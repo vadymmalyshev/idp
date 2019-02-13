@@ -10,9 +10,6 @@ import (
 	"github.com/sirupsen/logrus"
 
 	"github.com/volatiletech/authboss"
-	"github.com/volatiletech/authboss-renderer"
-	"github.com/volatiletech/authboss/auth"
-	"github.com/volatiletech/authboss/defaults"
 
 	clientState "github.com/volatiletech/authboss-clientstate"
 )
@@ -67,7 +64,7 @@ func Init(r *gin.Engine) {
 	cookieStore.HTTPOnly = SessionCookieHTTPOnly
 	cookieStore.Secure = SessionCookieSecure
 
-	sessionStore := clientState.NewSessionStorer(IDPSessionName, cookieAuthenticationKey, cookieEncryptionKey)
+	// sessionStore := clientState.NewSessionStorer(IDPSessionName, cookieAuthenticationKey, cookieEncryptionKey)
 
 	ab = authboss.New()
 	log.Info("00")
@@ -75,23 +72,23 @@ func Init(r *gin.Engine) {
 	ab.Config.Paths.RootURL = config.ServerHost
 
 	ab.Config.Storage.Server = users.NewUserStorer()
-	ab.Config.Storage.SessionState = sessionStore
-	ab.Config.Storage.CookieState = cookieStore
+	// ab.Config.Storage.SessionState = sessionStore
+	// ab.Config.Storage.CookieState = cookieStore
 
-	if *flagAPI {
-		ab.Config.Core.ViewRenderer = defaults.JSONRenderer{}
-	} else {
-		ab.Config.Core.ViewRenderer = abrenderer.NewHTML("/", "views/auth")
-	}
+	// if *flagAPI {
+	// 	ab.Config.Core.ViewRenderer = defaults.JSONRenderer{}
+	// } else {
+	// 	ab.Config.Core.ViewRenderer = abrenderer.NewHTML("/", "views/auth")
+	// }
 
-	modAuth := auth.Auth{}
-	log.Info("22")
-	err := modAuth.Init(ab)
-	log.Info("33")
-	if err != nil {
-		log.Info("err")
-		log.Panicf("can't initialize authboss's auth mod", err)
-	}
+	// modAuth := auth.Auth{}
+	// log.Info("22")
+	// err := modAuth.Init(ab)
+	// log.Info("33")
+	// if err != nil {
+	// 	log.Info("err")
+	// 	log.Panicf("can't initialize authboss's auth mod", err)
+	// }
 
 	// modRegister := register.Register{}
 	// if err := modRegister.Init(ab); err != nil {

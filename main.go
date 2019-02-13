@@ -22,6 +22,9 @@ func main() {
 	r := gin.New()
 	r.Use(ginutils.Middleware(log))
 
+	db := config.DB()
+	defer db.Close()
+
 	auth.Init(r)
 
 	errs := make(chan error, 2)
