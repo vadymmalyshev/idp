@@ -11,7 +11,7 @@ import (
 
 	"git.tor.ph/hiveon/idp/auth"
 	"git.tor.ph/hiveon/idp/config"
-	"git.tor.ph/hiveon/idp/internal/gin"
+	ginutils "git.tor.ph/hiveon/idp/internal/gin"
 )
 
 var (

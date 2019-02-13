@@ -15,10 +15,10 @@ hydra:
 db:
   host: "localhost"
   port: "54320"
-  name: "idp"
-  user: "postgres"
+  name: "idp_development"
+  user: "idp"
   sslmode: false
-  password: ""
+  password: "8GWbz2JF4FMe1Q8X"
 
 mail:
   active: "true"

@@ -1,0 +1,31 @@
+version: '3.4'
+services:
+
+  idp-postgres:
+    image: 'postgres:9.6.10'
+    container_name: idp-postgres
+    hostname: idp-postgres
+    ports:
+      - "54320:5432"
+    restart: always
+    volumes:
+      - ./__data/pg:/var/lib/postgresql/data
+      - ./scripts/pg-init:/docker-entrypoint-initdb.d
+    environment:
+      POSTGRES_MULTIPLE_DATABASES: "idp_dev, hydra"
+      POSTGRES_USER: idp
+      POSTGRES_PASSWORD: 8GWbz2JF4FMe1Q8X
+
+
+  idp:
+    build:
+      context: .
+      args:
+        NODE_ENV: development
+        GIN_MODE: debug
+        ENV: development
+    container_name: idp
+    image: idp
+    ports:
+      - "3000:3000"
+    env_file: .env
