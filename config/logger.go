@@ -17,6 +17,7 @@ package config
 import (
 	"sync"
 
+	"git.tor.ph/hiveon/idp/internal/log"
 	"github.com/sirupsen/logrus"
 )
 
@@ -31,6 +32,12 @@ func Logger() *logrus.Logger {
 }
 
 func newLogger() *logrus.Logger {
-	logger := logrus.New()
+	logger := log.NewLogger(log.Config{
+		Level:  "debug",
+		Format: "text",
+	})
+
+	// logger.Formatter = &runtime.Formatter{ChildFormatter: logger.Formatter}
+
 	return logger
 }

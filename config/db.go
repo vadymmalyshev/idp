@@ -15,6 +15,8 @@ func initDatabase() {
 
 	db.LogMode(true)
 
+	logger := Logger()
+
 	if err != nil {
 		logger.Panic("failed to init db:", err.Error())
 	}
