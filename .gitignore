@@ -21,6 +21,7 @@ vendor/
 /docker-compose.override.yml
 /.licensei.cache
 /.env
+/__data/pg/*
 
 # IDE integration
 /.idea/*
