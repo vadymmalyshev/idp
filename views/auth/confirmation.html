@@ -1,0 +1,20 @@
+{{template "header"}}
+<form action="" method="post">
+    <div class="main">
+        <div class="container">
+            <img src="/assets/logo.svg" width="200" height="60" alt="Hiveon ID" class="logo">
+            <h1><span class="thin">{{.message}} </span>Hiveon ID</h1>
+            <form method="post">
+
+                <input type="hidden" name="timezone" value="">
+                <input type="hidden" name="utc" value="">
+                <input type="hidden" name="_csrf" value="{{.csrfToken}}">
+                <input type="hidden" name="challenge" value="{{.challenge}}">
+
+
+            </form>
+        </div>
+    </div>
+    <script charset="utf-8" src="/assets/scripts.js"></script>
+</form>
+{{template "footer"}}

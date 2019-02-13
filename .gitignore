@@ -1,8 +1,8 @@
 _state*
 .DS_Store
-.pipeline
-pipeline
-!pipeline/
+.idp
+idp
+!idp/
 statestore/*
 vault/*
 config/config.toml

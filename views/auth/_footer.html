@@ -1,0 +1,6 @@
+{{ define "footer"}}
+<script charset="utf-8" src="/assets/scripts.js"></script>
+{{with .csrf_token}}<input type="hidden" name="csrf_token" value="{{.}}" />{{end}}
+</body>
+</html>
+{{ end}}

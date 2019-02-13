@@ -1,6 +1,9 @@
 idp:
   port: 3000
-  host: "127.0.0.1"
+  host: "localhost"
+
+auth:
+  sign_key: "Th1s!sMyR4Nd0MStri4gPleaseChangeIt"
 
 hydra:
   admin: "http://localhost:4445"

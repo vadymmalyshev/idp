@@ -24,7 +24,9 @@ const (
 )
 
 var (
-	ServerPort, ServerHost string
+	ServerPort, ServerHost, ServerURL string
+
+	AuthSignKey string
 
 	DBConn string
 
@@ -44,8 +46,17 @@ func init() {
 		panic(fmt.Errorf("Fatal error config file: %s \n", err))
 	}
 
-	ServerHost = viper.GetString("server.host")
-	ServerPort = viper.GetString("server.port")
+	ServerHost = viper.GetString("idp.host")
+	if ServerHost == "" {
+		panic("IDP host is missing from configuration")
+	}
+
+	ServerPort = viper.GetString("idp.port")
+	if ServerPort == "" {
+		panic("IDP port is missing from configuration")
+	}
+
+	ServerURL = fmt.Sprintf("%s:%s", ServerHost, ServerPort)
 
 	sslmode := "disable"
 	isSsl := viper.GetBool("db.sslmode")
@@ -61,6 +72,15 @@ func init() {
 		viper.GetString("db.name"),
 		viper.GetString("db.password"),
 	)
+
+	AuthSignKey = viper.GetString("auth.sign_key")
+
+	if AuthSignKey == "" {
+		panic("Token signing key is missing from configuration")
+	}
+	if len(AuthSignKey) < 32 {
+		panic("Token signing key must be at least 32 characters")
+	}
 
 	HydraAdmin = viper.GetString("hydra.admin")
 	HydraAPI = viper.GetString("hydra.api")

@@ -1,0 +1,27 @@
+{{ template "header"}}
+<form action="" method="post"  onSubmit="return validatePassword();">
+    <div class="main">
+        <div class="container">
+            <img src="/assets/logo.svg" width="200" height="60" alt="Hiveon ID" class="logo">
+            <h1><span class="thin">Setup new password</span></h1>
+            <form method="post" >
+                <div class="input-container">
+                    <input type="password" name="password" id="password" placeholder="Password" autocomplete="on" required value="" />
+                    <span class="eye" alt="Hide/Show password"></span>
+                </div>
+                <div class="input-container">
+                    <input type="password" name="confirm-password" id="confirm-password" placeholder="Confirm Password" autocomplete="on"
+                           required value="" />
+                    <span class="eye" alt="Hide/Show password"></span>
+                </div>
+                <input type="hidden" name="timezone" value="">
+                <input type="hidden" name="utc" value="">
+                <input type="hidden" name="_csrf" value="{{.csrfToken}}">
+                <input type="hidden" name="token" value="{{.token}}">
+                <button class="submit" type="submit"><span>Submit</span></button>
+
+            </form>
+        </div>
+    </div>
+</form>
+{{ template "footer"}}

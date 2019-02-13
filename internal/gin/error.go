@@ -2,6 +2,7 @@ package ginutils
 
 import (
 	"git.tor.ph/hiveon/idp/pkg/common"
+
 	"github.com/gin-gonic/gin"
 )
 
