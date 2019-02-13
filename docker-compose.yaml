@@ -24,7 +24,7 @@ services:
       - db:db
     environment:
       - LOG_LEVEL=debug
-      - HYDRA_SYSTEM_SECRET=youReallyNeedToChangeThis
+      # - HYDRA_SYSTEM_SECRET=youReallyNeedToChangeThis
     command:
       migrate sql postgres://${IDP_DB_USER}:${IDP_DB_PASS}@${IDP_DB_HOST}:5432/${HYDRA_DB_NAME}?sslmode=disable
     restart: on-failure
@@ -44,7 +44,7 @@ services:
       serve all --dangerous-force-http
     environment:
       - LOG_LEVEL=debug
-      - SYSTEM_SECRET=youReallyNeedToChangeThis
+      - SYSTEM_SECRET=${HYDRA_SYSTEM_SECRET}
       - DATABASE_URL=postgres://${IDP_DB_USER}:${IDP_DB_PASS}@${IDP_DB_HOST}:5432/${HYDRA_DB_NAME}?sslmode=disable
       - OAUTH2_CONSENT_URL=http://$BROWSER_IDP_HOST:3000/consent
       - OAUTH2_LOGIN_URL=http://$BROWSER_IDP_HOST:3000/login
