@@ -16,6 +16,7 @@ test.txt
 /bin/
 /build/
 /vendor/
+vendor/
 /.docker/
 /docker-compose.override.yml
 /.licensei.cache
