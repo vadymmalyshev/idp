@@ -1,13 +1,13 @@
 version: '3.4'
 services:
 
-  idp-postgres:
+  db:
     image: 'postgres:9.6.10'
-    container_name: idp-postgres
-    hostname: idp-postgres
+    container_name: ${IDP_DB_HOST}
+    hostname: ${IDP_DB_HOST}
     ports:
       - "54320:5432"
-    restart: always
+    restart: unless-stopped
     volumes:
       - ./__data/pg:/var/lib/postgresql/data
       - ./scripts/pg-init:/docker-entrypoint-initdb.d
@@ -16,16 +16,53 @@ services:
       POSTGRES_USER: idp
       POSTGRES_PASSWORD: 8GWbz2JF4FMe1Q8X
 
+  hydra-migrate:
+    image: oryd/hydra:$HYDRA_VERSION
+    container_name: idp_hydra_migrate
+    hostname: idp_hydra_migrate
+    links:
+      - db:db
+    environment:
+      - LOG_LEVEL=debug
+      - HYDRA_SYSTEM_SECRET=youReallyNeedToChangeThis
+    command:
+      migrate sql postgres://${IDP_DB_USER}:${IDP_DB_PASS}@${IDP_DB_HOST}:5432/${HYDRA_DB_NAME}?sslmode=disable
+    restart: on-failure
 
-  idp:
-    build:
-      context: .
-      args:
-        NODE_ENV: development
-        GIN_MODE: debug
-        ENV: development
-    container_name: idp
-    image: idp
+  hydra:
+    image: oryd/hydra:$HYDRA_VERSION
+    container_name: idp_hydra
+    hostname: idp_hydra
+    links:
+      - db:db
     ports:
-      - "3000:3000"
-    env_file: .env
+      - "4444:4444"
+      - "4445:4445"
+    depends_on:
+      - hydra-migrate
+    command:
+      serve all --dangerous-force-http
+    environment:
+      - LOG_LEVEL=debug
+      - SYSTEM_SECRET=youReallyNeedToChangeThis
+      - DATABASE_URL=postgres://${IDP_DB_USER}:${IDP_DB_PASS}@${IDP_DB_HOST}:5432/${HYDRA_DB_NAME}?sslmode=disable
+      - OAUTH2_CONSENT_URL=http://$BROWSER_IDP_HOST:3000/consent
+      - OAUTH2_LOGIN_URL=http://$BROWSER_IDP_HOST:3000/login
+      - OAUTH2_ISSUER_URL=http://$BROWSER_HYDRA_HOST:4444
+      - OAUTH2_SHARE_ERROR_DEBUG=1
+    restart: on-failure
+
+  # idp:
+  #   build:
+  #     context: .
+  #     args:
+  #       NODE_ENV: development
+  #       GIN_MODE: debug
+  #       ENV: development
+  #   container_name: idp
+  #     links:
+  #       - db:db
+  #   image: idp
+  #   ports:
+  #     - "3000:3000"
+  #   env_file: .env
