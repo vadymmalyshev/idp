@@ -2,6 +2,7 @@ _state*
 .DS_Store
 .idp
 idp
+debug
 !idp/
 statestore/*
 vault/*
