@@ -13,7 +13,7 @@
             <input name="password" type="password" placeholder="Password" /><br />
             {{with .errors}}{{range .password}}<span>{{.}}</span><br />{{end}}{{end -}}
             <label><input type="checkbox" name="remember">Remember me</label>
-            <input type="submit" value="Register"><br />
+            <input type="submit" value="Sign In"><br />
             <a href="/">Cancel</a>
 
             {{with .csrf_token}}<input type="hidden" name="csrf_token" value="{{.}}" />{{end}}

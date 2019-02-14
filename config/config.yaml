@@ -9,7 +9,7 @@ hydra:
   admin: "http://localhost:4445"
   api: "http://localhost:4444"
   client_id: "idp"
-  client_secret: "test-secret"
+  client_secret: "idp-secret"
   remember_for: 360000
 
 db:

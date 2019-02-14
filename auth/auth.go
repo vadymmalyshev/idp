@@ -8,6 +8,7 @@ import (
 
 	"git.tor.ph/hiveon/idp/config"
 	"git.tor.ph/hiveon/idp/models/users"
+
 	"github.com/gin-gonic/gin"
 	"github.com/go-chi/chi"
 	"github.com/gorilla/schema"
@@ -41,6 +42,9 @@ var (
 
 	signingKey       string
 	signingKeyBase32 string
+
+	cookieStore clientState.CookieStorer
+	sessionStore clientState.SessionStorer
 )
 
 var (
@@ -64,13 +68,13 @@ func Init(r *gin.Engine) {
 	cookieAuthenticationKey := signingKeyBytes
 	cookieEncryptionKey := signingKeyBytes[:32]
 
-	cookieStore := clientState.NewCookieStorer(cookieAuthenticationKey, cookieEncryptionKey)
+	cookieStore = clientState.NewCookieStorer(cookieAuthenticationKey, cookieEncryptionKey)
 	cookieStore.Domain = config.ServerHost
 	cookieStore.MaxAge = SessionCookieMaxAge
 	cookieStore.HTTPOnly = SessionCookieHTTPOnly
 	cookieStore.Secure = SessionCookieSecure
 
-	sessionStore := clientState.NewSessionStorer(IDPSessionName, cookieAuthenticationKey, cookieEncryptionKey)
+	sessionStore = clientState.NewSessionStorer(IDPSessionName, cookieAuthenticationKey, cookieEncryptionKey)
 
 	ab = authboss.New()
 
@@ -100,8 +104,6 @@ func Init(r *gin.Engine) {
 	ab.Config.Modules.RegisterPreserveFields = []string{"email", "username"}
 
 	ab.Config.Modules.TOTP2FAIssuer = "HiveonID"
-	ab.Config.Modules.RoutesRedirectOnUnauthed = true
-
 	ab.Config.Modules.TwoFactorEmailAuthRequired = false
 
 	defaults.SetCore(&ab.Config, *flagAPI, false)
@@ -150,11 +152,17 @@ func Init(r *gin.Engine) {
 
 	mux := chi.NewRouter()
 
+	mux.Use(challengeCode)
 	mux.Use(nosurfing, ab.LoadClientStateMiddleware, dataInjector)
 	mux.Group(func(mux chi.Router) {
 		mux.Use(authboss.ModuleListMiddleware(ab))
-		mux.Mount("/auth", http.StripPrefix("/auth", ab.Config.Core.Router))
+		mux.Mount("/", http.StripPrefix("", ab.Config.Core.Router))
 	})
 
-	r.Any("/auth/*resources", gin.WrapH(mux))
+	r.Any("/*resources", gin.WrapH(mux))
+
+	ab.Events.After(authboss.EventAuthHijack, func(w http.ResponseWriter, r *http.Request, handled bool) (bool, error) {
+		beforeHasValues := r.Context().Value(authboss.CTXKeyValues) != nil
+		return beforeHasValues, nil
+	})
 }

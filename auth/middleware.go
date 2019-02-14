@@ -4,10 +4,45 @@ import (
 	"context"
 	"net/http"
 
+	"git.tor.ph/hiveon/idp/internal/hydra"
 	"git.tor.ph/hiveon/idp/models/users"
 	"github.com/justinas/nosurf"
 	"github.com/volatiletech/authboss"
 )
+
+func challengeCode(h http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path == "/login" && r.Method == "GET" {
+			challenge := r.URL.Query().Get("login_challenge")
+
+			if len(challenge) == 0 {
+				ro := authboss.RedirectOptions{
+					Code:         http.StatusTemporaryRedirect,
+					RedirectPath: "/",
+					Success:      "You have no login challenge",
+				}
+				ab.Core.Redirector.Redirect(w, r, ro)
+				return
+			}
+
+			challengeResp, err := hydra.CheckChallengeCode(challenge)
+
+			if err != nil {
+				ro := authboss.RedirectOptions{
+					Code:         http.StatusTemporaryRedirect,
+					RedirectPath: "/",
+					Success:      "You have wrong login challenge",
+				}
+				ab.Core.Redirector.Redirect(w, r, ro)
+				return
+			}
+
+			authboss.PutSession(w, "Challenge", challengeResp.Challenge)
+		}
+
+		log.Info("/login mw skipped")
+	})
+}
 
 //nosurfing is a more verbose wrapper around csrf handling
 func nosurfing(h http.Handler) http.Handler {
