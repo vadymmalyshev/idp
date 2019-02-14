@@ -1,13 +1,7 @@
 package main
 
 import (
-	"fmt"
-	"os"
-	"os/signal"
-	"syscall"
-
 	"github.com/gin-gonic/gin"
-	"github.com/sirupsen/logrus"
 
 	"git.tor.ph/hiveon/idp/auth"
 	"git.tor.ph/hiveon/idp/config"
@@ -27,23 +21,6 @@ func main() {
 
 	auth.Init(r)
 
-	errs := make(chan error, 2)
-
-	go func() {
-		log.WithFields(
-			logrus.Fields{
-				"transport:": "http",
-				"port":       config.ServerPort,
-			}).Info("IDP has started")
-
-		errs <- r.Run(":" + config.ServerPort)
-	}()
-
-	go func() {
-		c := make(chan os.Signal)
-		signal.Notify(c, syscall.SIGINT)
-		errs <- fmt.Errorf("%s", <-c)
-	}()
-
-	log.Info("terminated", <-errs)
+	log.Infof("IDP has started on http://%s", config.ServerAddr)
+	r.Run(config.ServerAddr)
 }

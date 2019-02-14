@@ -24,7 +24,7 @@ const (
 )
 
 var (
-	ServerPort, ServerHost, ServerURL string
+	ServerPort, ServerHost, ServerAddr string
 
 	AuthSignKey string
 
@@ -56,7 +56,7 @@ func init() {
 		panic("IDP port is missing from configuration")
 	}
 
-	ServerURL = fmt.Sprintf("%s:%s", ServerHost, ServerPort)
+	ServerAddr = fmt.Sprintf("%s:%s", ServerHost, ServerPort)
 
 	sslmode := "disable"
 	isSsl := viper.GetBool("db.sslmode")

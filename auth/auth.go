@@ -3,15 +3,20 @@ package auth
 import (
 	"encoding/base32"
 	"flag"
+	"net/http"
+	"regexp"
 
 	"git.tor.ph/hiveon/idp/config"
 	"git.tor.ph/hiveon/idp/models/users"
 	"github.com/gin-gonic/gin"
+	"github.com/go-chi/chi"
+	"github.com/gorilla/schema"
 	"github.com/sirupsen/logrus"
 
 	"github.com/volatiletech/authboss"
 	"github.com/volatiletech/authboss/auth"
 	"github.com/volatiletech/authboss/defaults"
+	"github.com/volatiletech/authboss/register"
 
 	clientState "github.com/volatiletech/authboss-clientstate"
 	"github.com/volatiletech/authboss-renderer"
@@ -76,29 +81,80 @@ func Init(r *gin.Engine) {
 	ab.Config.Storage.SessionState = sessionStore
 	ab.Config.Storage.CookieState = cookieStore
 
+	if !*flagAPI {
+		// Prevent us from having to use Javascript in our basic HTML
+		// to create a delete method, but don't override this default for the API
+		// version
+		ab.Config.Modules.LogoutMethod = "GET"
+	}
+
 	if *flagAPI {
 		ab.Config.Core.ViewRenderer = defaults.JSONRenderer{}
 	} else {
 		ab.Config.Core.ViewRenderer = abrenderer.NewHTML("/", "views/auth")
 	}
 
+	ab.Config.Core.MailRenderer = abrenderer.NewEmail("/", "views/auth")
+	ab.Config.Core.Router = defaults.NewRouter()
+
+	ab.Config.Modules.RegisterPreserveFields = []string{"email", "username"}
+
+	ab.Config.Modules.TOTP2FAIssuer = "HiveonID"
+	ab.Config.Modules.RoutesRedirectOnUnauthed = true
+
+	ab.Config.Modules.TwoFactorEmailAuthRequired = false
+
 	defaults.SetCore(&ab.Config, *flagAPI, false)
 
-	modAuth := auth.Auth{}
-	err := modAuth.Init(ab)
+	emailRule := defaults.Rules{
+		FieldName: "email", Required: true,
+		MatchError: "Must be a valid e-mail address",
+		MustMatch:  regexp.MustCompile(`.*@.*\.[a-z]{1,}`),
+	}
+	passwordRule := defaults.Rules{
+		FieldName: "password", Required: true,
+		MinLength: 4,
+	}
+	nameRule := defaults.Rules{
+		FieldName: "name", Required: true,
+		MinLength: 2,
+	}
 
-	if err != nil {
+	ab.Config.Core.BodyReader = defaults.HTTPBodyReader{
+		ReadJSON: *flagAPI,
+		Rulesets: map[string][]defaults.Rules{
+			"register":    {emailRule, passwordRule, nameRule},
+			"recover_end": {passwordRule},
+		},
+		// Confirms: map[string][]string{
+		// 	"register":    {"password", authboss.ConfirmPrefix + "password"},
+		// 	"recover_end": {"password", authboss.ConfirmPrefix + "password"},
+		// },
+		Whitelist: map[string][]string{
+			"register": []string{"email", "name", "password"},
+		},
+	}
+
+	modAuth := auth.Auth{}
+	if err := modAuth.Init(ab); err != nil {
 		log.Panicf("can't initialize authboss's auth mod", err)
 	}
 
-	// modRegister := register.Register{}
-	// if err := modRegister.Init(ab); err != nil {
-	// 	panic(err)
-	// }
+	modRegister := register.Register{}
+	if err := modRegister.Init(ab); err != nil {
+		log.Panicf("can't initialize authboss's register mod", err)
+	}
 
-	// modLogout := logout.Logout{}
-	// if err := modLogout.Init(ab); err != nil {
-	// 	panic(err)
-	// }
+	schemaDec := schema.NewDecoder()
+	schemaDec.IgnoreUnknownKeys(true)
 
+	mux := chi.NewRouter()
+
+	mux.Use(nosurfing, ab.LoadClientStateMiddleware, dataInjector)
+	mux.Group(func(mux chi.Router) {
+		mux.Use(authboss.ModuleListMiddleware(ab))
+		mux.Mount("/auth", http.StripPrefix("/auth", ab.Config.Core.Router))
+	})
+
+	r.Any("/auth/*resources", gin.WrapH(mux))
 }
