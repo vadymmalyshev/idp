@@ -10,8 +10,11 @@ import (
 	"github.com/sirupsen/logrus"
 
 	"github.com/volatiletech/authboss"
+	"github.com/volatiletech/authboss/auth"
+	"github.com/volatiletech/authboss/defaults"
 
 	clientState "github.com/volatiletech/authboss-clientstate"
+	"github.com/volatiletech/authboss-renderer"
 )
 
 const IDPSessionName = "_idp_session"
@@ -48,8 +51,6 @@ func init() {
 
 }
 func Init(r *gin.Engine) {
-	log.Info("111")
-
 	signingKey := config.AuthSignKey
 
 	signingKeyBytes := []byte(signingKey)
@@ -64,31 +65,31 @@ func Init(r *gin.Engine) {
 	cookieStore.HTTPOnly = SessionCookieHTTPOnly
 	cookieStore.Secure = SessionCookieSecure
 
-	// sessionStore := clientState.NewSessionStorer(IDPSessionName, cookieAuthenticationKey, cookieEncryptionKey)
+	sessionStore := clientState.NewSessionStorer(IDPSessionName, cookieAuthenticationKey, cookieEncryptionKey)
 
 	ab = authboss.New()
-	log.Info("00")
+
 	ab.Config.Paths.Mount = "/"
 	ab.Config.Paths.RootURL = config.ServerHost
 
 	ab.Config.Storage.Server = users.NewUserStorer()
-	// ab.Config.Storage.SessionState = sessionStore
-	// ab.Config.Storage.CookieState = cookieStore
+	ab.Config.Storage.SessionState = sessionStore
+	ab.Config.Storage.CookieState = cookieStore
 
-	// if *flagAPI {
-	// 	ab.Config.Core.ViewRenderer = defaults.JSONRenderer{}
-	// } else {
-	// 	ab.Config.Core.ViewRenderer = abrenderer.NewHTML("/", "views/auth")
-	// }
+	if *flagAPI {
+		ab.Config.Core.ViewRenderer = defaults.JSONRenderer{}
+	} else {
+		ab.Config.Core.ViewRenderer = abrenderer.NewHTML("/", "views/auth")
+	}
 
-	// modAuth := auth.Auth{}
-	// log.Info("22")
-	// err := modAuth.Init(ab)
-	// log.Info("33")
-	// if err != nil {
-	// 	log.Info("err")
-	// 	log.Panicf("can't initialize authboss's auth mod", err)
-	// }
+	defaults.SetCore(&ab.Config, *flagAPI, false)
+
+	modAuth := auth.Auth{}
+	err := modAuth.Init(ab)
+
+	if err != nil {
+		log.Panicf("can't initialize authboss's auth mod", err)
+	}
 
 	// modRegister := register.Register{}
 	// if err := modRegister.Init(ab); err != nil {

@@ -15,7 +15,7 @@ hydra:
 db:
   host: "localhost"
   port: "54320"
-  name: "idp_development"
+  name: "idp_dev"
   user: "idp"
   sslmode: false
   password: "8GWbz2JF4FMe1Q8X"
