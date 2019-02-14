@@ -2,6 +2,7 @@ module git.tor.ph/hiveon/idp
 
 require (
 	github.com/boombuler/barcode v1.0.0 // indirect
+	github.com/davecgh/go-spew v1.1.1
 	github.com/denisenkom/go-mssqldb v0.0.0-20190204142019-df6d76eb9289 // indirect
 	github.com/erikstmartin/go-testdb v0.0.0-20160219214506-8d10e4a1bae5 // indirect
 	github.com/gin-contrib/sessions v0.0.0-20190212110342-a38112fffc50 // indirect
@@ -11,6 +12,7 @@ require (
 	github.com/go-sql-driver/mysql v1.4.1 // indirect
 	github.com/gofrs/uuid v3.2.0+incompatible // indirect
 	github.com/gorilla/schema v1.0.2
+	github.com/gorilla/sessions v1.1.3
 	github.com/jinzhu/gorm v1.9.2
 	github.com/jinzhu/inflection v0.0.0-20180308033659-04140366298a // indirect
 	github.com/jinzhu/now v0.0.0-20181116074157-8ec929ed50c3 // indirect

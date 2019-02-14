@@ -5,7 +5,7 @@ import (
 	"flag"
 	"net/http"
 	"regexp"
-
+	"encoding/base64"
 	"git.tor.ph/hiveon/idp/config"
 	"git.tor.ph/hiveon/idp/models/users"
 
@@ -13,6 +13,7 @@ import (
 	"github.com/go-chi/chi"
 	"github.com/gorilla/schema"
 	"github.com/sirupsen/logrus"
+	"github.com/gorilla/sessions"
 
 	"github.com/volatiletech/authboss"
 	"github.com/volatiletech/authboss/auth"
@@ -23,16 +24,13 @@ import (
 	"github.com/volatiletech/authboss-renderer"
 )
 
-const IDPSessionName = "_idp_session"
+const IDPSessionName = "idp_session"
 
 // SessionCookieMaxAge holds long an authenticated session should be valid in seconds
 const SessionCookieMaxAge = 30 * 24 * 60 * 60
 
 // SessionCookieHTTPOnly describes if the cookies should be accessible from HTTP requests only (no JS)
-const SessionCookieHTTPOnly = true
-
-// SessionCookieName is the name of the token that is stored in the session cookie
-const SessionCookieName = "Hiveon ID Session Token"
+const SessionCookieHTTPOnly = false
 
 const SessionCookieSecure = false
 
@@ -65,21 +63,37 @@ func Init(r *gin.Engine) {
 	signingKeyBytes := []byte(signingKey)
 	signingKeyBase32 = base32.StdEncoding.EncodeToString(signingKeyBytes)
 
-	cookieAuthenticationKey := signingKeyBytes
-	cookieEncryptionKey := signingKeyBytes[:32]
+	// cookieAuthenticationKey := signingKeyBytes
+	// cookieEncryptionKey := signingKeyBytes[:32]
 
-	cookieStore = clientState.NewCookieStorer(cookieAuthenticationKey, cookieEncryptionKey)
-	cookieStore.Domain = config.ServerHost
-	cookieStore.MaxAge = SessionCookieMaxAge
-	cookieStore.HTTPOnly = SessionCookieHTTPOnly
-	cookieStore.Secure = SessionCookieSecure
+	cookieStoreKey, _ := base64.StdEncoding.DecodeString(`NpEPi8pEjKVjLGJ6kYCS+VTCzi6BUuDzU0wrwXyf5uDPArtlofn2AG6aTMiPmN3C909rsEWMNqJqhIVPGP3Exg==`)
+	sessionStoreKey, _ := base64.StdEncoding.DecodeString(`AbfYwmmt8UCwUuhd9qvfNA9UCuN1cVcKJN1ofbiky6xCyyBj20whe40rJa3Su0WOWLWcPpO1taqJdsEI/65+JA==`)
 
-	sessionStore = clientState.NewSessionStorer(IDPSessionName, cookieAuthenticationKey, cookieEncryptionKey)
+
+	cookieStore = clientState.NewCookieStorer(cookieStoreKey, nil)
+	// cookieStore.MaxAge = SessionCookieMaxAge
+	// cookieStore.HTTPOnly = SessionCookieHTTPOnly
+	// cookieStore.Secure = SessionCookieSecure
+	cookieStore.Domain = "localhost"
+	cookieStore.HTTPOnly = false
+	cookieStore.Secure = false
+
+
+	sessionStore = clientState.NewSessionStorer(IDPSessionName, sessionStoreKey, nil)
+
+	cstore := sessionStore.Store.(*sessions.CookieStore)
+	// cstore.Options.HttpOnly = SessionCookieHTTPOnly
+	// cstore.Options.Secure = SessionCookieSecure
+
+	cstore.Options.HttpOnly = false
+	cstore.Options.Secure = false
+
+
 
 	ab = authboss.New()
 
-	ab.Config.Paths.Mount = "/"
 	ab.Config.Paths.RootURL = config.ServerHost
+	ab.Config.Paths.Mount = "/"
 
 	ab.Config.Storage.Server = users.NewUserStorer()
 	ab.Config.Storage.SessionState = sessionStore
@@ -152,8 +166,9 @@ func Init(r *gin.Engine) {
 
 	mux := chi.NewRouter()
 
+	mux.Use(nosurfing, ab.LoadClientStateMiddleware, dataInjector, debugMw)
 	mux.Use(challengeCode)
-	mux.Use(nosurfing, ab.LoadClientStateMiddleware, dataInjector)
+
 	mux.Group(func(mux chi.Router) {
 		mux.Use(authboss.ModuleListMiddleware(ab))
 		mux.Mount("/", http.StripPrefix("", ab.Config.Core.Router))
