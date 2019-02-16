@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"git.tor.ph/hiveon/idp/config"
+	"git.tor.ph/hiveon/idp/pkg/errors"
 
 	"github.com/sirupsen/logrus"
 	"github.com/volatiletech/authboss"
@@ -44,25 +45,13 @@ func NewUserStorer() *UserStorer {
 func (store UserStorer) Load(ctx context.Context, key string) (authboss.User, error) {
 	var user User
 
-	_, uid, err := authboss.ParseOAuth2PID(key)
-	if err == nil {
+	notFoundByEmail := db.First(&user, "email = ?", key).RecordNotFound()
 
-		notFound := db.First(&user, uid).RecordNotFound()
-
-		if !notFound {
-			log.Infof("oauth2 user loaded", logrus.Fields{
-				"email": user.Email,
-			})
-			return &user, nil
-		}
+	if notFoundByEmail {
+		return nil, errors.ErrUserNotFound
 	}
-
-	notFound := db.First(&user, "email = ?", key).RecordNotFound()
-	if notFound {
-		return nil, authboss.ErrUserNotFound
-	}
-
-	log.Infof("UserStorer.Load: user loaded", logrus.Fields{
+	
+	log.Info("user loaded by email", logrus.Fields{
 		"email": user.Email,
 	})
 

@@ -21,6 +21,7 @@ func initDatabase() {
 	if err != nil {
 		logger.Panic("failed to init db:", err.Error())
 	}
+
 }
 
 func DB() *gorm.DB {

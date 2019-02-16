@@ -1,6 +1,7 @@
 package auth
 
 import (
+	
 	"encoding/base32"
 	"flag"
 	"net/http"
@@ -8,6 +9,7 @@ import (
 	"encoding/base64"
 	"git.tor.ph/hiveon/idp/config"
 	"git.tor.ph/hiveon/idp/models/users"
+	"git.tor.ph/hiveon/idp/internal/hydra"
 
 	"github.com/gin-gonic/gin"
 	"github.com/go-chi/chi"
@@ -88,8 +90,6 @@ func Init(r *gin.Engine) {
 	cstore.Options.HttpOnly = false
 	cstore.Options.Secure = false
 
-
-
 	ab = authboss.New()
 
 	ab.Config.Paths.RootURL = config.ServerHost
@@ -166,7 +166,7 @@ func Init(r *gin.Engine) {
 
 	mux := chi.NewRouter()
 
-	mux.Use(nosurfing, ab.LoadClientStateMiddleware, dataInjector, debugMw)
+	mux.Use(nosurfing, ab.LoadClientStateMiddleware, dataInjector)
 	mux.Use(challengeCode)
 
 	mux.Group(func(mux chi.Router) {
@@ -176,8 +176,43 @@ func Init(r *gin.Engine) {
 
 	r.Any("/*resources", gin.WrapH(mux))
 
-	ab.Events.After(authboss.EventAuthHijack, func(w http.ResponseWriter, r *http.Request, handled bool) (bool, error) {
-		beforeHasValues := r.Context().Value(authboss.CTXKeyValues) != nil
-		return beforeHasValues, nil
+	
+	ab.Events.After(authboss.EventAuth, func(w http.ResponseWriter, r *http.Request, handled bool) (bool, error) {
+		challenge, _ := authboss.GetSession(r, "Challenge")
+
+		if len(challenge) == 0 {
+			ro := authboss.RedirectOptions{
+				Code:         http.StatusTemporaryRedirect,
+				RedirectPath: "/",
+				Success:      "You have no login challenge",
+			}
+			ab.Core.Redirector.Redirect(w, r, ro)
+			return true, nil
+		}
+
+		user, err := ab.LoadCurrentUser(&r)
+		if user != nil && err == nil {
+			user := user.(*users.User)
+
+			resp, errConfirm := hydra.ConfirmLogin(user.ID, false, challenge)
+
+			if errConfirm != nil {
+				log.WithFields(logrus.Fields{
+					"Email": user.Email,
+					"UserID": user.ID,
+					"Challenge": challenge,
+				}).Error("hydra/login/accept request has been failed")
+			}
+
+			ro := authboss.RedirectOptions{
+				Code:         http.StatusTemporaryRedirect,
+				RedirectPath: resp.RedirectTo,
+				Success:      "Hydra redirect",
+			}
+			ab.Core.Redirector.Redirect(w, r, ro)
+
+		}
+
+		return true, nil
 	})
 }

@@ -9,10 +9,10 @@ import (
 // User using by IDP to store users and their credentials
 type User struct {
 	gorm.Model
-	Username  string `gorm:"not null"`
-	Email     string `gorm:"not null;unique_index"`
-	Password  string `gorm:"not null"`
-	Challenge string
+	Username string `gorm:"not null"`
+	Email    string `gorm:"not null;unique_index"`
+	Password string `gorm:"not null"`
+
 	// Confirm
 	ConfirmSelector string
 	ConfirmVerifier string

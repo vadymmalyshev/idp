@@ -15,6 +15,8 @@ import (
 
 func challengeCode(h http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		defer h.ServeHTTP(w, r)
+
 		chal, _ := authboss.GetSession(r, "Challenge")
 		log.Info("chal:" + chal)
 
@@ -49,10 +51,7 @@ func challengeCode(h http.Handler) http.Handler {
 			authboss.PutSession(w, "Challenge", challengeCode)
 		}
 
-		writ, _ := authboss.GetSession(r, "Challenge")
-		log.Info("writ:" + writ)
-
-		log.Info("/login mw skipped")
+		log.Info("/login mw skipped")		
 	})
 }
 
