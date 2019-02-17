@@ -17,7 +17,7 @@ package config
 import (
 	"sync"
 
-	"git.tor.ph/hiveon/idp/internal/log"
+	"git.tor.ph/hiveon/idp/pkg/log"
 	"github.com/sirupsen/logrus"
 )
 

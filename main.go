@@ -6,7 +6,7 @@ import (
 	"git.tor.ph/hiveon/idp/auth"
 	"git.tor.ph/hiveon/idp/config"
 	"git.tor.ph/hiveon/idp/models"
-	ginutils "git.tor.ph/hiveon/idp/internal/gin"
+	ginutils "git.tor.ph/hiveon/idp/pkg/gin"
 )
 
 var (
@@ -19,7 +19,7 @@ func main() {
 
 	db := config.DB()
 	defer db.Close()
-	
+
 	models.Migrate(db)
 
 	auth.Init(r)
