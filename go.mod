@@ -7,6 +7,7 @@ require (
 	github.com/erikstmartin/go-testdb v0.0.0-20160219214506-8d10e4a1bae5 // indirect
 	github.com/gin-contrib/sessions v0.0.0-20190212110342-a38112fffc50 // indirect
 	github.com/gin-contrib/sse v0.0.0-20190125020943-a7658810eb74 // indirect
+	github.com/gin-contrib/static v0.0.0-20181225054800-cf5e10bbd933
 	github.com/gin-gonic/gin v1.3.0
 	github.com/go-chi/chi v4.0.1+incompatible
 	github.com/go-sql-driver/mysql v1.4.1 // indirect
@@ -25,12 +26,14 @@ require (
 	github.com/sirupsen/logrus v1.3.0
 	github.com/spf13/afero v1.2.1 // indirect
 	github.com/spf13/viper v1.3.1
+	github.com/stretchr/testify v1.3.0 // indirect
+	github.com/ugorji/go/codec v0.0.0-20190204201341-e444a5086c43 // indirect
 	github.com/volatiletech/authboss v0.0.0-20190207041050-5c92c016e0cd
 	github.com/volatiletech/authboss-clientstate v0.0.0-20190112194853-0943df8b4e05
 	github.com/volatiletech/authboss-renderer v0.0.0-20181105062701-4b64de40529a
 	golang.org/x/crypto v0.0.0-20190211182817-74369b46fc67 // indirect
 	golang.org/x/net v0.0.0-20190213061140-3a22650c66bd // indirect
 	golang.org/x/oauth2 v0.0.0-20190212230446-3e8b2be13635 // indirect
-	golang.org/x/sys v0.0.0-20190209173611-3b5209105503 // indirect
+	golang.org/x/sys v0.0.0-20190219092855-153ac476189d // indirect
 	gopkg.in/resty.v1 v1.11.0
 )

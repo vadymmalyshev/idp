@@ -16,7 +16,7 @@
             <input type="submit" value="Sign In"><br />
             <a href="/">Cancel</a>
 
-            {{with .csrf_token}}<input type="hidden" name="csrf_token" value="{{.}}" />{{end}}
+            {{with .csrf_token}}<input class="submit" type="hidden" name="csrf_token" value="{{.}}" />{{end}}
         </form>
 
     </div>
