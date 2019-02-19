@@ -8,7 +8,7 @@ import (
 	"git.tor.ph/hiveon/idp/pkg/errors"
 
 	"git.tor.ph/hiveon/idp/config"
-	"github.com/ory/hydra/consent"
+	hydraConsent "github.com/ory/hydra/consent"
 	"github.com/sirupsen/logrus"
 	"gopkg.in/resty.v1"
 )
@@ -22,9 +22,42 @@ func init() {
 	resty.SetRedirectPolicy(resty.FlexibleRedirectPolicy(20))
 }
 
-func CheckChallengeCode(challenge string) (consent.AuthenticationRequest, error) {
+func AcceptConsentChallengeCode(challenge string) (string, error) {
+	url := fmt.Sprintf("%s/oauth2/auth/requests/consent/%s", config.HydraAdmin, challenge)
+	consent := hydraConsent.ConsentRequest{}
+
+	res, err := resty.R().Get(url)
+
+	if err != nil || res.StatusCode() < 200 || res.StatusCode() > 302 {
+		log.Errorf("an error occured while making hydra accept consent url: %s", err.Error())
+		return "", err
+	}
+
+	json.Unmarshal(res.Body(), &consent)
+
+	req := hydraConsent.HandledConsentRequest{GrantedScope: getScopes(), GrantedAudience: consent.RequestedAudience,
+		Remember: false, RememberFor: RememberFor}
+
+	accept := hydraConsent.RequestHandlerResponse{}
+
+	res, err = resty.R().
+		SetBody(req).
+		SetHeader("Content-Type", "application/json").
+		Put(url + "/accept")
+
+	if err != nil {
+		log.Errorf("an error occured while making hydra accept consent url: %s", err.Error())
+		return "", nil
+	}
+
+	json.Unmarshal(res.Body(), &accept)
+
+	return accept.RedirectTo, nil
+}
+
+func CheckChallengeCode(challenge string) (hydraConsent.AuthenticationRequest, error) {
 	url := fmt.Sprintf("%s/oauth2/auth/requests/login/%s", config.HydraAdmin, challenge)
-	authResult := consent.AuthenticationRequest{}
+	authResult := hydraConsent.AuthenticationRequest{}
 
 	res, err := resty.R().Get(url)
 	if err != nil {
@@ -69,4 +102,8 @@ func ConfirmLogin(userID uint, remember bool, challenge string) (LoginResponse, 
 	json.Unmarshal(res.Body(), &response)
 	log.WithFields(logrus.Fields{"redirect_url": response.RedirectTo}).Info("redirect")
 	return response, nil
+}
+
+func getScopes() []string {
+	return []string{"openid", "offline"}
 }

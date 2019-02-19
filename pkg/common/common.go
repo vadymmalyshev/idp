@@ -1,6 +1,6 @@
 package common
 
-type IDPResponse struct {
+type HiveonResponse struct {
 	StatusCode int    `json:"status_code,omitempty"`
 	Message    string `json:"message,omitempty"`
 }

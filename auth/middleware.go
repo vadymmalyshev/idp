@@ -2,8 +2,8 @@ package auth
 
 import (
 	"context"
-	"net/http"
 	"fmt"
+	"net/http"
 
 	"github.com/davecgh/go-spew/spew"
 
@@ -12,6 +12,46 @@ import (
 	"github.com/justinas/nosurf"
 	"github.com/volatiletech/authboss"
 )
+
+func acceptConsent(h http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		defer h.ServeHTTP(w, r)
+
+		if r.URL.Path == "/consent" && r.Method == "GET" {
+			challenge := r.URL.Query().Get("consent_challenge")
+
+			if len(challenge) == 0 {
+				ro := authboss.RedirectOptions{
+					Code:         http.StatusTemporaryRedirect,
+					RedirectPath: "/",
+					Failure:      "You have no consent challenge",
+				}
+				ab.Core.Redirector.Redirect(w, r, ro)
+				return
+			}
+
+			url, err := hydra.AcceptConsentChallengeCode(challenge)
+			if err != nil {
+				ro := authboss.RedirectOptions{
+					Code:         http.StatusTemporaryRedirect,
+					RedirectPath: "/",
+					Failure:      "consent challenge code isn't right",
+				}
+				ab.Core.Redirector.Redirect(w, r, ro)
+				return
+			}
+
+			ro := authboss.RedirectOptions{
+				Code:         http.StatusTemporaryRedirect,
+				RedirectPath: url,
+				Success:      "Consent code accepted",
+			}
+			ab.Core.Redirector.Redirect(w, r, ro)
+			return
+
+		}
+	})
+}
 
 func challengeCode(h http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -50,8 +90,6 @@ func challengeCode(h http.Handler) http.Handler {
 
 			authboss.PutSession(w, "Challenge", challengeCode)
 		}
-
-		log.Info("/login mw skipped")		
 	})
 }
 
@@ -93,35 +131,34 @@ func layoutData(w http.ResponseWriter, r **http.Request) authboss.HTMLData {
 	}
 }
 
-
 func debugMw(h http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		fmt.Printf("\n%s %s %s\n", r.Method, r.URL.Path, r.Proto)
 
-			session, err := sessionStore.Get(r, IDPSessionName)
-			if err == nil {
-				fmt.Print("Session: ")
-				first := true
-				for k, v := range session.Values {
-					if first {
-						first = false
-					} else {
-						fmt.Print(", ")
-					}
-					fmt.Printf("%s = %v", k, v)
+		session, err := sessionStore.Get(r, IDPSessionName)
+		if err == nil {
+			fmt.Print("Session: ")
+			first := true
+			for k, v := range session.Values {
+				if first {
+					first = false
+				} else {
+					fmt.Print(", ")
 				}
-				fmt.Println()
+				fmt.Printf("%s = %v", k, v)
 			}
-			// fmt.Println("Database:")
-			// for _, u := range database.Users {
-			// 	fmt.Printf("! %#v\n", u)
-			// }
-			if val := r.Context().Value(authboss.CTXKeyData); val != nil {
-				fmt.Printf("CTX Data: %s", spew.Sdump(val))
-			}
-			if val := r.Context().Value(authboss.CTXKeyValues); val != nil {
-				fmt.Printf("CTX Values: %s", spew.Sdump(val))
-			}
+			fmt.Println()
+		}
+		// fmt.Println("Database:")
+		// for _, u := range database.Users {
+		// 	fmt.Printf("! %#v\n", u)
+		// }
+		if val := r.Context().Value(authboss.CTXKeyData); val != nil {
+			fmt.Printf("CTX Data: %s", spew.Sdump(val))
+		}
+		if val := r.Context().Value(authboss.CTXKeyValues); val != nil {
+			fmt.Printf("CTX Values: %s", spew.Sdump(val))
+		}
 
 		h.ServeHTTP(w, r)
 	})

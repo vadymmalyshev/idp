@@ -15,6 +15,7 @@ var (
 
 func main() {
 	r := gin.New()
+
 	r.Use(ginutils.Middleware(log))
 
 	db := config.DB()

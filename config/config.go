@@ -59,8 +59,7 @@ func init() {
 	ServerAddr = fmt.Sprintf("%s:%s", ServerHost, ServerPort)
 
 	sslmode := "disable"
-	isSsl := viper.GetBool("db.sslmode")
-	if isSsl {
+	if viper.GetBool("db.sslmode") {
 		sslmode = "enable"
 	}
 

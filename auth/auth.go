@@ -1,21 +1,21 @@
 package auth
 
 import (
-	
 	"encoding/base32"
+	"encoding/base64"
 	"flag"
 	"net/http"
 	"regexp"
-	"encoding/base64"
+
 	"git.tor.ph/hiveon/idp/config"
-	"git.tor.ph/hiveon/idp/models/users"
 	"git.tor.ph/hiveon/idp/internal/hydra"
+	"git.tor.ph/hiveon/idp/models/users"
 
 	"github.com/gin-gonic/gin"
 	"github.com/go-chi/chi"
 	"github.com/gorilla/schema"
-	"github.com/sirupsen/logrus"
 	"github.com/gorilla/sessions"
+	"github.com/sirupsen/logrus"
 
 	"github.com/volatiletech/authboss"
 	"github.com/volatiletech/authboss/auth"
@@ -23,7 +23,7 @@ import (
 	"github.com/volatiletech/authboss/register"
 
 	clientState "github.com/volatiletech/authboss-clientstate"
-	"github.com/volatiletech/authboss-renderer"
+	abrenderer "github.com/volatiletech/authboss-renderer"
 )
 
 const IDPSessionName = "idp_session"
@@ -43,7 +43,7 @@ var (
 	signingKey       string
 	signingKeyBase32 string
 
-	cookieStore clientState.CookieStorer
+	cookieStore  clientState.CookieStorer
 	sessionStore clientState.SessionStorer
 )
 
@@ -71,7 +71,6 @@ func Init(r *gin.Engine) {
 	cookieStoreKey, _ := base64.StdEncoding.DecodeString(`NpEPi8pEjKVjLGJ6kYCS+VTCzi6BUuDzU0wrwXyf5uDPArtlofn2AG6aTMiPmN3C909rsEWMNqJqhIVPGP3Exg==`)
 	sessionStoreKey, _ := base64.StdEncoding.DecodeString(`AbfYwmmt8UCwUuhd9qvfNA9UCuN1cVcKJN1ofbiky6xCyyBj20whe40rJa3Su0WOWLWcPpO1taqJdsEI/65+JA==`)
 
-
 	cookieStore = clientState.NewCookieStorer(cookieStoreKey, nil)
 	// cookieStore.MaxAge = SessionCookieMaxAge
 	// cookieStore.HTTPOnly = SessionCookieHTTPOnly
@@ -79,7 +78,6 @@ func Init(r *gin.Engine) {
 	cookieStore.Domain = "localhost"
 	cookieStore.HTTPOnly = false
 	cookieStore.Secure = false
-
 
 	sessionStore = clientState.NewSessionStorer(IDPSessionName, sessionStoreKey, nil)
 
@@ -168,6 +166,7 @@ func Init(r *gin.Engine) {
 
 	mux.Use(nosurfing, ab.LoadClientStateMiddleware, dataInjector)
 	mux.Use(challengeCode)
+	mux.Use(acceptConsent)
 
 	mux.Group(func(mux chi.Router) {
 		mux.Use(authboss.ModuleListMiddleware(ab))
@@ -176,7 +175,6 @@ func Init(r *gin.Engine) {
 
 	r.Any("/*resources", gin.WrapH(mux))
 
-	
 	ab.Events.After(authboss.EventAuth, func(w http.ResponseWriter, r *http.Request, handled bool) (bool, error) {
 		challenge, _ := authboss.GetSession(r, "Challenge")
 
@@ -198,8 +196,8 @@ func Init(r *gin.Engine) {
 
 			if errConfirm != nil {
 				log.WithFields(logrus.Fields{
-					"Email": user.Email,
-					"UserID": user.ID,
+					"Email":     user.Email,
+					"UserID":    user.ID,
 					"Challenge": challenge,
 				}).Error("hydra/login/accept request has been failed")
 			}
@@ -209,6 +207,7 @@ func Init(r *gin.Engine) {
 				RedirectPath: resp.RedirectTo,
 				Success:      "Hydra redirect",
 			}
+			log.Infof("user will be redirected to %s", resp.RedirectTo)
 			ab.Core.Redirector.Redirect(w, r, ro)
 
 		}
