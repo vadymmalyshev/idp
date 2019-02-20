@@ -25,9 +25,11 @@ func main() {
 	r.Use(ginutils.Middleware(log))
 	r.Use(static.Serve("/assets", static.LocalFile("./views/assets", true)))
 
-	auth.Init(r)
+	auth.Init(r, db)
 
-	log.Infof("IDP has started on http://%s", config.ServerAddr)
+	serverConfig, _ := config.GetServerConfig()
 
-	r.Run(config.ServerAddr)
+	log.Infof("IDP has started on http://%s", serverConfig.Addr)
+
+	r.Run(serverConfig.Addr)
 }

@@ -15,6 +15,7 @@ import (
 	"github.com/go-chi/chi"
 	"github.com/gorilla/schema"
 	"github.com/gorilla/sessions"
+	"github.com/jinzhu/gorm"
 	"github.com/sirupsen/logrus"
 
 	"github.com/volatiletech/authboss"
@@ -59,8 +60,8 @@ func init() {
 	log = config.Logger()
 
 }
-func Init(r *gin.Engine) {
-	signingKey := config.AuthSignKey
+func Init(r *gin.Engine, db *gorm.DB) {
+	signingKey, _ := config.GetSignKey()
 
 	signingKeyBytes := []byte(signingKey)
 	signingKeyBase32 = base32.StdEncoding.EncodeToString(signingKeyBytes)
@@ -90,10 +91,12 @@ func Init(r *gin.Engine) {
 
 	ab = authboss.New()
 
-	ab.Config.Paths.RootURL = config.ServerHost
+	serverConfig, _ := config.GetServerConfig()
+
+	ab.Config.Paths.RootURL = serverConfig.Addr
 	ab.Config.Paths.Mount = "/"
 
-	ab.Config.Storage.Server = users.NewUserStorer()
+	ab.Config.Storage.Server = users.NewUserStorer(db)
 	ab.Config.Storage.SessionState = sessionStore
 	ab.Config.Storage.CookieState = cookieStore
 

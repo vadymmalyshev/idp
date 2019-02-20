@@ -12,7 +12,13 @@ var db *gorm.DB
 
 func initDatabase() {
 	var err error
-	db, err = gorm.Open("postgres", DBConn)
+	dbconfig, err := GetDBConfig()
+
+	if err != nil {
+		logger.Panic("failed to find db config:", err.Error())
+	}
+
+	db, err = gorm.Open("postgres", dbconfig.Conn)
 
 	db.LogMode(true)
 

@@ -20,10 +20,12 @@ var RememberFor = 30 * 24 * 60 * 60
 func init() {
 	log = config.Logger()
 	resty.SetRedirectPolicy(resty.FlexibleRedirectPolicy(20))
+
 }
 
 func AcceptConsentChallengeCode(challenge string) (string, error) {
-	url := fmt.Sprintf("%s/oauth2/auth/requests/consent/%s", config.HydraAdmin, challenge)
+	hConfig, _ := config.GetHydraConfig()
+	url := fmt.Sprintf("%s/oauth2/auth/requests/consent/%s", hConfig.Admin, challenge)
 	consent := hydraConsent.ConsentRequest{}
 
 	res, err := resty.R().Get(url)
@@ -56,7 +58,9 @@ func AcceptConsentChallengeCode(challenge string) (string, error) {
 }
 
 func CheckChallengeCode(challenge string) (hydraConsent.AuthenticationRequest, error) {
-	url := fmt.Sprintf("%s/oauth2/auth/requests/login/%s", config.HydraAdmin, challenge)
+	hConfig, _ := config.GetHydraConfig()
+
+	url := fmt.Sprintf("%s/oauth2/auth/requests/login/%s", hConfig.Admin, challenge)
 	authResult := hydraConsent.AuthenticationRequest{}
 
 	res, err := resty.R().Get(url)
@@ -78,7 +82,8 @@ func CheckChallengeCode(challenge string) (hydraConsent.AuthenticationRequest, e
 }
 
 func ConfirmLogin(userID uint, remember bool, challenge string) (LoginResponse, error) {
-	url := fmt.Sprintf("%s/oauth2/auth/requests/login/%s/accept", config.HydraAdmin, challenge)
+	hConfig, _ := config.GetHydraConfig()
+	url := fmt.Sprintf("%s/oauth2/auth/requests/login/%s/accept", hConfig.Admin, challenge)
 
 	response := LoginResponse{}
 

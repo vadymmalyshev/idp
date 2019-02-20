@@ -6,6 +6,7 @@ import (
 	"git.tor.ph/hiveon/idp/config"
 	"git.tor.ph/hiveon/idp/pkg/errors"
 
+	"github.com/jinzhu/gorm"
 	"github.com/sirupsen/logrus"
 	"github.com/volatiletech/authboss"
 	"github.com/volatiletech/authboss/otp/twofactor/sms2fa"
@@ -13,7 +14,6 @@ import (
 )
 
 var (
-	db  = config.DB()
 	log = config.Logger()
 
 	assertUser   = &User{}
@@ -35,22 +35,23 @@ var (
 )
 
 type UserStorer struct {
+	db *gorm.DB
 }
 
-func NewUserStorer() *UserStorer {
-	return &UserStorer{}
+func NewUserStorer(db *gorm.DB) *UserStorer {
+	return &UserStorer{db}
 }
 
 // Load will look up the user based on the passed the PrimaryID
 func (store UserStorer) Load(ctx context.Context, key string) (authboss.User, error) {
 	var user User
 
-	notFoundByEmail := db.First(&user, "email = ?", key).RecordNotFound()
+	notFoundByEmail := store.db.First(&user, "email = ?", key).RecordNotFound()
 
 	if notFoundByEmail {
 		return nil, errors.ErrUserNotFound
 	}
-	
+
 	log.Info("user loaded by email", logrus.Fields{
 		"email": user.Email,
 	})
@@ -63,7 +64,7 @@ func (store UserStorer) Load(ctx context.Context, key string) (authboss.User, er
 // does not exist.
 func (store UserStorer) Save(ctx context.Context, user authboss.User) error {
 	u := user.(*User)
-	db.Save(&u)
+	store.db.Save(&u)
 	return nil
 }
 
@@ -73,7 +74,7 @@ func (store UserStorer) New(ctx context.Context) authboss.User {
 
 func (store UserStorer) Create(ctx context.Context, user authboss.User) error {
 	u := user.(*User)
-	err := db.Create(u).Error
+	err := store.db.Create(u).Error
 
 	if err != nil {
 		return authboss.ErrUserFound
@@ -90,7 +91,7 @@ func (store UserStorer) Create(ctx context.Context, user authboss.User) error {
 func (store UserStorer) LoadByConfirmSelector(ctx context.Context, selector string) (authboss.ConfirmableUser, error) {
 	var user User
 
-	err := db.Where(&User{ConfirmSelector: selector}).First(&user).Error
+	err := store.db.Where(&User{ConfirmSelector: selector}).First(&user).Error
 	return &user, err
 }
 
@@ -98,6 +99,6 @@ func (store UserStorer) LoadByConfirmSelector(ctx context.Context, selector stri
 func (store UserStorer) LoadByRecoverSelector(ctx context.Context, selector string) (authboss.RecoverableUser, error) {
 	var user User
 
-	err := db.Where(&User{RecoverSelector: selector}).First(&user).Error
+	err := store.db.Where(&User{RecoverSelector: selector}).First(&user).Error
 	return &user, err
 }

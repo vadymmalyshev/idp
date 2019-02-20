@@ -1,14 +1,16 @@
 package config
 
 import (
+	"errors"
 	"fmt"
+	"log"
 
 	"github.com/spf13/viper"
 )
 
 const (
-	idpPort = "idp.port"
-	idpHost = "idp.host"
+	serverPort = "idp.port"
+	serverHost = "idp.host"
 
 	hydraAdmin        = "hydra.admin"
 	hydraAPI          = "hydra.api"
@@ -21,16 +23,8 @@ const (
 	dbUser     = "db.user"
 	dbPassword = "db.password"
 	dbSSLMode  = "db.sslmode"
-)
 
-var (
-	ServerPort, ServerHost, ServerAddr string
-
-	AuthSignKey string
-
-	DBConn string
-
-	HydraAdmin, HydraAPI, HydraClientID, HydraClientSecret string
+	authSignKey = "auth.sign_key"
 )
 
 func init() {
@@ -41,49 +35,100 @@ func init() {
 	viper.AutomaticEnv()
 	viper.SetConfigName("config")
 
-	err := viper.ReadInConfig() // Find and read the config file
-	if err != nil {             // Handle errors reading the config file
-		panic(fmt.Errorf("Fatal error config file: %s \n", err))
+	if err := viper.ReadInConfig(); err != nil {
+		log.Fatalf("Error reading config file, %s", err)
 	}
 
-	ServerHost = viper.GetString("idp.host")
-	if ServerHost == "" {
-		panic("IDP host is missing from configuration")
+	viper.SetDefault(serverHost, "localhost")
+	viper.SetDefault(serverPort, "3000")
+
+	viper.SetDefault(dbSSLMode, false)
+
+	viper.SetDefault(authSignKey, "")
+
+	viper.SetDefault(hydraAPI, "localhost:4444")
+	viper.SetDefault(hydraAdmin, "localhost:4445")
+	viper.SetDefault(hydraClientID, "")
+	viper.SetDefault(hydraClientSecret, "")
+}
+
+type DBConfig struct {
+	Conn     string
+	Host     string
+	Port     string
+	SSLMode  string
+	Name     string
+	User     string
+	Password string
+}
+
+// GetDBConfig returns db config
+// todo error checking
+func GetDBConfig() (DBConfig, error) {
+	config := DBConfig{
+		Host:     viper.GetString(dbHost),
+		Port:     viper.GetString(dbPort),
+		Name:     viper.GetString(dbName),
+		User:     viper.GetString(dbUser),
+		Password: viper.GetString(dbPassword),
 	}
 
-	ServerPort = viper.GetString("idp.port")
-	if ServerPort == "" {
-		panic("IDP port is missing from configuration")
+	if viper.GetBool(dbSSLMode) {
+		config.SSLMode = "enable"
+	} else {
+		config.SSLMode = "disable"
 	}
 
-	ServerAddr = fmt.Sprintf("%s:%s", ServerHost, ServerPort)
+	config.Conn = fmt.Sprintf("host=%s port=%s sslmode=%s user=%s dbname=%s password=%s ",
+		config.Host, config.Port, config.SSLMode, config.User, config.Name, config.Password)
 
-	sslmode := "disable"
-	if viper.GetBool("db.sslmode") {
-		sslmode = "enable"
+	return config, nil
+}
+
+type ServerConfig struct {
+	Addr string
+	Host string
+	Port string
+}
+
+func GetServerConfig() (ServerConfig, error) {
+	config := ServerConfig{
+		Port: viper.GetString(serverPort),
+		Host: viper.GetString(serverHost),
 	}
 
-	DBConn = fmt.Sprintf("host=%s port=%s sslmode=%s user=%s dbname=%s password=%s ",
-		viper.GetString("db.host"),
-		viper.GetString("db.port"),
-		sslmode,
-		viper.GetString("db.user"),
-		viper.GetString("db.name"),
-		viper.GetString("db.password"),
-	)
+	config.Addr = fmt.Sprintf("%s:%s", config.Host, config.Port)
 
-	AuthSignKey = viper.GetString("auth.sign_key")
+	return config, nil
+}
 
-	if AuthSignKey == "" {
-		panic("Token signing key is missing from configuration")
+func GetSignKey() (string, error) {
+	key := viper.GetString(authSignKey)
+
+	if key == "" {
+		return key, errors.New("Token signing key is missing from configuration")
 	}
-	if len(AuthSignKey) < 32 {
-		panic("Token signing key must be at least 32 characters")
+	if len(key) < 32 {
+		return key, errors.New("Token signing key must be at least 32 characters")
 	}
 
-	HydraAdmin = viper.GetString("hydra.admin")
-	HydraAPI = viper.GetString("hydra.api")
-	HydraClientID = viper.GetString("hydra.client_id")
-	HydraClientSecret = viper.GetString("hydra.client_secret")
+	return key, nil
+}
 
+type HydraConfig struct {
+	Admin        string
+	API          string
+	ClientID     string
+	ClientSecret string
+}
+
+func GetHydraConfig() (*HydraConfig, error) {
+	config := HydraConfig{
+		Admin:        viper.GetString(hydraAdmin),
+		API:          viper.GetString(hydraAPI),
+		ClientID:     viper.GetString(hydraClientID),
+		ClientSecret: viper.GetString(hydraClientSecret),
+	}
+
+	return &config, nil
 }
