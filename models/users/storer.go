@@ -3,7 +3,6 @@ package users
 import (
 	"context"
 
-	"git.tor.ph/hiveon/idp/config"
 	"git.tor.ph/hiveon/idp/pkg/errors"
 
 	"github.com/jinzhu/gorm"
@@ -14,8 +13,6 @@ import (
 )
 
 var (
-	log = config.Logger()
-
 	assertUser   = &User{}
 	assertStorer = &UserStorer{}
 
@@ -52,7 +49,7 @@ func (store UserStorer) Load(ctx context.Context, key string) (authboss.User, er
 		return nil, errors.ErrUserNotFound
 	}
 
-	log.Info("user loaded by email", logrus.Fields{
+	logrus.Info("user loaded by email", logrus.Fields{
 		"email": user.Email,
 	})
 
@@ -80,7 +77,7 @@ func (store UserStorer) Create(ctx context.Context, user authboss.User) error {
 		return authboss.ErrUserFound
 	}
 
-	log.Infof("user created", logrus.Fields{
+	logrus.Infof("user created", logrus.Fields{
 		"email": u.Email,
 	})
 

@@ -5,6 +5,7 @@ import (
 
 	"github.com/jinzhu/gorm"
 	_ "github.com/jinzhu/gorm/dialects/postgres"
+	"github.com/sirupsen/logrus"
 )
 
 var dbOnce sync.Once
@@ -15,17 +16,15 @@ func initDatabase() {
 	dbconfig, err := GetDBConfig()
 
 	if err != nil {
-		logger.Panic("failed to find db config:", err.Error())
+		logrus.Panic("failed to find db config:", err.Error())
 	}
 
 	db, err = gorm.Open("postgres", dbconfig.Conn)
 
 	db.LogMode(true)
 
-	logger := Logger()
-
 	if err != nil {
-		logger.Panic("failed to init db:", err.Error())
+		logrus.Panic("failed to init db:", err.Error())
 	}
 
 }

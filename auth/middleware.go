@@ -6,6 +6,7 @@ import (
 	"net/http"
 
 	"github.com/davecgh/go-spew/spew"
+	"github.com/sirupsen/logrus"
 
 	"git.tor.ph/hiveon/idp/internal/hydra"
 	"git.tor.ph/hiveon/idp/models/users"
@@ -58,7 +59,7 @@ func challengeCode(h http.Handler) http.Handler {
 		defer h.ServeHTTP(w, r)
 
 		chal, _ := authboss.GetSession(r, "Challenge")
-		log.Info("chal:" + chal)
+		logrus.Info("chal:" + chal)
 
 		if r.URL.Path == "/login" && r.Method == "GET" {
 
@@ -97,7 +98,7 @@ func challengeCode(h http.Handler) http.Handler {
 func nosurfing(h http.Handler) http.Handler {
 	surfing := nosurf.New(h)
 	surfing.SetFailureHandler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		log.Println("Failed to validate CSRF token:", nosurf.Reason(r))
+		logrus.Println("Failed to validate CSRF token:", nosurf.Reason(r))
 		w.WriteHeader(http.StatusBadRequest)
 	}))
 	return surfing

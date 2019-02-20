@@ -49,17 +49,11 @@ var (
 )
 
 var (
-	log *logrus.Logger
-
 	ab *authboss.Authboss
 
 	flagAPI = flag.Bool("api", false, "configure the app to be an api instead of an html app")
 )
 
-func init() {
-	log = config.Logger()
-
-}
 func Init(r *gin.Engine, db *gorm.DB) {
 	signingKey, _ := config.GetSignKey()
 
@@ -154,12 +148,12 @@ func Init(r *gin.Engine, db *gorm.DB) {
 
 	modAuth := auth.Auth{}
 	if err := modAuth.Init(ab); err != nil {
-		log.Panicf("can't initialize authboss's auth mod", err)
+		logrus.Panicf("can't initialize authboss's auth mod", err)
 	}
 
 	modRegister := register.Register{}
 	if err := modRegister.Init(ab); err != nil {
-		log.Panicf("can't initialize authboss's register mod", err)
+		logrus.Panicf("can't initialize authboss's register mod", err)
 	}
 
 	schemaDec := schema.NewDecoder()
@@ -198,7 +192,7 @@ func Init(r *gin.Engine, db *gorm.DB) {
 			resp, errConfirm := hydra.ConfirmLogin(user.ID, false, challenge)
 
 			if errConfirm != nil {
-				log.WithFields(logrus.Fields{
+				logrus.WithFields(logrus.Fields{
 					"Email":     user.Email,
 					"UserID":    user.ID,
 					"Challenge": challenge,
@@ -210,7 +204,7 @@ func Init(r *gin.Engine, db *gorm.DB) {
 				RedirectPath: resp.RedirectTo,
 				Success:      "Hydra redirect",
 			}
-			log.Infof("user will be redirected to %s", resp.RedirectTo)
+			logrus.Infof("user will be redirected to %s", resp.RedirectTo)
 			ab.Core.Redirector.Redirect(w, r, ro)
 
 		}

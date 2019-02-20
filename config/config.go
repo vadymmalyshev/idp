@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 
+	"github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
 )
 
@@ -28,6 +29,7 @@ const (
 )
 
 func init() {
+	logrus.Info("THAT'S HAPPEN'")
 	// viper.AddConfigPath("$HOME/config")
 	viper.AddConfigPath("./")
 	viper.AddConfigPath("./config")

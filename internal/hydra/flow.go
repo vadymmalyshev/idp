@@ -13,14 +13,10 @@ import (
 	"gopkg.in/resty.v1"
 )
 
-var log *logrus.Logger
-
 var RememberFor = 30 * 24 * 60 * 60
 
 func init() {
-	log = config.Logger()
 	resty.SetRedirectPolicy(resty.FlexibleRedirectPolicy(20))
-
 }
 
 func AcceptConsentChallengeCode(challenge string) (string, error) {
@@ -31,7 +27,7 @@ func AcceptConsentChallengeCode(challenge string) (string, error) {
 	res, err := resty.R().Get(url)
 
 	if err != nil || res.StatusCode() < 200 || res.StatusCode() > 302 {
-		log.Errorf("an error occured while making hydra accept consent url: %s", err.Error())
+		logrus.Errorf("an error occured while making hydra accept consent url: %s", err.Error())
 		return "", err
 	}
 
@@ -48,7 +44,7 @@ func AcceptConsentChallengeCode(challenge string) (string, error) {
 		Put(url + "/accept")
 
 	if err != nil {
-		log.Errorf("an error occured while making hydra accept consent url: %s", err.Error())
+		logrus.Errorf("an error occured while making hydra accept consent url: %s", err.Error())
 		return "", nil
 	}
 
@@ -65,12 +61,12 @@ func CheckChallengeCode(challenge string) (hydraConsent.AuthenticationRequest, e
 
 	res, err := resty.R().Get(url)
 	if err != nil {
-		log.Error(err)
+		logrus.Error(err)
 		return authResult, err
 	}
 
 	if res.StatusCode() < 200 || res.StatusCode() > 302 {
-		log.WithFields(logrus.Fields{
+		logrus.WithFields(logrus.Fields{
 			"challenge": challenge,
 		}).Debug("An error occurred while making an hydra challenge request")
 
@@ -96,7 +92,7 @@ func ConfirmLogin(userID uint, remember bool, challenge string) (LoginResponse, 
 	res, err := resty.R().SetBody(request).
 		SetHeader("Content-Type", "application/json").Put(url)
 	if err != nil {
-		log.WithFields(logrus.Fields{
+		logrus.WithFields(logrus.Fields{
 			"Challenge": challenge,
 			"UserID":    request.Subject,
 		}).Debug("hydra/login/accept request failed")
@@ -105,7 +101,7 @@ func ConfirmLogin(userID uint, remember bool, challenge string) (LoginResponse, 
 	}
 
 	json.Unmarshal(res.Body(), &response)
-	log.WithFields(logrus.Fields{"redirect_url": response.RedirectTo}).Info("redirect")
+	logrus.WithFields(logrus.Fields{"redirect_url": response.RedirectTo}).Info("redirect")
 	return response, nil
 }
 
