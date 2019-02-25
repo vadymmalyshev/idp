@@ -1,6 +1,11 @@
 package main
 
 import (
+	"fmt"
+	"os"
+	"os/signal"
+	"syscall"
+
 	"github.com/gin-contrib/static"
 	"github.com/gin-gonic/gin"
 	"github.com/gogap/logrus_mate"
@@ -44,7 +49,19 @@ func main() {
 
 	serverConfig, _ := config.GetServerConfig()
 
-	logrus.Infof("IDP has started on http://%s", serverConfig.Addr)
+	errs := make(chan error, 2)
 
-	r.Run(serverConfig.Addr)
+	go func() {
+		logrus.Infof("IDP has started on https://%s", serverConfig.Addr)
+		errs <- r.RunTLS(serverConfig.Addr, "./config/certs/hiveon.local.pem", "./config/certs/hiveon.local.key")
+	}()
+
+	go func() {
+		c := make(chan os.Signal)
+		signal.Notify(c, syscall.SIGINT)
+		errs <- fmt.Errorf("%s", <-c)
+	}()
+
+	logrus.Info("terminated", <-errs)
+
 }

@@ -18,12 +18,12 @@ const (
 	hydraClientID     = "hydra.client_id"
 	hydraClientSecret = "hydra.client_secret"
 
-	dbHost     = "db.host"
-	dbPort     = "db.port"
-	dbName     = "db.name"
-	dbUser     = "db.user"
-	dbPassword = "db.password"
-	dbSSLMode  = "db.sslmode"
+	dbHost     = "idp.db.host"
+	dbPort     = "idp.db.port"
+	dbName     = "idp.db.name"
+	dbUser     = "idp.db.user"
+	dbPassword = "idp.db.password"
+	dbSSLMode  = "idp.db.sslmode"
 
 	authSignKey = "auth.sign_key"
 
