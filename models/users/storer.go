@@ -3,8 +3,6 @@ package users
 import (
 	"context"
 
-	"git.tor.ph/hiveon/idp/pkg/errors"
-
 	"github.com/jinzhu/gorm"
 	"github.com/sirupsen/logrus"
 	"github.com/volatiletech/authboss"
@@ -46,12 +44,12 @@ func (store UserStorer) Load(ctx context.Context, key string) (authboss.User, er
 	notFoundByEmail := store.db.First(&user, "email = ?", key).RecordNotFound()
 
 	if notFoundByEmail {
-		return nil, errors.ErrUserNotFound
+		return nil, authboss.ErrUserNotFound
 	}
 
-	logrus.Info("user loaded by email", logrus.Fields{
+	logrus.WithFields(logrus.Fields{
 		"email": user.Email,
-	})
+	}).Info("user loaded by email")
 
 	return &user, nil
 }

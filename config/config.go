@@ -26,6 +26,12 @@ const (
 	dbSSLMode  = "db.sslmode"
 
 	authSignKey = "auth.sign_key"
+
+	mailFrom     = "mail.from"
+	mailSMTP     = "mail.smtp"
+	mailPort     = "mail.port"
+	mailUser     = "mail.user"
+	mailPassword = "mail.password"
 )
 
 func init() {
@@ -133,4 +139,24 @@ func GetHydraConfig() (*HydraConfig, error) {
 	}
 
 	return &config, nil
+}
+
+type MailConfig struct {
+	From     string
+	SMTP     string
+	Port     int
+	User     string
+	Password string
+}
+
+func GetMailConfig() (MailConfig, error) {
+	config := MailConfig{
+		From:     viper.GetString(mailFrom),
+		SMTP:     viper.GetString(mailSMTP),
+		Port:     viper.GetInt(mailPort),
+		User:     viper.GetString(mailUser),
+		Password: viper.GetString(mailPassword),
+	}
+
+	return config, nil
 }

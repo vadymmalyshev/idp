@@ -7,6 +7,8 @@ import (
 	"net/http"
 	"regexp"
 
+	"github.com/volatiletech/authboss/recover"
+
 	"git.tor.ph/hiveon/idp/config"
 	"git.tor.ph/hiveon/idp/internal/hydra"
 	"git.tor.ph/hiveon/idp/models/users"
@@ -52,6 +54,13 @@ var (
 	ab *authboss.Authboss
 
 	flagAPI = flag.Bool("api", false, "configure the app to be an api instead of an html app")
+)
+
+const (
+	recoverSentURL = "/recover/sent"
+	recoverSentTPL = "recover_sent"
+
+	tplPath = "views/"
 )
 
 func Init(r *gin.Engine, db *gorm.DB) {
@@ -104,11 +113,8 @@ func Init(r *gin.Engine, db *gorm.DB) {
 	if *flagAPI {
 		ab.Config.Core.ViewRenderer = defaults.JSONRenderer{}
 	} else {
-		ab.Config.Core.ViewRenderer = abrenderer.NewHTML("/", "views/auth")
+		ab.Config.Core.ViewRenderer = abrenderer.NewHTML("/", tplPath)
 	}
-
-	ab.Config.Core.MailRenderer = abrenderer.NewEmail("/", "views/auth")
-	ab.Config.Core.Router = defaults.NewRouter()
 
 	ab.Config.Modules.RegisterPreserveFields = []string{"email", "username"}
 
@@ -116,6 +122,9 @@ func Init(r *gin.Engine, db *gorm.DB) {
 	ab.Config.Modules.TwoFactorEmailAuthRequired = false
 
 	defaults.SetCore(&ab.Config, *flagAPI, false)
+
+	ab.Config.Core.Mailer = NewMailer()
+	ab.Config.Core.MailRenderer = abrenderer.NewEmail("/", tplPath)
 
 	emailRule := defaults.Rules{
 		FieldName: "email", Required: true,
@@ -134,17 +143,26 @@ func Init(r *gin.Engine, db *gorm.DB) {
 	ab.Config.Core.BodyReader = defaults.HTTPBodyReader{
 		ReadJSON: *flagAPI,
 		Rulesets: map[string][]defaults.Rules{
-			"register":    {emailRule, passwordRule, nameRule},
-			"recover_end": {passwordRule},
+			"register":      {emailRule, passwordRule, nameRule},
+			"recover_start": {emailRule},
+			"recover_end":   {passwordRule},
 		},
-		// Confirms: map[string][]string{
-		// 	"register":    {"password", authboss.ConfirmPrefix + "password"},
-		// 	"recover_end": {"password", authboss.ConfirmPrefix + "password"},
-		// },
+		Confirms: map[string][]string{
+			// 	"register":    {"password", authboss.ConfirmPrefix + "password"},
+			"recover_end": {"password", authboss.ConfirmPrefix + "password"},
+		},
 		Whitelist: map[string][]string{
 			"register": []string{"email", "name", "password"},
 		},
 	}
+
+	ab.Config.Paths.RecoverOK = recoverSentURL
+	// Load our template of recover sent message to AB renderer
+	ab.Config.Core.ViewRenderer.Load(recoverSentTPL)
+	// Handle recover sent
+	ab.Config.Core.Router.Get(recoverSentURL, ab.Core.ErrorHandler.Wrap(func(w http.ResponseWriter, req *http.Request) error {
+		return ab.Config.Core.Responder.Respond(w, req, http.StatusOK, recoverSentTPL, nil)
+	}))
 
 	modAuth := auth.Auth{}
 	if err := modAuth.Init(ab); err != nil {
@@ -154,6 +172,11 @@ func Init(r *gin.Engine, db *gorm.DB) {
 	modRegister := register.Register{}
 	if err := modRegister.Init(ab); err != nil {
 		logrus.Panicf("can't initialize authboss's register mod", err)
+	}
+
+	modRecover := recover.Recover{}
+	if err := modRecover.Init(ab); err != nil {
+		logrus.Panicf("can't initialize authboss's recover mod", err)
 	}
 
 	schemaDec := schema.NewDecoder()
@@ -206,9 +229,7 @@ func Init(r *gin.Engine, db *gorm.DB) {
 			}
 			logrus.Infof("user will be redirected to %s", resp.RedirectTo)
 			ab.Core.Redirector.Redirect(w, r, ro)
-
 		}
-
 		return true, nil
 	})
 }

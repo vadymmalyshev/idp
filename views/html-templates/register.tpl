@@ -17,12 +17,12 @@
                 <label for="email">E-mail</label>
             </div>
             <div class="field">
-                    {{with .errors}}{{range .password}}<span class="err">{{.}}</span>{{end}}{{end -}}
+                {{with .errors}}{{range .password}}<span class="err">{{.}}</span>{{end}}{{end -}}
                 <input id="password" name="password" type="password" placeholder="Password" />
                 <label for="password">Password</label>
             </div>
             <div class="field">            
-                    {{with .errors}}{{range .confirm_password}}<span class="err">{{.}}</span>{{end}}{{end -}}
+                {{with .errors}}{{range .confirm_password}}<span class="err">{{.}}</span>{{end}}{{end -}}
                 <input id="confirm_password" name="confirm_password" type="password" placeholder="Confirm Password" />
                 <label for="confirm_password">Confirm Password</label>
             </div>

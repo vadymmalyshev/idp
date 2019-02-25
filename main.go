@@ -17,7 +17,7 @@ func init() {
 	logrus_mate.Hijack(
 		logrus.StandardLogger(),
 		logrus_mate.ConfigString(
-			`{formatter.name = "json"}`,
+			`{formatter.name = "text"}`,
 		),
 	)
 }

@@ -59,7 +59,7 @@ func challengeCode(h http.Handler) http.Handler {
 		defer h.ServeHTTP(w, r)
 
 		chal, _ := authboss.GetSession(r, "Challenge")
-		logrus.Info("chal:" + chal)
+		logrus.Info("current challenge:" + chal)
 
 		if r.URL.Path == "/login" && r.Method == "GET" {
 

@@ -15,6 +15,8 @@ services:
       POSTGRES_MULTIPLE_DATABASES: "idp_dev, hydra"
       POSTGRES_USER: idp
       POSTGRES_PASSWORD: 8GWbz2JF4FMe1Q8X
+      HIVEON_DB: hiveon_db
+    build: './build'
 
   hydra-migrate:
     image: oryd/hydra:$HYDRA_VERSION
