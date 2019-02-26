@@ -11,6 +11,8 @@ services:
     volumes:
       - ./__data/pg:/var/lib/postgresql/data
       - ./scripts/pg-init:/docker-entrypoint-initdb.d
+      - ${PWD}/database/docker-init.sql:/docker-entrypoint-initdb.d/docker-init.sql
+
     environment:
       POSTGRES_MULTIPLE_DATABASES: "idp_dev, hydra"
       POSTGRES_USER: idp
