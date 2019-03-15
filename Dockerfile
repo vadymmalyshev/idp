@@ -1,31 +1,18 @@
-FROM golang:1.11.5-alpine3.8
+FROM golang as idp-build-deps
+RUN mkdir /idp
+WORKDIR /idp
+COPY . .
+RUN go mod vendor && \
+    go mod tidy && \
+    go build . && \
+    mv config/config.dev.yaml config/config.yaml && \
+    ls
 
-ARG NODE_ENV=production
-ARG GIN_MODE=release
-ARG ENV=production
-
-ENV PORT=8081
-ENV NODE_ENV=$NODE_ENV
-ENV GIN_MODE=$GIN_MODE
-ENV ENV=$ENV
-
-RUN apk update && \
-    apk upgrade && \
-    apk add --no-cache \
-      git \
-      build-base \
-      python
-
-ENV PATH /usr/local/bin:$PATH
-
-RUN mkdir -p /opt
-RUN mkdir -p /opt/idp
-
-COPY . /opt/idp
-
-WORKDIR /opt/idp
-
+FROM golang
+RUN mkdir -p /idp/config
+WORKDIR /idp
+COPY --from=idp-build-deps /idp/idp .
+COPY --from=idp-build-deps /idp/config config/.
 EXPOSE 3000
-
-ENTRYPOINT [ "go", "run", "main.go" ]
-CMD [ "serve" ]
+#ENTRYPOINT ["./idp"]
+CMD ["./idp","serve"]
