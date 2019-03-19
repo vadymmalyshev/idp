@@ -26,6 +26,7 @@ __data/
 
 # IDE integration
 /.idea/*
+.idea/
 !/.idea/copyright/
 !/.idea/*.iml
 !/.idea/externalDependencies.xml
