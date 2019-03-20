@@ -2,17 +2,24 @@ package auth
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
-	"net/http"
-
+	"git.tor.ph/hiveon/idp/config"
 	"github.com/davecgh/go-spew/spew"
+	. "github.com/ory/hydra/sdk/go/hydra/swagger"
 	"github.com/sirupsen/logrus"
+	log "github.com/sirupsen/logrus"
+	"golang.org/x/oauth2"
+	"gopkg.in/resty.v1"
+	"net/http"
 
 	"git.tor.ph/hiveon/idp/internal/hydra"
 	"git.tor.ph/hiveon/idp/models/users"
 	"github.com/justinas/nosurf"
 	"github.com/volatiletech/authboss"
 )
+
+var oauthClient *oauth2.Config
 
 func acceptConsent(h http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -62,14 +69,17 @@ func challengeCode(h http.Handler) http.Handler {
 		logrus.Info("current challenge:" + chal)
 
 		if r.URL.Path == "/login" && r.Method == "GET" {
-
 			challenge := r.URL.Query().Get("login_challenge")
 
-			if len(challenge) == 0 {
+			if len(challenge) == 0 { // obtain login challenge
+				hydraConfig,_ := config.GetHydraConfig()
+				oauthClient = InitClient(hydraConfig.ClientID, hydraConfig.ClientSecret)
+				redirectUrl := oauthClient.AuthCodeURL("state123")
+
 				ro := authboss.RedirectOptions{
 					Code:         http.StatusTemporaryRedirect,
-					RedirectPath: "/",
-					Success:      "You have no login challenge",
+					RedirectPath: redirectUrl,
+					Success:      "Obtaining login challenge",
 				}
 				ab.Core.Redirector.Redirect(w, r, ro)
 				return
@@ -163,4 +173,42 @@ func debugMw(h http.Handler) http.Handler {
 
 		h.ServeHTTP(w, r)
 	})
+}
+
+func InitClient(clientId string, secret string) *oauth2.Config {
+
+	hydraConfig,_ := config.GetHydraConfig()
+	hydraAPI := hydraConfig.API
+	client := GetClient(clientId)
+	oauthConfig := &oauth2.Config{
+		ClientID:     clientId,
+		ClientSecret: secret,
+		Endpoint: oauth2.Endpoint{
+			AuthURL:  hydraAPI + "/oauth2/auth",
+			TokenURL: hydraAPI + "/oauth2/token",
+		},
+		RedirectURL: client.RedirectUris[0],
+		Scopes:      getScopes(),
+	}
+
+	return oauthConfig
+}
+
+func GetClient(clientId string) OAuth2Client {
+	hydraConfig,_ := config.GetHydraConfig()
+	hydraAdmin := hydraConfig.Admin
+
+	clientUrl := hydraAdmin + "/clients/" + clientId
+	res, err := resty.R().Get(clientUrl)
+	if err != nil {
+		log.Info(err)
+	}
+	var client OAuth2Client
+	json.Unmarshal(res.Body(), &client)
+	return client
+
+}
+
+func getScopes() []string {
+	return []string{"openid", "offline"}
 }
