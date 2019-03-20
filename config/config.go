@@ -10,28 +10,34 @@ import (
 )
 
 const (
-	serverPort = "idp.port"
-	serverHost = "idp.host"
+	serverPort         = "idp.port"
+	serverHost         = "idp.host"
 
-	hydraAdmin        = "hydra.admin"
-	hydraAPI          = "hydra.api"
-	hydraClientID     = "hydra.client_id"
-	hydraClientSecret = "hydra.client_secret"
+	hydraAdmin         = "hydra.admin"
+	hydraAPI           = "hydra.api"
+	hydraClientID      = "hydra.client_id"
+	hydraClientSecret  = "hydra.client_secret"
 
-	dbHost     = "idp.db.host"
-	dbPort     = "idp.db.port"
-	dbName     = "idp.db.name"
-	dbUser     = "idp.db.user"
-	dbPassword = "idp.db.password"
-	dbSSLMode  = "idp.db.sslmode"
+	dbHost             = "idp.db.host"
+	dbPort     		   = "idp.db.port"
+	dbName     		   = "idp.db.name"
+	dbUser     		   = "idp.db.user"
+	dbPassword 		   = "idp.db.password"
+	dbSSLMode  		   = "idp.db.sslmode"
 
-	authSignKey = "auth.sign_key"
+	authSignKey 	   = "auth.sign_key"
 
-	mailFrom     = "mail.from"
-	mailSMTP     = "mail.smtp"
-	mailPort     = "mail.port"
-	mailUser     = "mail.user"
-	mailPassword = "mail.password"
+	mailFrom     	   = "mail.from"
+	mailSMTP     	   = "mail.smtp"
+	mailPort    	   = "mail.port"
+	mailUser   		   = "mail.user"
+	mailPassword	   = "mail.password"
+
+	portalPort         = "portal.port"
+	portalHost         = "portal.host"
+	portalCallback     = "portal.callback"
+	portalClientID     = "portal.client_id"
+	portalClientSecret = "portal.client_secret"
 )
 
 func init() {
@@ -156,6 +162,26 @@ func GetMailConfig() (MailConfig, error) {
 		Port:     viper.GetInt(mailPort),
 		User:     viper.GetString(mailUser),
 		Password: viper.GetString(mailPassword),
+	}
+
+	return config, nil
+}
+
+type PortalConfig struct {
+	Port     int
+	Host     string
+	Callback string
+	ClientID     string
+	ClientSecret string
+}
+
+func GetPortalConfig() (PortalConfig, error) {
+	config := PortalConfig{
+		Port:     viper.GetInt(portalPort),
+		Host:     viper.GetString(portalHost),
+		Callback: viper.GetString(portalCallback),
+		ClientID: viper.GetString(portalClientID),
+		ClientSecret: viper.GetString(portalClientSecret),
 	}
 
 	return config, nil

@@ -5,14 +5,13 @@ import (
 	"encoding/json"
 	"fmt"
 	"git.tor.ph/hiveon/idp/config"
+	"github.com/davecgh/go-spew/spew"
+	. "github.com/ory/hydra/sdk/go/hydra/swagger"
+	"github.com/sirupsen/logrus"
+	log "github.com/sirupsen/logrus"
 	"golang.org/x/oauth2"
 	"gopkg.in/resty.v1"
 	"net/http"
-	log "github.com/sirupsen/logrus"
-	. "github.com/ory/hydra/sdk/go/hydra/swagger"
-
-	"github.com/davecgh/go-spew/spew"
-	"github.com/sirupsen/logrus"
 
 	"git.tor.ph/hiveon/idp/internal/hydra"
 	"git.tor.ph/hiveon/idp/models/users"

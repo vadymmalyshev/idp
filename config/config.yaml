@@ -3,7 +3,7 @@ hydra:
   api: "http://localhost:4444"  
   docker: idp_hydra
   client_id: "idp"
-  client_secret: "test-secret"
+  client_secret: "idp-secret"
 
 idp:
   port: 3000
