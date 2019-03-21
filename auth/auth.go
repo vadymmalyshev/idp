@@ -25,8 +25,9 @@ import (
 	"github.com/volatiletech/authboss/defaults"
 	"github.com/volatiletech/authboss/register"
 
+	renderPkg "github.com/unrolled/render"
 	clientState "github.com/volatiletech/authboss-clientstate"
-	abrenderer "github.com/volatiletech/authboss-renderer"
+	"github.com/volatiletech/authboss-renderer"
 )
 
 const IDPSessionName = "idp_session"
@@ -193,6 +194,22 @@ func Init(r *gin.Engine, db *gorm.DB) {
 		mux.Mount("/", http.StripPrefix("", ab.Config.Core.Router))
 	})
 
+	render := renderPkg.New()
+	mux.Get("/api/users/email/{email}", func(w http.ResponseWriter, r *http.Request) {
+		email := chi.URLParam(r, "email")
+		user, err := ab.Config.Storage.Server.Load(r.Context(), email)
+		if err != nil {
+			http.Error(w, http.StatusText(204), 204)
+			return
+		}
+
+		if err != nil {
+			http.Error(w, err.Error(), 422)
+			return
+		}
+		render.JSON(w, 200, user)
+	})
+
 	r.Any("/*resources", gin.WrapH(mux))
 
 	ab.Events.After(authboss.EventAuth, func(w http.ResponseWriter, r *http.Request, handled bool) (bool, error) {
@@ -232,4 +249,17 @@ func Init(r *gin.Engine, db *gorm.DB) {
 		}
 		return true, nil
 	})
+}
+
+func handleGetUserByEmail() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		email := c.Param("email")
+		user, err := ab.Config.Storage.Server.Load(c, email)
+		//user, err := userService.FindByEmail(email)
+		if err != nil {
+			c.JSON(204, err.Error())
+			return
+		}
+		c.JSON(200, user)
+	}
 }

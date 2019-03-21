@@ -31,6 +31,7 @@ require (
 	github.com/spf13/viper v1.3.1
 	github.com/stretchr/testify v1.3.0 // indirect
 	github.com/ugorji/go/codec v0.0.0-20190204201341-e444a5086c43 // indirect
+	github.com/unrolled/render v1.0.0
 	github.com/volatiletech/authboss v0.0.0-20190207041050-5c92c016e0cd
 	github.com/volatiletech/authboss-clientstate v0.0.0-20190112194853-0943df8b4e05
 	github.com/volatiletech/authboss-renderer v0.0.0-20181105062701-4b64de40529a
