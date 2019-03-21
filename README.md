@@ -69,7 +69,7 @@ docker exec -it `docker ps -f name=idp_hydra -q` \
     --response-types code,id_token \
     --grant-types refresh_token,authorization_code \
     --scope openid,offline \
-    --callbacks https://127.0.0.1:5555/callback
+    --callbacks http://127.0.0.1:5555/callback
 ```
 
 Create IDP test example client
