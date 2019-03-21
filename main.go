@@ -54,7 +54,6 @@ func main() {
 	go func() {
 		logrus.Infof("IDP has started on http://%s", serverConfig.Addr)
 		errs <- r.Run(serverConfig.Addr)
-		//errs <- r.RunTLS(serverConfig.Addr, "./config/certs/hiveon.local.pem", "./config/certs/hiveon.local.key")
 	}()
 
 	go func() {
