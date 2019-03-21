@@ -251,15 +251,3 @@ func Init(r *gin.Engine, db *gorm.DB) {
 	})
 }
 
-func handleGetUserByEmail() gin.HandlerFunc {
-	return func(c *gin.Context) {
-		email := c.Param("email")
-		user, err := ab.Config.Storage.Server.Load(c, email)
-		//user, err := userService.FindByEmail(email)
-		if err != nil {
-			c.JSON(204, err.Error())
-			return
-		}
-		c.JSON(200, user)
-	}
-}
