@@ -199,14 +199,10 @@ func Init(r *gin.Engine, db *gorm.DB) {
 		email := chi.URLParam(r, "email")
 		user, err := ab.Config.Storage.Server.Load(r.Context(), email)
 		if err != nil {
-			http.Error(w, http.StatusText(204), 204)
+			http.Error(w, err.Error(), http.StatusNoContent)
 			return
 		}
 
-		if err != nil {
-			http.Error(w, err.Error(), 422)
-			return
-		}
 		render.JSON(w, 200, user)
 	})
 
