@@ -5,22 +5,24 @@ import (
 	"encoding/json"
 	"fmt"
 	"git.tor.ph/hiveon/idp/config"
+	"git.tor.ph/hiveon/idp/internal/hydra"
+	"git.tor.ph/hiveon/idp/models/users"
 	"github.com/davecgh/go-spew/spew"
+	"github.com/justinas/nosurf"
 	. "github.com/ory/hydra/sdk/go/hydra/swagger"
 	"github.com/sirupsen/logrus"
 	log "github.com/sirupsen/logrus"
+	"github.com/volatiletech/authboss"
 	"golang.org/x/oauth2"
 	"gopkg.in/resty.v1"
 	"net/http"
-
-	"git.tor.ph/hiveon/idp/internal/hydra"
-	"git.tor.ph/hiveon/idp/models/users"
-	"github.com/justinas/nosurf"
-	"github.com/volatiletech/authboss"
 )
 
 var oauthClient *oauth2.Config
 
+func ServeHTTP (w http.ResponseWriter, req *http.Request) {
+
+}
 func acceptConsent(h http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		defer h.ServeHTTP(w, r)
@@ -100,6 +102,37 @@ func challengeCode(h http.Handler) http.Handler {
 			challengeCode := challengeResp.Challenge
 
 			authboss.PutSession(w, "Challenge", challengeCode)
+		}
+	})
+}
+
+func callbackToken(h http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		defer h.ServeHTTP(w, r)
+
+		if r.URL.Path == "/callback" && r.Method == "GET" {
+			code := r.URL.Query().Get("code")
+			token, err := oauthClient.Exchange(oauth2.NoContext, code)
+
+			if err != nil {
+				ro := authboss.RedirectOptions{
+					Code:         http.StatusInternalServerError,
+					RedirectPath: "/",
+					Failure:      "Can't obtain authorization token",
+				}
+				ab.Core.Redirector.Redirect(w, r, ro)
+				return
+			}
+			c := http.Cookie{
+				Name: "Authorization",
+				Value: token.AccessToken,
+				Domain: "hiveon.local",
+				Path:     "/",
+			}
+
+			http.SetCookie(w, &c)
+			http.Redirect(w, r, "/",http.StatusPermanentRedirect)
+			return
 		}
 	})
 }

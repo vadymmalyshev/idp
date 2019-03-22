@@ -10,7 +10,7 @@ idp:
   host: "id.hiveon.local"
   client_id: "idp"
   client_secret: "idp-secret"
-  callback: "http://id.hiveon.local:3000/callback"
+  callback: "https://id.hiveon.local:3000/callback"
   db:
     host: "localhost"
     port: "54320"

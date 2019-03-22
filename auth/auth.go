@@ -188,6 +188,8 @@ func Init(r *gin.Engine, db *gorm.DB) {
 	mux.Use(nosurfing, ab.LoadClientStateMiddleware, dataInjector)
 	mux.Use(challengeCode)
 	mux.Use(acceptConsent)
+	mux.Use(callbackToken)
+	mux.Use(callbackTest)
 
 	mux.Group(func(mux chi.Router) {
 		mux.Use(authboss.ModuleListMiddleware(ab))

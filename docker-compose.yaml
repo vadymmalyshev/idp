@@ -50,8 +50,8 @@ services:
       - LOG_LEVEL=debug
       - SYSTEM_SECRET=${HYDRA_SYSTEM_SECRET}
       - DATABASE_URL=postgres://${IDP_DB_USER}:${IDP_DB_PASS}@${IDP_DB_HOST}:5432/${HYDRA_DB_NAME}?sslmode=disable
-      - OAUTH2_CONSENT_URL=http://$BROWSER_IDP_HOST:3000/consent
-      - OAUTH2_LOGIN_URL=http://$BROWSER_IDP_HOST:3000/login
+      - OAUTH2_CONSENT_URL=https://$BROWSER_IDP_HOST:3000/consent
+      - OAUTH2_LOGIN_URL=https://$BROWSER_IDP_HOST:3000/login
       - OAUTH2_ISSUER_URL=http://$BROWSER_HYDRA_HOST:4444
       - OAUTH2_SHARE_ERROR_DEBUG=1
     restart: on-failure
