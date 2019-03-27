@@ -52,6 +52,7 @@ services:
       - .dev.local
 
   idp:
+    build: .
 #    restart: on-failure
     <<: *idp_pool-network-dev
     container_name: idp
@@ -63,3 +64,5 @@ services:
       - postgres:postgres
     env_file:
       - .dev.local
+    volumes:
+      - "./config:/idp/config"
