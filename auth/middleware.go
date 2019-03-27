@@ -123,6 +123,27 @@ func callbackToken(h http.Handler) http.Handler {
 				ab.Core.Redirector.Redirect(w, r, ro)
 				return
 			}
+			var introToken OAuth2TokenIntrospection
+			hydraConfig,_ := config.GetHydraConfig()
+			introspectUrl := hydraConfig.IntrospectURL
+
+			res, err := resty.R().SetFormData(map[string]string{"token": token.AccessToken}).
+				SetHeader("Content-Type", "application/x-www-form-urlencoded").
+				SetHeader("Accept", "application/json").Post(introspectUrl)
+
+			err = json.Unmarshal(res.Body(), &introToken)
+			user, err := ab.Config.Storage.Server.Load(r.Context(), introToken.Sub)
+
+			user1 := user.(*users.User)
+			user1.PutOAuth2AccessToken(token.AccessToken)
+			user1.PutOAuth2RefreshToken(token.RefreshToken)
+			ab.Config.Storage.Server.Save(r.Context(),user1)
+
+			if err != nil {
+				http.Error(w, err.Error(), http.StatusNoContent)
+				return
+			}
+
 			c := http.Cookie{
 				Name: "Authorization",
 				Value: token.AccessToken,
@@ -131,7 +152,7 @@ func callbackToken(h http.Handler) http.Handler {
 			}
 
 			http.SetCookie(w, &c)
-			http.Redirect(w, r, "/",http.StatusPermanentRedirect)
+			http.Redirect(w, r, "/refresh1",http.StatusPermanentRedirect)
 			return
 		}
 	})

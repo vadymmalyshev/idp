@@ -44,7 +44,10 @@ func (store UserStorer) Load(ctx context.Context, key string) (authboss.User, er
 	notFoundByEmail := store.db.First(&user, "email = ?", key).RecordNotFound()
 
 	if notFoundByEmail {
-		return nil, authboss.ErrUserNotFound
+		notFoundByID := store.db.First(&user, "id = ?", key).RecordNotFound()
+		if notFoundByID {
+			return nil, authboss.ErrUserNotFound
+		}
 	}
 
 	logrus.WithFields(logrus.Fields{

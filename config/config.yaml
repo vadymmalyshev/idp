@@ -4,6 +4,7 @@ hydra:
   docker: idp_hydra
   client_id: "idp"
   client_secret: "idp-secret"
+  introspect_url: "http://localhost:4445/oauth2/introspect"
 
 idp:
   port: 3000
