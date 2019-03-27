@@ -1,11 +1,11 @@
 hydra:
   admin: "http://localhost:4445"
   api: "http://localhost:4444"  
-  docker: idp_hydra
+  docker: hydra
 
 idp:
   port: 3000
-  host: "id.hiveon.dev"
+  host: "0.0.0.0"
   client_id: "idp"
   client_secret: "idp-secret"
   callback: "http://id.hiveon.dev:3000/callback"
@@ -20,7 +20,7 @@ idp:
 portal:
   port: 3001
   host: "hiveon.dev"
-  callback: "http://hiveon.dev:8080"
+  callback: "http://hiveon.dev/callback"
   client_id: "portal"
   client_secret: "portal-secret"
 
@@ -29,7 +29,7 @@ admin:
   host: "admin.hiveon.dev"
   client_id: "admin"
   client_secret: "admin-secret"    
-  callback: "http://admin.hiveon.dev:3002/callback"
+  callback: "http://admin.hiveon.dev/callback"
   db:
     host: "postgres"
     port: "5432"
@@ -51,7 +51,7 @@ mail:
   from: "id@hiveon.net"
 
 redis:
-  host: "0.0.0.0"
+  host: "redis"
   port: 6379
   db: 1
   password: ""
