@@ -59,7 +59,7 @@ services:
     hostname: idp
     image: registry.tor.ph/hiveon/idp:${IDP_BUILD_NUMBER:-latest}
     ports:
-      - "3000:3000"
+      - "${IDP_LOCAL_PORT:-3000}:3000"
     external_links:
       - postgres:postgres
     env_file:
