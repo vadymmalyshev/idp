@@ -1,0 +1,41 @@
+version: '3.5'
+
+#Networking (docker networks)
+networks:
+  pool-network-dev:
+    driver: bridge
+    ipam:
+      driver: default
+      config:
+      - subnet: 10.100.100.0/24
+  default: 
+    name: pool-network-dev
+
+#Volumes
+volumes:
+  postgres_data:
+
+#Templates
+x-pool-network-dev:
+  &pool-network-dev
+  networks:
+  - pool-network-dev
+
+#Containers
+services:
+
+  postgres:
+#    restart: unless-stopped
+    build: './postgres'
+    <<: *pool-network-dev
+    image: 'postgres:pool'
+    container_name: postgres
+    hostname: postgres
+    ports:
+      - '127.0.0.1:5432:5432'
+    volumes:
+#      - ./postgres:/docker-entrypoint-initdb.d
+      - postgres_data:/var/lib/postgresql/data
+    env_file:
+      - .dev.local
+

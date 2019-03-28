@@ -1,7 +1,7 @@
 hydra:
   admin: "http://localhost:4445"
   api: "http://localhost:4444"  
-  docker: idp_hydra
+  docker: hydra
   client_id: "idp"
   client_secret: "idp-secret"
   introspect_url: "http://localhost:4445/oauth2/introspect"
@@ -13,8 +13,8 @@ idp:
   client_secret: "idp-secret"
   callback: "https://id.hiveon.local:3000/callback"
   db:
-    host: "localhost"
-    port: "54320"
+    host: "postgres"
+    port: "5432"
     name: "idp_dev"
     user: "idp"
     sslmode: false
