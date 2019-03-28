@@ -195,8 +195,7 @@ func Init(r *gin.Engine, db *gorm.DB) {
 	render := renderPkg.New()
 
 	mux.Get("/api/users/email/{email}", func(w http.ResponseWriter, r *http.Request) {
-		email := chi.URLParam(r, "email")
-		user, err := ab.Config.Storage.Server.Load(r.Context(), email)
+		user, err := getAuthbossUser(r)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusNoContent)
 			return
@@ -206,10 +205,7 @@ func Init(r *gin.Engine, db *gorm.DB) {
 	})
 
 	mux.Get("/api/token/refresh/{email}", func(w http.ResponseWriter, r *http.Request) {
-		//refreshToken, _ := authboss.GetSession(r, "Refresh_token")
-		email := chi.URLParam(r, "email")
-
-		user, err := ab.Config.Storage.Server.Load(r.Context(), email)
+		user, err := getAuthbossUser(r)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusNoContent)
 			return
@@ -218,7 +214,7 @@ func Init(r *gin.Engine, db *gorm.DB) {
 		refreshToken := user1.GetOAuth2RefreshToken()
 
 		if refreshToken == "" {
-			http.Error(w, "No refresh cookie", http.StatusForbidden)
+			http.Error(w, "No refresh token", http.StatusForbidden)
 			return
 		}
 		token := oauth2.Token{RefreshToken:refreshToken}
@@ -282,5 +278,11 @@ func Init(r *gin.Engine, db *gorm.DB) {
 		}
 		return true, nil
 	})
+}
+
+func getAuthbossUser(r *http.Request) (authboss.User, error){
+	email := chi.URLParam(r, "email")
+	user, err := ab.Config.Storage.Server.Load(r.Context(), email)
+		return user, err
 }
 

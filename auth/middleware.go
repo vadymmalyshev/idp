@@ -23,6 +23,7 @@ var oauthClient *oauth2.Config
 func ServeHTTP (w http.ResponseWriter, req *http.Request) {
 
 }
+
 func acceptConsent(h http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		defer h.ServeHTTP(w, r)
@@ -58,7 +59,6 @@ func acceptConsent(h http.Handler) http.Handler {
 			}
 			ab.Core.Redirector.Redirect(w, r, ro)
 			return
-
 		}
 	})
 }
@@ -100,7 +100,6 @@ func challengeCode(h http.Handler) http.Handler {
 			}
 
 			challengeCode := challengeResp.Challenge
-
 			authboss.PutSession(w, "Challenge", challengeCode)
 		}
 	})
@@ -151,8 +150,14 @@ func callbackToken(h http.Handler) http.Handler {
 				Path:     "/",
 			}
 
+			portalConfig, err := config.GetPortalConfig()
+			if err != nil {
+				http.Error(w, err.Error(), http.StatusNoContent)
+				return
+			}
+
 			http.SetCookie(w, &c)
-			http.Redirect(w, r, "/refresh1",http.StatusPermanentRedirect)
+			http.Redirect(w, r, portalConfig.Callback,http.StatusPermanentRedirect)
 			return
 		}
 	})
