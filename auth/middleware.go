@@ -136,6 +136,8 @@ func callbackToken(h http.Handler) http.Handler {
 			user1 := user.(*users.User)
 			user1.PutOAuth2AccessToken(token.AccessToken)
 			user1.PutOAuth2RefreshToken(token.RefreshToken)
+			user1.PutOAuth2Expiry(token.Expiry)
+
 			ab.Config.Storage.Server.Save(r.Context(),user1)
 
 			if err != nil {

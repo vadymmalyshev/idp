@@ -212,17 +212,23 @@ func Init(r *gin.Engine, db *gorm.DB) {
 		}
 		user1 := user.(*users.User)
 		refreshToken := user1.GetOAuth2RefreshToken()
+		accessToken := user1.GetOAuth2AccessToken()
+		expiry := user1.GetOAuth2Expiry()
 
 		if refreshToken == "" {
 			http.Error(w, "No refresh token", http.StatusForbidden)
 			return
 		}
-		token := oauth2.Token{RefreshToken:refreshToken}
+		token := oauth2.Token{RefreshToken: refreshToken, AccessToken: accessToken, Expiry: expiry}
 		updatedToken, _ := oauthClient.TokenSource(context.TODO(), &token).Token()
 
-		user1.PutOAuth2AccessToken(updatedToken.AccessToken)
-		user1.PutOAuth2RefreshToken(updatedToken.RefreshToken)
-		ab.Config.Storage.Server.Save(r.Context(),user1)
+		if accessToken != updatedToken.AccessToken {
+			user1.PutOAuth2AccessToken(updatedToken.AccessToken)
+			user1.PutOAuth2RefreshToken(updatedToken.RefreshToken)
+			user1.PutOAuth2Expiry(updatedToken.Expiry)
+
+			ab.Config.Storage.Server.Save(r.Context(),user1)
+		}
 
 		c := http.Cookie{
 			Name: "Authorization",
@@ -230,9 +236,9 @@ func Init(r *gin.Engine, db *gorm.DB) {
 			Domain: "hiveon.local",
 			Path:     "/",
 		}
+
 		http.SetCookie(w, &c)
-		w.Header().Set("Authorization",updatedToken.AccessToken)
-		w.WriteHeader(http.StatusOK)
+		render.JSON(w, 200, updatedToken)
 	})
 
 	mux.Group(func(mux chi.Router) {
