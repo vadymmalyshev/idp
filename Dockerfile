@@ -6,6 +6,7 @@ RUN go mod vendor && \
     go mod tidy && \
     go build . && \
 #    mv config/config.dev.yaml config/config.yaml && \
+    echo '127.0.0.1 id.hiveon.local' >> /etc/hosts && \
     ls
 
 FROM golang
