@@ -5,6 +5,7 @@ require (
 	github.com/boombuler/barcode v1.0.0 // indirect
 	github.com/davecgh/go-spew v1.1.1
 	github.com/denisenkom/go-mssqldb v0.0.0-20190204142019-df6d76eb9289 // indirect
+	github.com/eknkc/amber v0.0.0-20171010120322-cdade1c07385 // indirect
 	github.com/erikstmartin/go-testdb v0.0.0-20160219214506-8d10e4a1bae5 // indirect
 	github.com/gin-contrib/sse v0.0.0-20190125020943-a7658810eb74 // indirect
 	github.com/gin-contrib/static v0.0.0-20181225054800-cf5e10bbd933

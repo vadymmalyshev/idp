@@ -1,9 +1,11 @@
 package auth
 
 import (
+	"context"
 	"encoding/base32"
 	"encoding/base64"
 	"flag"
+	"golang.org/x/oauth2"
 	"net/http"
 	"regexp"
 
@@ -190,15 +192,10 @@ func Init(r *gin.Engine, db *gorm.DB) {
 	mux.Use(acceptConsent)
 	mux.Use(callbackToken)
 
-	mux.Group(func(mux chi.Router) {
-		mux.Use(authboss.ModuleListMiddleware(ab))
-		mux.Mount("/", http.StripPrefix("", ab.Config.Core.Router))
-	})
-
 	render := renderPkg.New()
+
 	mux.Get("/api/users/email/{email}", func(w http.ResponseWriter, r *http.Request) {
-		email := chi.URLParam(r, "email")
-		user, err := ab.Config.Storage.Server.Load(r.Context(), email)
+		user, err := getAuthbossUser(r)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusNoContent)
 			return
@@ -207,8 +204,49 @@ func Init(r *gin.Engine, db *gorm.DB) {
 		render.JSON(w, 200, user)
 	})
 
-	r.Any("/*resources", gin.WrapH(mux))
+	mux.Get("/api/token/refresh/{email}", func(w http.ResponseWriter, r *http.Request) {
+		user, err := getAuthbossUser(r)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusNoContent)
+			return
+		}
+		user1 := user.(*users.User)
+		refreshToken := user1.GetOAuth2RefreshToken()
+		accessToken := user1.GetOAuth2AccessToken()
+		expiry := user1.GetOAuth2Expiry()
 
+		if refreshToken == "" {
+			http.Error(w, "No refresh token", http.StatusForbidden)
+			return
+		}
+		token := oauth2.Token{RefreshToken: refreshToken, AccessToken: accessToken, Expiry: expiry}
+		updatedToken, _ := oauthClient.TokenSource(context.TODO(), &token).Token()
+
+		if accessToken != updatedToken.AccessToken {
+			user1.PutOAuth2AccessToken(updatedToken.AccessToken)
+			user1.PutOAuth2RefreshToken(updatedToken.RefreshToken)
+			user1.PutOAuth2Expiry(updatedToken.Expiry)
+
+			ab.Config.Storage.Server.Save(r.Context(),user1)
+		}
+
+		c := http.Cookie{
+			Name: "Authorization",
+			Value: updatedToken.AccessToken,
+			Domain: "hiveon.local",
+			Path:     "/",
+		}
+
+		http.SetCookie(w, &c)
+		render.JSON(w, 200, updatedToken)
+	})
+
+	mux.Group(func(mux chi.Router) {
+		mux.Use(authboss.ModuleListMiddleware(ab))
+		mux.Mount("/", http.StripPrefix("", ab.Config.Core.Router))
+	})
+
+	r.Any("/*resources", gin.WrapH(mux))
 	ab.Events.After(authboss.EventAuth, func(w http.ResponseWriter, r *http.Request, handled bool) (bool, error) {
 		challenge, _ := authboss.GetSession(r, "Challenge")
 
@@ -246,5 +284,11 @@ func Init(r *gin.Engine, db *gorm.DB) {
 		}
 		return true, nil
 	})
+}
+
+func getAuthbossUser(r *http.Request) (authboss.User, error){
+	email := chi.URLParam(r, "email")
+	user, err := ab.Config.Storage.Server.Load(r.Context(), email)
+		return user, err
 }
 
