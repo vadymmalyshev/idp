@@ -1,0 +1,17 @@
+#Default hiveon.dev LOCAL DOCKER network as docker-compose.
+#It's a main prerequisite
+version: '3.5'
+#Networking (docker networks)
+networks:
+  hiveon.dev-network:
+    driver: bridge
+    ipam:
+      driver: default
+      config:
+      - subnet: 10.100.100.0/24
+
+services:
+  hello-world:
+    image: alpine
+    container_name: hello-world
+    command: echo hello-world

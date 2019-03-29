@@ -2,19 +2,19 @@ version: '3.5'
 
 #Networking (docker networks)
 networks:
-  idp_pool-network-dev:
+  idp_hiveon-dev-network:
     external: true
 #Templates
-x-idp_pool-network-dev:
-  &idp_pool-network-dev
+x-idp_hiveon-dev-network:
+  &idp_hiveon-dev-network
   networks:
-  - idp_pool-network-dev
+  - idp_hiveon-dev-network
 
 #Containers
 services:
   hydra:
 #    restart: on-failure
-    <<: *idp_pool-network-dev
+    <<: *idp_hiveon-dev-network
     container_name: hydra
     hostname: hydra
     image: oryd/hydra:${HYDRA_VERSION:-v1.0.0-rc.6_oryOS.10}
@@ -38,7 +38,7 @@ services:
 
   hydra-migrate:
 #    restart: on-failure
-    <<: *idp_pool-network-dev
+    <<: *idp_hiveon-dev-network
     container_name: hydra-migrate
     hostname: hydra-migrate
     image: oryd/hydra:${HYDRA_VERSION:-v1.0.0-rc.6_oryOS.10}
@@ -54,7 +54,7 @@ services:
   idp:
     build: .
 #    restart: on-failure
-    <<: *idp_pool-network-dev
+    <<: *idp_hiveon-dev-network
     container_name: idp
     hostname: idp
     image: registry.tor.ph/hiveon/idp:${IDP_BUILD_NUMBER:-latest}
