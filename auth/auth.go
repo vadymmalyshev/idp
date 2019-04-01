@@ -5,6 +5,7 @@ import (
 	"encoding/base32"
 	"encoding/base64"
 	"flag"
+	"github.com/justinas/nosurf"
 	"golang.org/x/oauth2"
 	"net/http"
 	"regexp"
@@ -67,6 +68,7 @@ const (
 )
 
 func Init(r *gin.Engine, db *gorm.DB) {
+	flag.Parse()
 	signingKey, _ := config.GetSignKey()
 
 	signingKeyBytes := []byte(signingKey)
@@ -245,6 +247,24 @@ func Init(r *gin.Engine, db *gorm.DB) {
 		mux.Use(authboss.ModuleListMiddleware(ab))
 		mux.Mount("/", http.StripPrefix("", ab.Config.Core.Router))
 	})
+
+	if *flagAPI {
+		// In order to have a "proper" API with csrf protection we allow
+		// the options request to return the csrf token that's required to complete the request
+		// when using post
+		optionsHandler := func(w http.ResponseWriter, r *http.Request) {
+			w.Header().Set("X-CSRF-TOKEN", nosurf.Token(r))
+			w.WriteHeader(http.StatusOK)
+		}
+
+		// We have to add each of the authboss get/post routes specifically because
+		// chi sees the 'Mount' above as overriding the '/*' pattern.
+		routes := []string{"login", "logout", "recover", "recover/end", "register"}
+		mux.MethodFunc("OPTIONS", "/*", optionsHandler)
+		for _, r := range routes {
+			mux.MethodFunc("OPTIONS", "/auth/"+r, optionsHandler)
+		}
+	}
 
 	r.Any("/*resources", gin.WrapH(mux))
 	ab.Events.After(authboss.EventAuth, func(w http.ResponseWriter, r *http.Request, handled bool) (bool, error) {
