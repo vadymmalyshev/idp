@@ -1,7 +1,6 @@
 hydra:
   admin: "http://localhost:4445"
-  api: "http://localhost:4444"
-  introspect_url: "http://localhost:4445/oauth2/introspect"
+  api: "http://localhost:4444"  
   docker: hydra
 
 idp:

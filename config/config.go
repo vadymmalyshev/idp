@@ -17,7 +17,6 @@ const (
 	hydraAPI           = "hydra.api"
 	hydraClientID      = "hydra.client_id"
 	hydraClientSecret  = "hydra.client_secret"
-	hydraIntrospectURL = "hydra.introspect_url"
 
 	dbHost             = "idp.db.host"
 	dbPort     		   = "idp.db.port"
@@ -65,7 +64,6 @@ func init() {
 	viper.SetDefault(hydraAdmin, "localhost:4445")
 	viper.SetDefault(hydraClientID, "")
 	viper.SetDefault(hydraClientSecret, "")
-	viper.SetDefault(hydraIntrospectURL, "")
 }
 
 type DBConfig struct {
@@ -132,20 +130,18 @@ func GetSignKey() (string, error) {
 }
 
 type HydraConfig struct {
-	Admin         string
-	API           string
-	ClientID      string
-	ClientSecret  string
-	IntrospectURL string
+	Admin        string
+	API          string
+	ClientID     string
+	ClientSecret string
 }
 
 func GetHydraConfig() (*HydraConfig, error) {
 	config := HydraConfig{
-		Admin:         viper.GetString(hydraAdmin),
-		API:           viper.GetString(hydraAPI),
-		ClientID:      viper.GetString(hydraClientID),
-		ClientSecret:  viper.GetString(hydraClientSecret),
-		IntrospectURL: viper.GetString(hydraIntrospectURL),
+		Admin:        viper.GetString(hydraAdmin),
+		API:          viper.GetString(hydraAPI),
+		ClientID:     viper.GetString(hydraClientID),
+		ClientSecret: viper.GetString(hydraClientSecret),
 	}
 
 	return &config, nil
