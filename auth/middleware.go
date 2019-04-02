@@ -28,7 +28,7 @@ func acceptConsent(h http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		defer h.ServeHTTP(w, r)
 
-		if r.URL.Path == "/consent" && r.Method == "GET" {
+		if r.URL.Path == "/api/consent" && r.Method == "GET" {
 			challenge := r.URL.Query().Get("consent_challenge")
 
 			if len(challenge) == 0 {
@@ -70,10 +70,11 @@ func challengeCode(h http.Handler) http.Handler {
 		chal, _ := authboss.GetSession(r, "Challenge")
 		logrus.Info("current challenge:" + chal)
 
-		if r.URL.Path == "/login" && r.Method == "GET" {
+		if r.URL.Path == "/api/login" && r.Method == "GET" {
 			challenge := r.URL.Query().Get("login_challenge")
-
+			returnURL := r.URL.Query().Get("returnURL")
 			if len(challenge) == 0 { // obtain login challenge
+				authboss.PutSession(w, "returnURL", returnURL)
 				hydraConfig,_ := config.GetHydraConfig()
 				oauthClient = InitClient(hydraConfig.ClientID, hydraConfig.ClientSecret)
 				redirectUrl := oauthClient.AuthCodeURL("state123")
@@ -109,7 +110,8 @@ func callbackToken(h http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		defer h.ServeHTTP(w, r)
 
-		if r.URL.Path == "/callback" && r.Method == "GET" {
+		if r.URL.Path == "/api/callback" && r.Method == "GET" {
+			returnURL, _ := authboss.GetSession(r, "returnURL")
 			code := r.URL.Query().Get("code")
 			token, err := oauthClient.Exchange(oauth2.NoContext, code)
 
@@ -158,8 +160,12 @@ func callbackToken(h http.Handler) http.Handler {
 				return
 			}
 
+			if returnURL == "" {
+				returnURL = portalConfig.Callback
+			}
+
 			http.SetCookie(w, &c)
-			http.Redirect(w, r, portalConfig.Callback,http.StatusPermanentRedirect)
+			http.Redirect(w, r, returnURL,http.StatusPermanentRedirect)
 			return
 		}
 	})

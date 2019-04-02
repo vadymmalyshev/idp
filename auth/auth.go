@@ -245,7 +245,7 @@ func Init(r *gin.Engine, db *gorm.DB) {
 
 	mux.Group(func(mux chi.Router) {
 		mux.Use(authboss.ModuleListMiddleware(ab))
-		mux.Mount("/", http.StripPrefix("", ab.Config.Core.Router))
+		mux.Mount("/api", http.StripPrefix("/api", ab.Config.Core.Router))
 	})
 
 	if *flagAPI {
