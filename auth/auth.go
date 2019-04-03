@@ -5,6 +5,7 @@ import (
 	"encoding/base32"
 	"encoding/base64"
 	"flag"
+	"github.com/volatiletech/authboss/remember"
 	"golang.org/x/oauth2"
 	"net/http"
 	"regexp"
@@ -67,6 +68,7 @@ const (
 )
 
 func Init(r *gin.Engine, db *gorm.DB) {
+	flag.Parse()
 	signingKey, _ := config.GetSignKey()
 
 	signingKeyBytes := []byte(signingKey)
@@ -187,10 +189,11 @@ func Init(r *gin.Engine, db *gorm.DB) {
 
 	mux := chi.NewRouter()
 
-	mux.Use(nosurfing, ab.LoadClientStateMiddleware, dataInjector)
+	mux.Use(ab.LoadClientStateMiddleware, remember.Middleware(ab), dataInjector)
 	mux.Use(challengeCode)
 	mux.Use(acceptConsent)
 	mux.Use(callbackToken)
+	mux.Use(acceptPost)
 
 	render := renderPkg.New()
 
@@ -243,11 +246,15 @@ func Init(r *gin.Engine, db *gorm.DB) {
 
 	mux.Group(func(mux chi.Router) {
 		mux.Use(authboss.ModuleListMiddleware(ab))
-		mux.Mount("/", http.StripPrefix("", ab.Config.Core.Router))
+		mux.Mount("/api", http.StripPrefix("/api", ab.Config.Core.Router))
 	})
 
 	r.Any("/*resources", gin.WrapH(mux))
 	ab.Events.After(authboss.EventAuth, func(w http.ResponseWriter, r *http.Request, handled bool) (bool, error) {
+		if *flagAPI {
+			return true, nil
+		}
+
 		challenge, _ := authboss.GetSession(r, "Challenge")
 
 		if len(challenge) == 0 {
