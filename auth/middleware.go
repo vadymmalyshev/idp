@@ -20,6 +20,12 @@ import (
 
 var oauthClient *oauth2.Config
 
+type IDPLoginRequest struct {
+	email          string `json:"email"`
+	password       string `json:"password"`
+	fromURL        string `json:"fromURL"`
+}
+
 func ServeHTTP (w http.ResponseWriter, req *http.Request) {
 
 }
@@ -27,15 +33,29 @@ func ServeHTTP (w http.ResponseWriter, req *http.Request) {
 func acceptPost(h http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		defer h.ServeHTTP(w, r)
+		var idpLoginRequest IDPLoginRequest
+/*
+		reqBody, err := ioutil.ReadAll(r.Body)
+		if err != nil {
+			fmt.Fprintf(w, "ParseForm err: %v", err)
+			return
+		}
+
+		err = json.Unmarshal(reqBody, &idpLoginRequest)
+		if err != nil {
+			fmt.Fprintf(w, "Failed to unmarshall Json: %v", err)
+			return
+		}*/
+		authboss.PutSession(w, "fromURL", idpLoginRequest.fromURL)
 
 		if r.URL.Path == "/api/login" && r.Method == "POST" && *flagAPI{
 			hydraConfig,_ := config.GetHydraConfig()
 			oauthClient = InitClient(hydraConfig.ClientID, hydraConfig.ClientSecret)
 			redirectUrl := oauthClient.AuthCodeURL("state123")
 			    w.Header().Set("Content-Type", "application/json")
-			    w.Header().Set("redirectURL", redirectUrl)
+			    fmt.Fprintf(w, `{"redirectURL": %q}`, redirectUrl)
 				w.WriteHeader(http.StatusOK)
-			    //fmt.Fprintf(w, `{"redirectURL": %q}`, redirectUrl)
+
 				return
 		}
 	})
@@ -79,7 +99,7 @@ func acceptConsent(h http.Handler) http.Handler {
 
 			if *flagAPI {
 				w.Header().Set("Content-Type", "application/json")
-				w.Header().Set("redirectURL", url)
+				fmt.Fprintf(w, `{"redirectURL": %q}`, url)
 				w.WriteHeader(http.StatusOK)
 				return
 			}
@@ -159,9 +179,8 @@ func challengeCode(h http.Handler) http.Handler {
 						}).Error("hydra/login/accept request has been failed")
 						return
 					}
-					k:=r.Cookies();fmt.Println(k)
 					w.Header().Set("Content-Type", "application/json")
-					w.Header().Set("redirectURL", resp.RedirectTo)
+					fmt.Fprintf(w, `{"redirectURL": %q}`, resp.RedirectTo)
 					w.WriteHeader(http.StatusOK)
 					return
 
@@ -227,8 +246,14 @@ func callbackToken(h http.Handler) http.Handler {
 			}
 
 			if *flagAPI {
+				fromURL, _ := authboss.GetSession(r, "fromURL")
+
+				if fromURL =="" {
+					fromURL = portalConfig.Callback
+				}
+
 				w.Header().Set("Content-Type", "application/json")
-				w.Header().Set("redirectURL", portalConfig.Callback)
+				fmt.Fprintf(w, `{"redirectURL": %q}`, fromURL)
 				w.WriteHeader(http.StatusOK)
 				return
 			}
