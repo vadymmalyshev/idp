@@ -52,7 +52,7 @@ func main() {
 	errs := make(chan error, 2)
 
 	go func() {
-		logrus.Infof("IDP has started on http://%s", serverConfig.Addr)
+		logrus.Infof("api-mode. IDP has started on http://%s", serverConfig.Addr)
 		//errs <- r.RunTLS(serverConfig.Addr, "./config/certs/hiveon.local.crt", "./config/certs/hiveon.local.key")
 		errs <- r.Run(serverConfig.Addr)
 	}()
