@@ -203,7 +203,7 @@ func layoutData(w http.ResponseWriter, r **http.Request) authboss.HTMLData {
 	return authboss.HTMLData{
 		"loggedin":          userInter != nil,
 		"current_user_name": currentUserName,
-		"csrf_token":        nosurf.Token(*r),
+		//"csrf_token":        nosurf.Token(*r),
 		"flash_success":     authboss.FlashSuccess(w, *r),
 		"flash_error":       authboss.FlashError(w, *r),
 	}

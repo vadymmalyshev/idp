@@ -5,7 +5,6 @@ import (
 	"encoding/base32"
 	"encoding/base64"
 	"flag"
-	"github.com/justinas/nosurf"
 	"golang.org/x/oauth2"
 	"net/http"
 	"regexp"
@@ -189,7 +188,7 @@ func Init(r *gin.Engine, db *gorm.DB) {
 
 	mux := chi.NewRouter()
 
-	mux.Use(nosurfing, ab.LoadClientStateMiddleware, dataInjector)
+	mux.Use(ab.LoadClientStateMiddleware, dataInjector)
 	mux.Use(challengeCode)
 	mux.Use(acceptConsent)
 	mux.Use(callbackToken)
@@ -247,7 +246,7 @@ func Init(r *gin.Engine, db *gorm.DB) {
 		mux.Use(authboss.ModuleListMiddleware(ab))
 		mux.Mount("/api", http.StripPrefix("/api", ab.Config.Core.Router))
 	})
-
+/*
 	if *flagAPI {
 		// In order to have a "proper" API with csrf protection we allow
 		// the options request to return the csrf token that's required to complete the request
@@ -265,7 +264,7 @@ func Init(r *gin.Engine, db *gorm.DB) {
 			mux.MethodFunc("OPTIONS", "/auth/"+r, optionsHandler)
 		}
 	}
-
+*/
 	r.Any("/*resources", gin.WrapH(mux))
 	ab.Events.After(authboss.EventAuth, func(w http.ResponseWriter, r *http.Request, handled bool) (bool, error) {
 		challenge, _ := authboss.GetSession(r, "Challenge")
