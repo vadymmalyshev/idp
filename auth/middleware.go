@@ -15,16 +15,11 @@ import (
 	"github.com/volatiletech/authboss"
 	"golang.org/x/oauth2"
 	"gopkg.in/resty.v1"
+	"io/ioutil"
 	"net/http"
 )
 
 var oauthClient *oauth2.Config
-
-type IDPLoginRequest struct {
-	email          string `json:"email"`
-	password       string `json:"password"`
-	fromURL        string `json:"fromURL"`
-}
 
 func ServeHTTP (w http.ResponseWriter, req *http.Request) {
 
@@ -33,29 +28,17 @@ func ServeHTTP (w http.ResponseWriter, req *http.Request) {
 func acceptPost(h http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		defer h.ServeHTTP(w, r)
-		var idpLoginRequest IDPLoginRequest
-/*
-		reqBody, err := ioutil.ReadAll(r.Body)
-		if err != nil {
-			fmt.Fprintf(w, "ParseForm err: %v", err)
-			return
-		}
-
-		err = json.Unmarshal(reqBody, &idpLoginRequest)
-		if err != nil {
-			fmt.Fprintf(w, "Failed to unmarshall Json: %v", err)
-			return
-		}*/
-		authboss.PutSession(w, "fromURL", idpLoginRequest.fromURL)
 
 		if r.URL.Path == "/api/login" && r.Method == "POST" && *flagAPI{
+			fromURL, err := getReturnURL(r, w);
+			if err != nil {
+				return
+			}
+			authboss.PutSession(w, "fromURL", fromURL)
 			hydraConfig,_ := config.GetHydraConfig()
 			oauthClient = InitClient(hydraConfig.ClientID, hydraConfig.ClientSecret)
 			redirectUrl := oauthClient.AuthCodeURL("state123")
-			    w.Header().Set("Content-Type", "application/json")
-			    fmt.Fprintf(w, `{"redirectURL": %q}`, redirectUrl)
-				w.WriteHeader(http.StatusOK)
-
+			setRedirectURL(redirectUrl, w)
 				return
 		}
 	})
@@ -98,9 +81,7 @@ func acceptConsent(h http.Handler) http.Handler {
 			}
 
 			if *flagAPI {
-				w.Header().Set("Content-Type", "application/json")
-				fmt.Fprintf(w, `{"redirectURL": %q}`, url)
-				w.WriteHeader(http.StatusOK)
+				setRedirectURL(url, w)
 				return
 			}
 
@@ -179,9 +160,7 @@ func challengeCode(h http.Handler) http.Handler {
 						}).Error("hydra/login/accept request has been failed")
 						return
 					}
-					w.Header().Set("Content-Type", "application/json")
-					fmt.Fprintf(w, `{"redirectURL": %q}`, resp.RedirectTo)
-					w.WriteHeader(http.StatusOK)
+					setRedirectURL(resp.RedirectTo, w)
 					return
 
 				}
@@ -252,9 +231,7 @@ func callbackToken(h http.Handler) http.Handler {
 					fromURL = portalConfig.Callback
 				}
 
-				w.Header().Set("Content-Type", "application/json")
-				fmt.Fprintf(w, `{"redirectURL": %q}`, fromURL)
-				w.WriteHeader(http.StatusOK)
+				setRedirectURL(fromURL, w)
 				return
 			}
 
@@ -373,20 +350,31 @@ func getScopes() []string {
 	return []string{"openid", "offline"}
 }
 
-func badRequest(w http.ResponseWriter, err error) bool {
-	if err == nil {
-		return false
+func getReturnURL(r *http.Request, w http.ResponseWriter) (string, error) {
+	reqBody, err := ioutil.ReadAll(r.Body)
+	if err != nil {
+		fmt.Fprintf(w, "Can't read request body: %v", err)
+		return "", err
+	}
+	f := map[string]interface{}{}
+
+	err = json.Unmarshal([]byte(reqBody), &f)
+	if err != nil {
+		fmt.Fprintf(w, "Can't unmarshal request body: %v", err)
+		return "", err
+	}
+	fromURL := f["fromURL"]
+	fromURLString := ""
+
+	if fromURL != nil {
+		fromURLString = fromURL.(string)
 	}
 
-	if *flagAPI {
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusBadRequest)
-		fmt.Fprintln(w, `{"error":"bad request"}`, err)
-		return true
-	}
+	return fromURLString, nil
+}
 
-	w.Header().Set("Content-Type", "text/plain")
-	w.WriteHeader(http.StatusBadRequest)
-	fmt.Fprintln(w, "Bad request:", err)
-	return true
+func setRedirectURL(redirectURL string, w http.ResponseWriter) {
+	w.Header().Set("Content-Type", "application/json")
+	fmt.Fprintf(w, `{"redirectURL": %q}`, redirectURL)
+	w.WriteHeader(http.StatusOK)
 }
