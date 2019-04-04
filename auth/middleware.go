@@ -1,6 +1,7 @@
 package auth
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -21,6 +22,12 @@ import (
 
 var oauthClient *oauth2.Config
 
+type IDPLoginRequest struct{
+	email     string `json:"email"`
+	password  string `json:"password"`
+	fromURL   string `json:"fromURL"`
+
+}
 func ServeHTTP (w http.ResponseWriter, req *http.Request) {
 
 }
@@ -29,9 +36,8 @@ func acceptPost(h http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		defer h.ServeHTTP(w, r)
 
-		if r.URL.Path == "/api/login" && r.Method == "POST" && *flagAPI{
-			//returnURL := getReturnURL(r, w)
-			//authboss.PutSession(w, "fromURL", getReturnURL(r, w))
+		if r.URL.Path == "/api/login" && r.Method == "POST" && *flagAPI {
+			authboss.PutSession(w, "fromURL", getFromURL(r, w))
 		}
 	})
 }
@@ -73,7 +79,9 @@ func acceptConsent(h http.Handler) http.Handler {
 			}
 
 			if *flagAPI {
-				setRedirectURL(url, w)
+				data := layoutData(w, &r, url)
+				r = r.WithContext(context.WithValue(r.Context(), authboss.CTXKeyData, data))
+				h.ServeHTTP(w, r)
 				return
 			}
 
@@ -152,7 +160,10 @@ func challengeCode(h http.Handler) http.Handler {
 						}).Error("hydra/login/accept request has been failed")
 						return
 					}
-					setRedirectURL(resp.RedirectTo, w)
+
+					data := layoutData(w, &r, resp.RedirectTo)
+					r = r.WithContext(context.WithValue(r.Context(), authboss.CTXKeyData, data))
+					h.ServeHTTP(w, r)
 					return
 
 				}
@@ -222,8 +233,10 @@ func callbackToken(h http.Handler) http.Handler {
 				if fromURL =="" {
 					fromURL = portalConfig.Callback
 				}
+				data := layoutData(w, &r, fromURL)
+				r = r.WithContext(context.WithValue(r.Context(), authboss.CTXKeyData, data))
+				h.ServeHTTP(w, r)
 
-				setRedirectURL(fromURL, w)
 				return
 			}
 
@@ -245,7 +258,7 @@ func nosurfing(h http.Handler) http.Handler {
 
 func dataInjector(handler http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		data := layoutData(w, &r)
+		data := layoutData(w, &r, "")
 		r = r.WithContext(context.WithValue(r.Context(), authboss.CTXKeyData, data))
 		handler.ServeHTTP(w, r)
 	})
@@ -255,7 +268,7 @@ func dataInjector(handler http.Handler) http.Handler {
 // to the request. This is still safe as it still creates a new request and doesn't
 // modify the old one, it just modifies what we're pointing to in our methods so
 // we're able to skip returning an *http.Request everywhere
-func layoutData(w http.ResponseWriter, r **http.Request) authboss.HTMLData {
+func layoutData(w http.ResponseWriter, r **http.Request, redirect string) authboss.HTMLData {
 	currentUserName := ""
 	userInter, err := ab.LoadCurrentUser(r)
 	if userInter != nil && err == nil {
@@ -268,6 +281,7 @@ func layoutData(w http.ResponseWriter, r **http.Request) authboss.HTMLData {
 		//"csrf_token":        nosurf.Token(*r),
 		"flash_success":     authboss.FlashSuccess(w, *r),
 		"flash_error":       authboss.FlashError(w, *r),
+		"redirectURL":       redirect,
 	}
 }
 
@@ -342,24 +356,23 @@ func getScopes() []string {
 	return []string{"openid", "offline"}
 }
 
-func getReturnURL(r *http.Request, w http.ResponseWriter) string {
-	reqBody, err := ioutil.ReadAll(r.Body)
-	if err != nil {
-		return ""
-	}
-	f := map[string]interface{}{}
-
-	err = json.Unmarshal([]byte(reqBody), &f)
-	if err != nil {
-		return ""
-	}
-	fromURL := f["fromURL"]
+func getFromURL(r *http.Request, w http.ResponseWriter) string {
+	bodyBytes, err := ioutil.ReadAll(r.Body)
 	fromURLString := ""
 
-	if fromURL != nil {
-		fromURLString = fromURL.(string)
+	if err != nil {
+		return fromURLString
 	}
 
+	decoder := json.NewDecoder(r.Body)
+	var t map[string]string
+	decoder.Decode(&t)
+
+	if t["fromURL"] != "" {
+		fromURLString = t["fromURL"]
+
+	}
+	r.Body = ioutil.NopCloser(bytes.NewBuffer(bodyBytes))
 	return fromURLString
 }
 
