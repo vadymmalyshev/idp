@@ -1,67 +1,65 @@
-version: '3.4'
+version: '3.5'
+
+#Networking (docker networks)
+networks:
+  pool_pool-network-dev:
+    external: true
+#Templates
+x-pool_pool-network-dev:
+  &pool_pool-network-dev
+  networks:
+  - pool_pool-network-dev
+
+#Containers
 services:
-
-  db:
-    image: 'postgres:11'
-    container_name: ${IDP_DB_HOST}
-    hostname: ${IDP_DB_HOST}
-    ports:
-      - "54320:5432"
-    restart: unless-stopped
-    volumes:
-      - ./__data/pg:/var/lib/postgresql/data
-      - ./scripts/pg-init:/docker-entrypoint-initdb.d
-      - ${PWD}/database/docker-init.sql:/docker-entrypoint-initdb.d/docker-init.sql
-
-    environment:
-      POSTGRES_MULTIPLE_DATABASES: "idp_dev, hydra"
-      POSTGRES_USER: idp
-      POSTGRES_PASSWORD: 8GWbz2JF4FMe1Q8X
-      HIVEON_DB: hiveon_db
-    build: './build'
-
-  hydra-migrate:
-    image: oryd/hydra:$HYDRA_VERSION
-    container_name: idp_hydra_migrate
-    hostname: idp_hydra_migrate
-    links:
-      - db:db
+  hydra:
+#    restart: on-failure
+    <<: *pool_pool-network-dev
+    container_name: hydra
+    hostname: hydra
+    image: oryd/hydra:${HYDRA_VERSION:-v1.0.0-rc.6_oryOS.10}
     environment:
       - LOG_LEVEL=debug
-      # - HYDRA_SYSTEM_SECRET=youReallyNeedToChangeThis
-    command:
-      migrate sql postgres://${IDP_DB_USER}:${IDP_DB_PASS}@${IDP_DB_HOST}:5432/${HYDRA_DB_NAME}?sslmode=disable
-    restart: on-failure
-
-  hydra:
-    image: oryd/hydra:$HYDRA_VERSION
-    container_name: idp_hydra
-    hostname: idp_hydra
-    links:
-      - db:db
-    ports:
-      - "4444:4444"
-      - "4445:4445"
+      - SYSTEM_SECRET=${HYDRA_SYSTEM_SECRET:-hydra}
+      - DATABASE_URL=postgres://${IDP_DB_USER:-idp}:${IDP_DB_PASS:-8GWbz2JF4FMe1Q8X}@${IDP_DB_HOST:-postgres}:5432/${HYDRA_DB_NAME:-hydra}?sslmode=disable
+      - OAUTH2_CONSENT_URL=http://${BROWSER_IDP_HOST:-idp}:3000/api/consent
+      - OAUTH2_LOGIN_URL=http://${BROWSER_IDP_HOST:-idp}:3000/api/login
+      - OAUTH2_ISSUER_URL=http://${BROWSER_HYDRA_HOST:-hydra}:4444
+      - OAUTH2_SHARE_ERROR_DEBUG=1
     depends_on:
       - hydra-migrate
     command:
       serve all --dangerous-force-http
+    ports:
+      - "4444:4444"
+      - "4445:4445"
+    env_file:
+      - ./.env
+
+  hydra-migrate:
+#    restart: on-failure
+    <<: *pool_pool-network-dev
+    container_name: hydra-migrate
+    hostname: hydra-migrate
+    image: oryd/hydra:${HYDRA_VERSION:-v1.0.0-rc.6_oryOS.10}
     environment:
       - LOG_LEVEL=debug
-      - SYSTEM_SECRET=${HYDRA_SYSTEM_SECRET}
-      - DATABASE_URL=postgres://${IDP_DB_USER}:${IDP_DB_PASS}@${IDP_DB_HOST}:5432/${HYDRA_DB_NAME}?sslmode=disable
-      - OAUTH2_CONSENT_URL=http://$BROWSER_IDP_HOST:3000/api/consent
-      - OAUTH2_LOGIN_URL=http://$BROWSER_IDP_HOST:3000/api/login
-      - OAUTH2_ISSUER_URL=http://$BROWSER_HYDRA_HOST:4444
-      - OAUTH2_SHARE_ERROR_DEBUG=1
-    restart: on-failure
+    external_links:
+      - postgres:postgres
+    command:
+      migrate sql postgres://${IDP_DB_USER:-idp}:${IDP_DB_PASS:-8GWbz2JF4FMe1Q8X}@${IDP_DB_HOST:-postgres}:5432/${HYDRA_DB_NAME:-hydra}?sslmode=disable
+    env_file:
+      - ./.env
 
-  redis:
-    image: redis:4.0.5-alpine
-    container_name: redis
+  idp:
+#    restart: on-failure
+    <<: *pool_pool-network-dev
+    container_name: idp
+    hostname: idp
+    image: registry.tor.ph/hiveon/idp:${IDP_BUILD_NUMBER:-latest}
     ports:
-      - "6379:6379"
-    volumes:
-      - ../data/redis:/data
-    entrypoint: redis-server --appendonly yes
-    restart: always
+      - "3000:3000"
+    external_links:
+      - postgres:postgres
+    env_file:
+      - ./.env
