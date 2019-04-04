@@ -22,12 +22,6 @@ import (
 
 var oauthClient *oauth2.Config
 
-type IDPLoginRequest struct{
-	email     string `json:"email"`
-	password  string `json:"password"`
-	fromURL   string `json:"fromURL"`
-
-}
 func ServeHTTP (w http.ResponseWriter, req *http.Request) {
 
 }
@@ -37,7 +31,20 @@ func acceptPost(h http.Handler) http.Handler {
 		defer h.ServeHTTP(w, r)
 
 		if r.URL.Path == "/api/login" && r.Method == "POST" && *flagAPI {
-			authboss.PutSession(w, "fromURL", getFromURL(r, w))
+			bodyBytes, _ := ioutil.ReadAll(r.Body)
+			fromURLString := ""
+			var t map[string]string
+			b:=bodyBytes
+			json.Unmarshal(b, &t)
+
+
+			if t["fromURL"] != "" {
+				fromURLString = t["fromURL"]
+
+			}
+			r.Body = ioutil.NopCloser(bytes.NewBuffer(bodyBytes))
+
+			authboss.PutSession(w, "fromURL", fromURLString)
 		}
 	})
 }
