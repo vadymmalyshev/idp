@@ -79,8 +79,10 @@ func acceptConsent(h http.Handler) http.Handler {
 			}
 
 			if *flagAPI {
-				data := layoutData(w, &r, url)
+				/*data := layoutData(w, &r, url)
 				r = r.WithContext(context.WithValue(r.Context(), authboss.CTXKeyData, data))
+				h.ServeHTTP(w, r)*/
+				setRedirectURL(url, w)
 				h.ServeHTTP(w, r)
 				return
 			}
@@ -233,8 +235,10 @@ func callbackToken(h http.Handler) http.Handler {
 				if fromURL =="" {
 					fromURL = portalConfig.Callback
 				}
+				/*
 				data := layoutData(w, &r, fromURL)
-				r = r.WithContext(context.WithValue(r.Context(), authboss.CTXKeyData, data))
+				r = r.WithContext(context.WithValue(r.Context(), authboss.CTXKeyData, data))*/
+				setRedirectURL(fromURL, w)
 				h.ServeHTTP(w, r)
 
 				return
