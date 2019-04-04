@@ -30,16 +30,8 @@ func acceptPost(h http.Handler) http.Handler {
 		defer h.ServeHTTP(w, r)
 
 		if r.URL.Path == "/api/login" && r.Method == "POST" && *flagAPI{
-			fromURL, err := getReturnURL(r, w);
-			if err != nil {
-				return
-			}
-			authboss.PutSession(w, "fromURL", fromURL)
-			hydraConfig,_ := config.GetHydraConfig()
-			oauthClient = InitClient(hydraConfig.ClientID, hydraConfig.ClientSecret)
-			redirectUrl := oauthClient.AuthCodeURL("state123")
-			setRedirectURL(redirectUrl, w)
-				return
+			//returnURL := getReturnURL(r, w)
+			//authboss.PutSession(w, "fromURL", getReturnURL(r, w))
 		}
 	})
 }
@@ -350,18 +342,16 @@ func getScopes() []string {
 	return []string{"openid", "offline"}
 }
 
-func getReturnURL(r *http.Request, w http.ResponseWriter) (string, error) {
+func getReturnURL(r *http.Request, w http.ResponseWriter) string {
 	reqBody, err := ioutil.ReadAll(r.Body)
 	if err != nil {
-		fmt.Fprintf(w, "Can't read request body: %v", err)
-		return "", err
+		return ""
 	}
 	f := map[string]interface{}{}
 
 	err = json.Unmarshal([]byte(reqBody), &f)
 	if err != nil {
-		fmt.Fprintf(w, "Can't unmarshal request body: %v", err)
-		return "", err
+		return ""
 	}
 	fromURL := f["fromURL"]
 	fromURLString := ""
@@ -370,7 +360,7 @@ func getReturnURL(r *http.Request, w http.ResponseWriter) (string, error) {
 		fromURLString = fromURL.(string)
 	}
 
-	return fromURLString, nil
+	return fromURLString
 }
 
 func setRedirectURL(redirectURL string, w http.ResponseWriter) {
