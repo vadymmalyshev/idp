@@ -1,6 +1,6 @@
 hydra:
-  admin: "http://localhost:4445"
-  api: "http://localhost:4444"  
+  admin: "http://hydra.hiveon.dev:4445"
+  api: "http://hydra.hiveon.dev:4444"  
   docker: hydra
 
 idp:
@@ -8,9 +8,9 @@ idp:
   host: "0.0.0.0"
   client_id: "idp"
   client_secret: "idp-secret"
-  callback: "http://id.hiveon.dev:3000/callback"
+  callback: "http://localhost:3000/callback"
   db:
-    host: "postgres"
+    host: "postgres.hiveon.dev"
     port: "5432"
     name: "idp_dev"
     user: "idp"
