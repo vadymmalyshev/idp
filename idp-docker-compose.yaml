@@ -22,9 +22,9 @@ services:
       - LOG_LEVEL=debug
       - SYSTEM_SECRET=${HYDRA_SYSTEM_SECRET:-youReallyNeedToChangeThis}
       - DATABASE_URL=postgres://${IDP_DB_USER:-idp}:${IDP_DB_PASS:-8GWbz2JF4FMe1Q8X}@${IDP_DB_HOST:-postgres}:5432/${HYDRA_DB_NAME:-hydra}?sslmode=disable
-      - OAUTH2_CONSENT_URL=http://${BROWSER_IDP_HOST:-idp}:3000/consent
-      - OAUTH2_LOGIN_URL=http://${BROWSER_IDP_HOST:-idp}:3000/login
-      - OAUTH2_ISSUER_URL=http://${BROWSER_HYDRA_HOST:-hydra}:4444
+      - OAUTH2_CONSENT_URL=https//id.hiveon.dev/api/consent
+      - OAUTH2_LOGIN_URL=https://id.hiveon.dev/api/login
+      - OAUTH2_ISSUER_URL=https://id.hiveon.dev
       - OAUTH2_SHARE_ERROR_DEBUG=1
     depends_on:
       - hydra-migrate
@@ -64,5 +64,7 @@ services:
       - postgres:postgres
     env_file:
       - .dev.local
+    command:
+      ./idp -api=true
     volumes:
       - "./config:/idp/config"
