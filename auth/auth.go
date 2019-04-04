@@ -252,6 +252,11 @@ func Init(r *gin.Engine, db *gorm.DB) {
 	r.Any("/*resources", gin.WrapH(mux))
 	ab.Events.After(authboss.EventAuth, func(w http.ResponseWriter, r *http.Request, handled bool) (bool, error) {
 		if *flagAPI {
+			hydraConfig,_ := config.GetHydraConfig()
+			oauthClient = InitClient(hydraConfig.ClientID, hydraConfig.ClientSecret)
+			redirectUrl := oauthClient.AuthCodeURL("state123")
+			setRedirectURL(redirectUrl, w)
+
 			return true, nil
 		}
 
