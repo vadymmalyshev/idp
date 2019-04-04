@@ -1,6 +1,6 @@
 hydra:
   admin: "http://hydra:4445"
-  api: "http://id.hiveon.dev"  
+  api: "https://id.hiveon.dev"  
   docker: hydra
   client_id: "idp"
   client_secret: "idp-secret"
@@ -14,7 +14,7 @@ idp:
   db:
     host: "postgres"
     port: "5432"
-    name: "idp_dev"
+    name: "idp"
     user: "idp"
     sslmode: false
     password: "8GWbz2JF4FMe1Q8X"
