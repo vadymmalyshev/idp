@@ -5,7 +5,6 @@ import (
 	"encoding/base32"
 	"encoding/base64"
 	"flag"
-	"fmt"
 	"github.com/volatiletech/authboss/remember"
 	"golang.org/x/oauth2"
 	"net/http"
@@ -252,8 +251,11 @@ func Init(r *gin.Engine, db *gorm.DB) {
 
 	r.Any("/*resources", gin.WrapH(mux))
 	ab.Events.After(authboss.EventAuth, func(w http.ResponseWriter, r *http.Request, handled bool) (bool, error) {
-		challenge, _ := authboss.GetSession(r, "Challenge")
+		//challenge, _ := authboss.GetSession(r, "Challenge")
 		//fromURL, _ := authboss.GetSession(r, "fromURL");
+
+		challenge := r.Header.Get("Challenge")
+		//fromURL := r.Header.Get("fromURL")
 
 		if *flagAPI {
 			if len(challenge) == 0 {
@@ -285,7 +287,6 @@ func Init(r *gin.Engine, db *gorm.DB) {
 				}).Error("hydra/login/accept request has been failed")
 			}
 			if *flagAPI {
-				k := r.Cookies(); fmt.Println(k)
 				http.Redirect(w, r, resp.RedirectTo, http.StatusTemporaryRedirect)
 				//res, _ := resty.R().Get(resp.RedirectTo)
 

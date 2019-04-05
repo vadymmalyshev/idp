@@ -12,6 +12,7 @@ import (
 	"github.com/justinas/nosurf"
 	. "github.com/ory/hydra/sdk/go/hydra/swagger"
 	"github.com/sirupsen/logrus"
+	"github.com/ory/hydra/sdk/go/hydra/swagger"
 	log "github.com/sirupsen/logrus"
 	"github.com/volatiletech/authboss"
 	"golang.org/x/oauth2"
@@ -31,8 +32,13 @@ func acceptPost(h http.Handler) http.Handler {
 		defer h.ServeHTTP(w, r)
 		if r.URL.Path == "/api/login" && r.Method == "POST" && *flagAPI {
 			fromURL, challenge := getChallengeFromURL(r, w)
+			r.Header.Set("Challenge", challenge)
+			r.Header.Set("fromURL", fromURL)
+
 			authboss.PutSession(w, "Challenge", challenge)
 			authboss.PutSession(w, "fromURL", fromURL)
+			return
+
 			//k, _ := r.Cookie("oauth2_authentication_csrf");
 		}
 	})
@@ -78,8 +84,9 @@ func acceptConsent(h http.Handler) http.Handler {
 				/*data := layoutData(w, &r, url)
 				r = r.WithContext(context.WithValue(r.Context(), authboss.CTXKeyData, data))
 				h.ServeHTTP(w, r)*/
-				setRedirectURL(url, w)
-				h.ServeHTTP(w, r)
+				//setRedirectURL(url, w)
+				//h.ServeHTTP(w, r)
+				http.Redirect(w, r, url, http.StatusTemporaryRedirect)
 				return
 			}
 
@@ -99,7 +106,7 @@ func challengeCode(h http.Handler) http.Handler {
 		defer h.ServeHTTP(w, r)
 
 		if r.URL.Path == "/api/login" && r.Method == "GET" {
-			challenge := r.URL.Query().Get("Challenge")
+			challenge := r.URL.Query().Get("login_challenge")
 			if len(challenge) == 0 { // obtain login challenge
 
 				hydraConfig,_ := config.GetHydraConfig()
@@ -141,20 +148,18 @@ func challengeCode(h http.Handler) http.Handler {
 				return
 			}
 			challengeCode := challengeResp.Challenge
+			authboss.PutSession(w, "Challenge", challengeCode)
 
-			if !*flagAPI {
-				authboss.PutSession(w, "Challenge", challengeCode)
-			}
 
 			// put login_challenge in cookies
 			if *flagAPI {
-				c2 := http.Cookie{
+				c := http.Cookie{
 					Name:  "Challenge",
 					Value: challengeCode,
 					//Domain: "localhost",
 					Path: "/",
 				}
-				http.SetCookie(w, &c2)
+				http.SetCookie(w, &c)
 				h.ServeHTTP(w, r)
 			}
 		}
@@ -186,7 +191,18 @@ func callbackToken(h http.Handler) http.Handler {
 				return
 			}
 
-			user, err := ab.LoadCurrentUser(&r)
+			//user, err := ab.LoadCurrentUser(&r)
+			var introToken swagger.OAuth2TokenIntrospection
+
+			introspectUrl := "http://localhost:4445/oauth2/introspect"
+			res, err := resty.R().SetFormData(map[string]string{"token": token.AccessToken}).
+				SetHeader("Content-Type", "application/x-www-form-urlencoded").
+				SetHeader("Accept", "application/json").Post(introspectUrl)
+
+			err = json.Unmarshal(res.Body(), &introToken)
+			user, err := ab.Storage.Server.Load(context.TODO(),introToken.Sub)
+
+
 
 			if user != nil && err == nil {
 				user1 := user.(*users.User)
@@ -205,7 +221,7 @@ func callbackToken(h http.Handler) http.Handler {
 			c := http.Cookie{
 				Name: "Authorization",
 				Value: token.AccessToken,
-				Domain: "localhost",
+				//Domain: "localhost",
 				Path:     "/",
 			}
 			http.SetCookie(w, &c)
@@ -222,9 +238,7 @@ func callbackToken(h http.Handler) http.Handler {
 				if fromURL =="" {
 					fromURL = portalConfig.Callback
 				}
-				/*
-				data := layoutData(w, &r, fromURL)
-				r = r.WithContext(context.WithValue(r.Context(), authboss.CTXKeyData, data))*/
+
 				setRedirectURL(fromURL, w)
 				h.ServeHTTP(w, r)
 
@@ -360,8 +374,8 @@ func getChallengeFromURL(r *http.Request, w http.ResponseWriter) (string, string
 		fromURLString = t["fromURL"]
 
 	}
-	if t["Challenge"] != "" {
-		chalengeString = t["Challenge"]
+	if t["login_challenge"] != "" {
+		chalengeString = t["login_challenge"]
 
 	}
 	r.Body = ioutil.NopCloser(bytes.NewBuffer(bodyBytes))
