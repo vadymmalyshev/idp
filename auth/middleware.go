@@ -28,7 +28,7 @@ func ServeHTTP(w http.ResponseWriter, req *http.Request) {
 
 func acceptPost(h http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		//defer h.ServeHTTP(w, r)
+		defer h.ServeHTTP(w, r)
 		if r.URL.Path == "/api/login" && r.Method == "POST" && *flagAPI {
 			fromURL, challenge := getChallengeFromURL(r, w)
 			//r.Header.Set("Challenge", challenge)
@@ -96,7 +96,7 @@ func acceptConsent(h http.Handler) http.Handler {
 
 func challengeCode(h http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		//defer h.ServeHTTP(w, r)
+		defer h.ServeHTTP(w, r)
 
 		if r.URL.Path == "/api/login" && r.Method == "GET" {
 			challenge := r.URL.Query().Get("login_challenge")
@@ -159,7 +159,7 @@ func challengeCode(h http.Handler) http.Handler {
 
 func callbackToken(h http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		//defer h.ServeHTTP(w, r)
+		defer h.ServeHTTP(w, r)
 
 		if r.URL.Path == "/api/callback" && r.Method == "GET" {
 			code := r.URL.Query().Get("code")
