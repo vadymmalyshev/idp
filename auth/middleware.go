@@ -18,22 +18,43 @@ import (
 	"gopkg.in/resty.v1"
 	"io/ioutil"
 	"net/http"
+	renderPkg "github.com/unrolled/render"
 )
 
 var oauthClient *oauth2.Config
+var render *renderPkg.Render
 
 func ServeHTTP(w http.ResponseWriter, req *http.Request) {
 
 }
+func init() {
+	render = renderPkg.New()
+}
 
-func acceptPost(w http.ResponseWriter, r *http.Request) {
-	fromURL, challenge := getChallengeFromURL(r, w)
-	//r.Header.Set("Challenge", challenge)
-	//r.Header.Set("fromURL", fromURL)
-	k := r.Cookies()
-	fmt.Println(k)
-	authboss.PutSession(w, "Challenge", challenge)
-	authboss.PutSession(w, "fromURL", fromURL)
+
+func acceptPost(h http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path == "/api/login" && r.Method == "POST" && *flagAPI {
+			fromURL, challenge := getChallengeFromURL(r, w)
+			c1 := http.Cookie{
+				Name:  "Challenge",
+				Value: challenge,
+				//Domain: "localhost",
+				Path: "/",
+			}
+			c2 := http.Cookie{
+				Name:  "fromURL",
+				Value: fromURL,
+				//Domain: "localhost",
+				Path: "/",
+			}
+			http.SetCookie(w, &c1)
+			http.SetCookie(w, &c2)
+
+			h.ServeHTTP(w, r)
+			return
+		}
+	})
 }
 
 func acceptConsent(w http.ResponseWriter, r *http.Request) {
@@ -90,8 +111,6 @@ func challengeCode(w http.ResponseWriter, r *http.Request) {
 		oauthClient = InitClient(hydraConfig.ClientID, hydraConfig.ClientSecret)
 		redirectUrl := oauthClient.AuthCodeURL("state123")
 		// return link to hydra
-		data := layoutData(w, &r, redirectUrl)
-		r = r.WithContext(context.WithValue(r.Context(), authboss.CTXKeyData, data))
 
 		if !*flagAPI {
 			ro := authboss.RedirectOptions{
@@ -101,7 +120,8 @@ func challengeCode(w http.ResponseWriter, r *http.Request) {
 			}
 			ab.Core.Redirector.Redirect(w, r, ro)
 		}
-		return
+
+		render.JSON(w, 200, map[string]string{"redirectURL": redirectUrl})
 	}
 
 	challengeResp, err := hydra.CheckChallengeCode(challenge)
@@ -135,6 +155,7 @@ func challengeCode(w http.ResponseWriter, r *http.Request) {
 		}
 		http.SetCookie(w, &c)
 	}
+	render.JSON(w, 200, nil)
 }
 
 func callbackToken(w http.ResponseWriter, r *http.Request) {

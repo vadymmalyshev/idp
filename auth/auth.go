@@ -5,10 +5,10 @@ import (
 	"encoding/base32"
 	"encoding/base64"
 	"flag"
+	"github.com/volatiletech/authboss/remember"
 	"net/http"
 	"regexp"
 
-	"github.com/volatiletech/authboss/remember"
 	"golang.org/x/oauth2"
 
 	"github.com/volatiletech/authboss/recover"
@@ -31,7 +31,7 @@ import (
 
 	renderPkg "github.com/unrolled/render"
 	clientState "github.com/volatiletech/authboss-clientstate"
-	abrenderer "github.com/volatiletech/authboss-renderer"
+	"github.com/volatiletech/authboss-renderer"
 )
 
 const IDPSessionName = "idp_session"
@@ -187,17 +187,18 @@ func Init(r *gin.Engine, db *gorm.DB) {
 
 	schemaDec := schema.NewDecoder()
 	schemaDec.IgnoreUnknownKeys(true)
+	render := renderPkg.New()
 
 	mux := chi.NewRouter()
-
 	mux.Use(ab.LoadClientStateMiddleware, remember.Middleware(ab), dataInjector)
 
-	render := renderPkg.New()
 
 	mux.Get("/api/login", challengeCode)
 	mux.Get("/api/callback", callbackToken)
 	mux.Get("/api/consent", acceptConsent)
-	mux.Post("/api/login", acceptPost)
+	//mux.Post("/api/login", acceptPost)
+
+
 
 	mux.Get("/api/users/email/{email}", func(w http.ResponseWriter, r *http.Request) {
 		user, err := getAuthbossUser(r)
@@ -255,20 +256,25 @@ func Init(r *gin.Engine, db *gorm.DB) {
 		render.JSON(w, 200, updatedToken)
 	})
 
+
+
 	mux.Group(func(mux chi.Router) {
 		mux.Use(authboss.ModuleListMiddleware(ab))
+		mux.Use(acceptPost)
 		mux.Mount("/api", http.StripPrefix("/api", ab.Config.Core.Router))
 	})
 
 	r.Any("/*resources", gin.WrapH(mux))
+
 	ab.Events.After(authboss.EventAuth, func(w http.ResponseWriter, r *http.Request, handled bool) (bool, error) {
-		challenge, _ := authboss.GetSession(r, "Challenge")
-		fromURL, _ := authboss.GetSession(r, "fromURL")
+
+		challengeC,_ := r.Cookie("Challenge")
+		fromURLC,_ := r.Cookie("fromURL")
+
+		challenge := challengeC.Value
+		fromURL := fromURLC.Value
 
 		if *flagAPI {
-			//challenge := r.Header.Get("Challenge")
-			//fromURL = r.Header.Get("fromURL")
-
 			if len(challenge) == 0 {
 				return true, nil
 			}
@@ -307,7 +313,7 @@ func Init(r *gin.Engine, db *gorm.DB) {
 				}
 
 				http.SetCookie(w, &c)
-				//http.Get(resp.RedirectTo)
+				http.Get(resp.RedirectTo)
 				/*
 					res, _ := resty.SetCookie(&c).R().
 						SetHeader("Content-Type", "application/json").
