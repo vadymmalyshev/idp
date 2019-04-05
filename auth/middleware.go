@@ -18,6 +18,7 @@ import (
 	"gopkg.in/resty.v1"
 	"io/ioutil"
 	"net/http"
+	renderPkg "github.com/unrolled/render"
 )
 
 var oauthClient *oauth2.Config
@@ -96,6 +97,7 @@ func acceptConsent(h http.Handler) http.Handler {
 func challengeCode(h http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		defer h.ServeHTTP(w, r)
+		render := renderPkg.New()
 
 		if r.URL.Path == "/api/login" && r.Method == "GET" {
 			challenge := r.URL.Query().Get("login_challenge")
@@ -116,8 +118,8 @@ func challengeCode(h http.Handler) http.Handler {
 					}
 					ab.Core.Redirector.Redirect(w, r, ro)
 				}
-
-				//ab.Core.Responder.Respond(w, r, http.StatusOK,"api/login",data)
+				render.JSON(w, 200, redirectUrl)
+				h.ServeHTTP(w, r)
 				return
 			}
 
