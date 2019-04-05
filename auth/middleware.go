@@ -22,9 +22,14 @@ import (
 )
 
 var oauthClient *oauth2.Config
+var render *renderPkg.Render
 
 func ServeHTTP (w http.ResponseWriter, req *http.Request) {
 
+}
+
+func init() {
+	render = renderPkg.New()
 }
 
 func acceptPost(h http.Handler) http.Handler {
@@ -97,7 +102,6 @@ func acceptConsent(h http.Handler) http.Handler {
 func challengeCode(h http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		defer h.ServeHTTP(w, r)
-		render := renderPkg.New()
 
 		if r.URL.Path == "/api/login" && r.Method == "GET" {
 			challenge := r.URL.Query().Get("login_challenge")
