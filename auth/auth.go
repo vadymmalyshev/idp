@@ -197,6 +197,7 @@ func Init(r *gin.Engine, db *gorm.DB) {
 
 	render := renderPkg.New()
 
+
 	mux.Get("/api/users/email/{email}", func(w http.ResponseWriter, r *http.Request) {
 		user, err := getAuthbossUser(r)
 		if err != nil {
@@ -205,6 +206,16 @@ func Init(r *gin.Engine, db *gorm.DB) {
 		}
 
 		render.JSON(w, 200, user)
+	})
+
+	mux.Get("/api/loginchalenge", func(w http.ResponseWriter, r *http.Request) {
+
+		hydraConfig,_ := config.GetHydraConfig()
+		oauthClient = InitClient(hydraConfig.ClientID, hydraConfig.ClientSecret)
+		redirectUrl := oauthClient.AuthCodeURL("state123")
+
+		setRedirectURL(redirectUrl, w)
+		render.JSON(w, 200, "")
 	})
 
 	mux.Get("/api/token/refresh/{email}", func(w http.ResponseWriter, r *http.Request) {

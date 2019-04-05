@@ -18,19 +18,14 @@ import (
 	"gopkg.in/resty.v1"
 	"io/ioutil"
 	"net/http"
-	renderPkg "github.com/unrolled/render"
 )
 
 var oauthClient *oauth2.Config
-var render *renderPkg.Render
 
 func ServeHTTP (w http.ResponseWriter, req *http.Request) {
 
 }
 
-func init() {
-	render = renderPkg.New()
-}
 
 func acceptPost(h http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -106,7 +101,10 @@ func challengeCode(h http.Handler) http.Handler {
 		if r.URL.Path == "/api/login" && r.Method == "GET" {
 			challenge := r.URL.Query().Get("login_challenge")
 			if len(challenge) == 0 { // obtain login challenge
-
+				if *flagAPI {
+					return
+				}
+				// move to auth
 				hydraConfig,_ := config.GetHydraConfig()
 				oauthClient = InitClient(hydraConfig.ClientID, hydraConfig.ClientSecret)
 				redirectUrl := oauthClient.AuthCodeURL("state123")
@@ -122,7 +120,6 @@ func challengeCode(h http.Handler) http.Handler {
 					}
 					ab.Core.Redirector.Redirect(w, r, ro)
 				}
-				render.JSON(w, 200, redirectUrl)
 				h.ServeHTTP(w, r)
 				return
 			}
