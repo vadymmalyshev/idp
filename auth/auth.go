@@ -215,7 +215,7 @@ func Init(r *gin.Engine, db *gorm.DB) {
 		redirectUrl := oauthClient.AuthCodeURL("state123")
 
 		setRedirectURL(redirectUrl, w)
-		render.JSON(w, 200, "")
+		//render.JSON(w, 200, "")
 	})
 
 	mux.Get("/api/token/refresh/{email}", func(w http.ResponseWriter, r *http.Request) {
