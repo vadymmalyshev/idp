@@ -29,7 +29,7 @@ auto-deploy-dev:
     - docker-compose -f idp-docker-compose.yaml pull
     - docker-compose -f idp-docker-compose.yaml up -d --force-recreate idp
     - docker restart nginx
- manual-deploy-branch:
+manual-deploy-branch:
    when: manual
    stage: manual-deploy-branch
    tags:
