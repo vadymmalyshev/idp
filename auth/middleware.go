@@ -22,19 +22,19 @@ import (
 
 var oauthClient *oauth2.Config
 
-func ServeHTTP (w http.ResponseWriter, req *http.Request) {
+func ServeHTTP(w http.ResponseWriter, req *http.Request) {
 
 }
 
-
 func acceptPost(h http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		defer h.ServeHTTP(w, r)
+		//defer h.ServeHTTP(w, r)
 		if r.URL.Path == "/api/login" && r.Method == "POST" && *flagAPI {
 			fromURL, challenge := getChallengeFromURL(r, w)
 			//r.Header.Set("Challenge", challenge)
 			//r.Header.Set("fromURL", fromURL)
-			k:= r.Cookies();fmt.Println(k)
+			k := r.Cookies()
+			fmt.Println(k)
 			authboss.PutSession(w, "Challenge", challenge)
 			authboss.PutSession(w, "fromURL", fromURL)
 			return
@@ -74,7 +74,7 @@ func acceptConsent(h http.Handler) http.Handler {
 						Failure:      "consent challenge code isn't right",
 					}
 					ab.Core.Redirector.Redirect(w, r, ro)
-					}
+				}
 				return
 			}
 
@@ -96,7 +96,7 @@ func acceptConsent(h http.Handler) http.Handler {
 
 func challengeCode(h http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		defer h.ServeHTTP(w, r)
+		//defer h.ServeHTTP(w, r)
 
 		if r.URL.Path == "/api/login" && r.Method == "GET" {
 			challenge := r.URL.Query().Get("login_challenge")
@@ -105,7 +105,7 @@ func challengeCode(h http.Handler) http.Handler {
 					return
 				}
 				// move to auth
-				hydraConfig,_ := config.GetHydraConfig()
+				hydraConfig, _ := config.GetHydraConfig()
 				oauthClient = InitClient(hydraConfig.ClientID, hydraConfig.ClientSecret)
 				redirectUrl := oauthClient.AuthCodeURL("state123")
 				// return link to hydra
@@ -133,17 +133,17 @@ func challengeCode(h http.Handler) http.Handler {
 					fmt.Fprintf(w, `{"You have wrong login challenge"}`)
 
 				} else {
-				ro := authboss.RedirectOptions{
-					Code:         http.StatusTemporaryRedirect,
-					RedirectPath: "/",
-					Success:      "You have wrong login challenge",
+					ro := authboss.RedirectOptions{
+						Code:         http.StatusTemporaryRedirect,
+						RedirectPath: "/",
+						Success:      "You have wrong login challenge",
+					}
+					ab.Core.Redirector.Redirect(w, r, ro)
 				}
-				ab.Core.Redirector.Redirect(w, r, ro)}
 				return
 			}
 			challengeCode := challengeResp.Challenge
 			authboss.PutSession(w, "Challenge", challengeCode)
-
 
 			// put login_challenge in cookies
 			if *flagAPI {
@@ -162,7 +162,7 @@ func challengeCode(h http.Handler) http.Handler {
 
 func callbackToken(h http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		defer h.ServeHTTP(w, r)
+		//defer h.ServeHTTP(w, r)
 
 		if r.URL.Path == "/api/callback" && r.Method == "GET" {
 			code := r.URL.Query().Get("code")
@@ -188,25 +188,25 @@ func callbackToken(h http.Handler) http.Handler {
 
 			user, err := ab.LoadCurrentUser(&r)
 			/*
-			var introToken swagger.OAuth2TokenIntrospection
-			hydraConfig,_ := config.GetHydraConfig()
-			introspectUrl := hydraConfig.Introspect
+				var introToken swagger.OAuth2TokenIntrospection
+				hydraConfig,_ := config.GetHydraConfig()
+				introspectUrl := hydraConfig.Introspect
 
-			res, err := resty.R().SetFormData(map[string]string{"token": token.AccessToken}).
-				SetHeader("Content-Type", "application/x-www-form-urlencoded").
-				SetHeader("Accept", "application/json").Post(introspectUrl)
+				res, err := resty.R().SetFormData(map[string]string{"token": token.AccessToken}).
+					SetHeader("Content-Type", "application/x-www-form-urlencoded").
+					SetHeader("Accept", "application/json").Post(introspectUrl)
 
-			err = json.Unmarshal(res.Body(), &introToken)
-			user, err := ab.Storage.Server.Load(context.TODO(),introToken.Sub)
-*/
+				err = json.Unmarshal(res.Body(), &introToken)
+				user, err := ab.Storage.Server.Load(context.TODO(),introToken.Sub)
+			*/
 			if user != nil && err == nil {
 				user1 := user.(*users.User)
 				user1.PutOAuth2AccessToken(token.AccessToken)
 				user1.PutOAuth2RefreshToken(token.RefreshToken)
 				user1.PutOAuth2Expiry(token.Expiry)
 
-				ab.Config.Storage.Server.Save(r.Context(),user1)
-				}
+				ab.Config.Storage.Server.Save(r.Context(), user1)
+			}
 
 			if err != nil {
 				http.Error(w, err.Error(), http.StatusNoContent)
@@ -214,12 +214,11 @@ func callbackToken(h http.Handler) http.Handler {
 			}
 
 			c := http.Cookie{
-				Name: "Authorization",
+				Name:  "Authorization",
 				Value: token.AccessToken,
 				//Domain: "id.hiveon.local",
-				Path:     "/",
+				Path: "/",
 			}
-
 
 			portalConfig, err := config.GetPortalConfig()
 			if err != nil {
@@ -230,7 +229,7 @@ func callbackToken(h http.Handler) http.Handler {
 			if *flagAPI {
 				fromURL, _ := authboss.GetSession(r, "fromURL")
 
-				if fromURL =="" {
+				if fromURL == "" {
 					fromURL = portalConfig.Callback
 				}
 				setRedirectURL(fromURL, w)
@@ -241,7 +240,7 @@ func callbackToken(h http.Handler) http.Handler {
 				return
 			}
 
-			http.Redirect(w, r, portalConfig.Callback,http.StatusPermanentRedirect)
+			http.Redirect(w, r, portalConfig.Callback, http.StatusPermanentRedirect)
 			return
 		}
 	})
@@ -280,9 +279,9 @@ func layoutData(w http.ResponseWriter, r **http.Request, redirect string) authbo
 		"loggedin":          userInter != nil,
 		"current_user_name": currentUserName,
 		//"csrf_token":        nosurf.Token(*r),
-		"flash_success":     authboss.FlashSuccess(w, *r),
-		"flash_error":       authboss.FlashError(w, *r),
-		"redirectURL":       redirect,
+		"flash_success": authboss.FlashSuccess(w, *r),
+		"flash_error":   authboss.FlashError(w, *r),
+		"redirectURL":   redirect,
 	}
 }
 
@@ -321,7 +320,7 @@ func debugMw(h http.Handler) http.Handler {
 
 func InitClient(clientId string, secret string) *oauth2.Config {
 
-	hydraConfig,_ := config.GetHydraConfig()
+	hydraConfig, _ := config.GetHydraConfig()
 	hydraAPI := hydraConfig.API
 	client := GetClient(clientId)
 	oauthConfig := &oauth2.Config{
@@ -339,7 +338,7 @@ func InitClient(clientId string, secret string) *oauth2.Config {
 }
 
 func GetClient(clientId string) OAuth2Client {
-	hydraConfig,_ := config.GetHydraConfig()
+	hydraConfig, _ := config.GetHydraConfig()
 	hydraAdmin := hydraConfig.Admin
 
 	clientUrl := hydraAdmin + "/clients/" + clientId
@@ -359,7 +358,7 @@ func getScopes() []string {
 
 func getChallengeFromURL(r *http.Request, w http.ResponseWriter) (string, string) {
 	bodyBytes, _ := ioutil.ReadAll(r.Body)
-	b:=bodyBytes
+	b := bodyBytes
 	fromURLString := ""
 	chalengeString := ""
 

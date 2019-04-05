@@ -197,7 +197,6 @@ func Init(r *gin.Engine, db *gorm.DB) {
 
 	render := renderPkg.New()
 
-
 	mux.Get("/api/users/email/{email}", func(w http.ResponseWriter, r *http.Request) {
 		user, err := getAuthbossUser(r)
 		if err != nil {
@@ -210,7 +209,7 @@ func Init(r *gin.Engine, db *gorm.DB) {
 
 	mux.Get("/api/loginchalenge", func(w http.ResponseWriter, r *http.Request) {
 
-		hydraConfig,_ := config.GetHydraConfig()
+		hydraConfig, _ := config.GetHydraConfig()
 		oauthClient = InitClient(hydraConfig.ClientID, hydraConfig.ClientSecret)
 		redirectUrl := oauthClient.AuthCodeURL("state123")
 
@@ -300,19 +299,19 @@ func Init(r *gin.Engine, db *gorm.DB) {
 
 			if *flagAPI {
 				c := http.Cookie{
-					Name: "fromURL",
+					Name:  "fromURL",
 					Value: fromURL,
 					//Domain: "id.hiveon.local",
-					Path:     "/",
+					Path: "/",
 				}
 
 				http.SetCookie(w, &c)
 				//http.Get(resp.RedirectTo)
 				/*
-				res, _ := resty.SetCookie(&c).R().
-					SetHeader("Content-Type", "application/json").
-					Get(resp.RedirectTo)
-		*/
+					res, _ := resty.SetCookie(&c).R().
+						SetHeader("Content-Type", "application/json").
+						Get(resp.RedirectTo)
+				*/
 
 				//http.Redirect(w, r, resp.RedirectTo, http.StatusTemporaryRedirect)
 			} else {
