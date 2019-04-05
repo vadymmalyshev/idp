@@ -5,10 +5,11 @@ import (
 	"encoding/base32"
 	"encoding/base64"
 	"flag"
-	"github.com/volatiletech/authboss/remember"
-	"golang.org/x/oauth2"
 	"net/http"
 	"regexp"
+
+	"github.com/volatiletech/authboss/remember"
+	"golang.org/x/oauth2"
 
 	"github.com/volatiletech/authboss/recover"
 
@@ -30,7 +31,7 @@ import (
 
 	renderPkg "github.com/unrolled/render"
 	clientState "github.com/volatiletech/authboss-clientstate"
-	"github.com/volatiletech/authboss-renderer"
+	abrenderer "github.com/volatiletech/authboss-renderer"
 )
 
 const IDPSessionName = "idp_session"
@@ -211,10 +212,9 @@ func Init(r *gin.Engine, db *gorm.DB) {
 
 		hydraConfig, _ := config.GetHydraConfig()
 		oauthClient = InitClient(hydraConfig.ClientID, hydraConfig.ClientSecret)
-		redirectUrl := oauthClient.AuthCodeURL("state123")
+		redirectURL := oauthClient.AuthCodeURL("state123")
 
-		setRedirectURL(redirectUrl, w)
-		//render.JSON(w, 200, "")
+		render.JSON(w, 200, map[string]string{"redirectURL": redirectURL})
 	})
 
 	mux.Get("/api/token/refresh/{email}", func(w http.ResponseWriter, r *http.Request) {
