@@ -117,8 +117,8 @@ func challengeCode(h http.Handler) http.Handler {
 					ab.Core.Redirector.Redirect(w, r, ro)
 				}
 
-				ab.Core.Responder.Respond(w, r, http.StatusOK,"api/login",data)
-
+				//ab.Core.Responder.Respond(w, r, http.StatusOK,"api/login",data)
+				return
 			}
 
 			challengeResp, err := hydra.CheckChallengeCode(challenge)
