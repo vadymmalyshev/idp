@@ -21,7 +21,7 @@ build:
 auto-deploy-dev:
   only:
     - dev
-  stage: auto-deploy-deploy
+  stage: auto-deploy-dev
   tags:
     - hiveon.dev
   script:
