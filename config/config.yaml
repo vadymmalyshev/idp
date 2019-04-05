@@ -1,9 +1,10 @@
 hydra:
   admin: "http://hydra:4445"
-  api: "https://id.hiveon.dev"  
+  api: "https://id.hiveon.dev"
   docker: hydra
   client_id: "idp"
   client_secret: "idp-secret"
+  introspect: "http://localhost:4445/oauth2/introspect"
 
 idp:
   port: 3000
@@ -30,7 +31,7 @@ admin:
   port: 3002
   host: "0.0.0.0"
   client_id: "admin"
-  client_secret: "admin-secret"    
+  client_secret: "admin-secret"
   callback: "https://admin.hiveon.dev/callback"
   db:
     host: "postgres"

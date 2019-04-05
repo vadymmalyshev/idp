@@ -207,6 +207,16 @@ func Init(r *gin.Engine, db *gorm.DB) {
 		render.JSON(w, 200, user)
 	})
 
+	mux.Get("/api/loginchallenge", func(w http.ResponseWriter, r *http.Request) {
+
+		hydraConfig, _ := config.GetHydraConfig()
+		oauthClient = InitClient(hydraConfig.ClientID, hydraConfig.ClientSecret)
+		redirectUrl := oauthClient.AuthCodeURL("state123")
+
+		setRedirectURL(redirectUrl, w)
+		//render.JSON(w, 200, "")
+	})
+
 	mux.Get("/api/token/refresh/{email}", func(w http.ResponseWriter, r *http.Request) {
 		user, err := getAuthbossUser(r)
 		if err != nil {
@@ -230,14 +240,14 @@ func Init(r *gin.Engine, db *gorm.DB) {
 			user1.PutOAuth2RefreshToken(updatedToken.RefreshToken)
 			user1.PutOAuth2Expiry(updatedToken.Expiry)
 
-			ab.Config.Storage.Server.Save(r.Context(),user1)
+			ab.Config.Storage.Server.Save(r.Context(), user1)
 		}
 
 		c := http.Cookie{
-			Name: "Authorization",
-			Value: updatedToken.AccessToken,
+			Name:   "Authorization",
+			Value:  updatedToken.AccessToken,
 			Domain: "hiveon.local",
-			Path:     "/",
+			Path:   "/",
 		}
 
 		http.SetCookie(w, &c)
@@ -251,16 +261,17 @@ func Init(r *gin.Engine, db *gorm.DB) {
 
 	r.Any("/*resources", gin.WrapH(mux))
 	ab.Events.After(authboss.EventAuth, func(w http.ResponseWriter, r *http.Request, handled bool) (bool, error) {
-		if *flagAPI {
-			hydraConfig,_ := config.GetHydraConfig()
-			oauthClient = InitClient(hydraConfig.ClientID, hydraConfig.ClientSecret)
-			redirectUrl := oauthClient.AuthCodeURL("state123")
-			setRedirectURL(redirectUrl, w)
-
-			return true, nil
-		}
-
 		challenge, _ := authboss.GetSession(r, "Challenge")
+		fromURL, _ := authboss.GetSession(r, "fromURL")
+
+		if *flagAPI {
+			//challenge := r.Header.Get("Challenge")
+			//fromURL = r.Header.Get("fromURL")
+
+			if len(challenge) == 0 {
+				return true, nil
+			}
+		}
 
 		if len(challenge) == 0 {
 			ro := authboss.RedirectOptions{
@@ -286,21 +297,39 @@ func Init(r *gin.Engine, db *gorm.DB) {
 				}).Error("hydra/login/accept request has been failed")
 			}
 
-			ro := authboss.RedirectOptions{
-				Code:         http.StatusTemporaryRedirect,
-				RedirectPath: resp.RedirectTo,
-				Success:      "Hydra redirect",
+			if *flagAPI {
+				c := http.Cookie{
+					Name:  "fromURL",
+					Value: fromURL,
+					//Domain: "id.hiveon.local",
+					Path: "/",
+				}
+
+				http.SetCookie(w, &c)
+				//http.Get(resp.RedirectTo)
+				/*
+					res, _ := resty.SetCookie(&c).R().
+						SetHeader("Content-Type", "application/json").
+						Get(resp.RedirectTo)
+				*/
+
+				//http.Redirect(w, r, resp.RedirectTo, http.StatusTemporaryRedirect)
+			} else {
+				ro := authboss.RedirectOptions{
+					Code:         http.StatusTemporaryRedirect,
+					RedirectPath: resp.RedirectTo,
+					Success:      "Hydra redirect",
+				}
+				logrus.Infof("user will be redirected to %s", resp.RedirectTo)
+				ab.Core.Redirector.Redirect(w, r, ro)
 			}
-			logrus.Infof("user will be redirected to %s", resp.RedirectTo)
-			ab.Core.Redirector.Redirect(w, r, ro)
 		}
 		return true, nil
 	})
 }
 
-func getAuthbossUser(r *http.Request) (authboss.User, error){
+func getAuthbossUser(r *http.Request) (authboss.User, error) {
 	email := chi.URLParam(r, "email")
 	user, err := ab.Config.Storage.Server.Load(r.Context(), email)
-		return user, err
+	return user, err
 }
-

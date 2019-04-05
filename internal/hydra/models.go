@@ -21,3 +21,7 @@ type LoginRequest struct {
 type LoginResponse struct {
 	RedirectTo string `json:"redirect_to"`
 }
+
+type xxx struct {
+	res string
+}

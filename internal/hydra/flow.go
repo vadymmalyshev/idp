@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"strconv"
 
-	"git.tor.ph/hiveon/idp/pkg/errors"
+	. "git.tor.ph/hiveon/idp/pkg/errors"
 
 	"git.tor.ph/hiveon/idp/config"
 	hydraConsent "github.com/ory/hydra/consent"
@@ -82,7 +82,6 @@ func ConfirmLogin(userID uint, remember bool, challenge string) (LoginResponse, 
 	url := fmt.Sprintf("%s/oauth2/auth/requests/login/%s/accept", hConfig.Admin, challenge)
 
 	response := LoginResponse{}
-
 	request := LoginRequest{}
 	request.Subject = strconv.FormatUint(uint64(userID), 10)
 	request.Remember = remember
@@ -97,7 +96,7 @@ func ConfirmLogin(userID uint, remember bool, challenge string) (LoginResponse, 
 			"UserID":    request.Subject,
 		}).Debug("hydra/login/accept request failed")
 
-		return response, errors.ErrHydraAcceptLogin
+		return response, ErrHydraAcceptLogin
 	}
 
 	json.Unmarshal(res.Body(), &response)

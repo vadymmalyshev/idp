@@ -17,6 +17,7 @@ const (
 	hydraAPI           = "hydra.api"
 	hydraClientID      = "hydra.client_id"
 	hydraClientSecret  = "hydra.client_secret"
+	hydraIntrospect    = "hydra.introspect"
 
 	dbHost             = "idp.db.host"
 	dbPort     		   = "idp.db.port"
@@ -134,6 +135,7 @@ type HydraConfig struct {
 	API          string
 	ClientID     string
 	ClientSecret string
+	Introspect   string
 }
 
 func GetHydraConfig() (*HydraConfig, error) {
@@ -142,6 +144,7 @@ func GetHydraConfig() (*HydraConfig, error) {
 		API:          viper.GetString(hydraAPI),
 		ClientID:     viper.GetString(hydraClientID),
 		ClientSecret: viper.GetString(hydraClientSecret),
+		Introspect:   viper.GetString(hydraIntrospect),
 	}
 
 	return &config, nil
