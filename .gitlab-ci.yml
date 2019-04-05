@@ -1,0 +1,41 @@
+image: registry.tor.ph/infra/d3:latest
+stages:
+  - build
+  - auto-deploy-dev
+  - manual-deploy-branch
+
+before_script:
+  - docker login -u gitlab-ci-token -p "${CI_JOB_TOKEN}" ${CI_REGISTRY}
+
+build:
+  only: 
+    - dev
+  stage: build
+  tags:
+    - hiveon.dev
+  script:
+    - docker-compose -f idp-docker-compose.yaml build
+    - docker tag registry.tor.ph/hiveon/idp registry.tor.ph/hiveon/idp:${CI_PIPELINE_ID}
+    - docker push registry.tor.ph/hiveon/idp
+    - docker push registry.tor.ph/hiveon/idp:${CI_PIPELINE_ID}
+auto-deploy-dev:
+  only:
+    - dev
+  stage: auto-deploy-deploy
+  tags:
+    - hiveon.dev
+  script:
+    - cd /opt/idp
+    - docker-compose -f idp-docker-compose.yaml pull
+    - docker-compose -f idp-docker-compose.yaml up -d --force-recreate idp
+    - docker restart nginx
+ manual-deploy-branch:
+   when: manual
+   stage: manual-deploy-branch
+   tags:
+    - hiveon.dev
+   script:
+    - cd /opt/idp
+    - docker-compose -f idp-docker-compose.yaml pull
+    - docker-compose -f idp-docker-compose.yaml up -d --force-recreate idp
+    - docker restart nginx
