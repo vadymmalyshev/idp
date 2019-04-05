@@ -25,3 +25,4 @@ deploy:
     - cd /opt/idp
     - docker-compose -f idp-docker-compose.yaml pull
     - docker-compose -f idp-docker-compose.yaml up -d --force-recreate idp
+    - docker restart nginx
