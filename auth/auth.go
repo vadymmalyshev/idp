@@ -7,6 +7,7 @@ import (
 	"flag"
 	"github.com/volatiletech/authboss/remember"
 	"golang.org/x/oauth2"
+	"gopkg.in/resty.v1"
 	"net/http"
 	"regexp"
 
@@ -230,14 +231,14 @@ func Init(r *gin.Engine, db *gorm.DB) {
 			user1.PutOAuth2RefreshToken(updatedToken.RefreshToken)
 			user1.PutOAuth2Expiry(updatedToken.Expiry)
 
-			ab.Config.Storage.Server.Save(r.Context(),user1)
+			ab.Config.Storage.Server.Save(r.Context(), user1)
 		}
 
 		c := http.Cookie{
-			Name: "Authorization",
-			Value: updatedToken.AccessToken,
+			Name:   "Authorization",
+			Value:  updatedToken.AccessToken,
 			Domain: "hiveon.local",
-			Path:     "/",
+			Path:   "/",
 		}
 
 		http.SetCookie(w, &c)
@@ -251,16 +252,19 @@ func Init(r *gin.Engine, db *gorm.DB) {
 
 	r.Any("/*resources", gin.WrapH(mux))
 	ab.Events.After(authboss.EventAuth, func(w http.ResponseWriter, r *http.Request, handled bool) (bool, error) {
+		challenge, _ := authboss.GetSession(r, "Challenge")
+		var csrf,sess *http.Cookie
+
 		if *flagAPI {
-			hydraConfig,_ := config.GetHydraConfig()
+			hydraConfig, _ := config.GetHydraConfig()
 			oauthClient = InitClient(hydraConfig.ClientID, hydraConfig.ClientSecret)
 			redirectUrl := oauthClient.AuthCodeURL("state123")
-			setRedirectURL(redirectUrl, w)
-
-			return true, nil
+			res, _ := resty.R().Get(redirectUrl)
+			k := res.Cookies()
+			csrf = k[0]
+			challenge = k[1].Value
+			sess = k[2]
 		}
-
-		challenge, _ := authboss.GetSession(r, "Challenge")
 
 		if len(challenge) == 0 {
 			ro := authboss.RedirectOptions{
@@ -285,7 +289,12 @@ func Init(r *gin.Engine, db *gorm.DB) {
 					"Challenge": challenge,
 				}).Error("hydra/login/accept request has been failed")
 			}
-
+			if *flagAPI {
+				http.SetCookie(w, csrf)
+				http.SetCookie(w, sess)
+				setRedirectURL(resp.RedirectTo, w)
+				return true, nil
+			}
 			ro := authboss.RedirectOptions{
 				Code:         http.StatusTemporaryRedirect,
 				RedirectPath: resp.RedirectTo,
@@ -298,9 +307,8 @@ func Init(r *gin.Engine, db *gorm.DB) {
 	})
 }
 
-func getAuthbossUser(r *http.Request) (authboss.User, error){
+func getAuthbossUser(r *http.Request) (authboss.User, error) {
 	email := chi.URLParam(r, "email")
 	user, err := ab.Config.Storage.Server.Load(r.Context(), email)
-		return user, err
+	return user, err
 }
-

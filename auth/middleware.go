@@ -31,6 +31,17 @@ func acceptPost(h http.Handler) http.Handler {
 		defer h.ServeHTTP(w, r)
 
 		if r.URL.Path == "/api/login" && r.Method == "POST" && *flagAPI {
+			//hydraConfig,_ := config.GetHydraConfig()
+			//oauthClient = InitClient(hydraConfig.ClientID, hydraConfig.ClientSecret)
+			//redirectUrl := oauthClient.AuthCodeURL("state123")
+
+			//res, _ := resty.R().Get(redirectUrl)
+			//k := res.Cookies();
+			//http.SetCookie(w, k[0])
+			//http.SetCookie(w, k[1])
+
+
+		/*
 			bodyBytes, _ := ioutil.ReadAll(r.Body)
 			fromURLString := ""
 			var t map[string]string
@@ -43,8 +54,8 @@ func acceptPost(h http.Handler) http.Handler {
 
 			}
 			r.Body = ioutil.NopCloser(bytes.NewBuffer(bodyBytes))
-
 			authboss.PutSession(w, "fromURL", fromURLString)
+		*/
 		}
 	})
 }
@@ -149,7 +160,19 @@ func challengeCode(h http.Handler) http.Handler {
 
 			challengeCode := challengeResp.Challenge
 			authboss.PutSession(w, "Challenge", challengeCode)
-
+			// get cookies
+			c2 := http.Cookie{
+				Name: "Challenge",
+				Value: challengeCode,
+				//Domain: "localhost",
+				Path:     "/",
+			}
+				c1,_ := r.Cookie("oauth2_authentication_csrf")
+				http.SetCookie(w, c1)
+			    http.SetCookie(w, &c2)
+				h.ServeHTTP(w, r)
+			//
+/*
 			if *flagAPI {
 				user, err := ab.LoadCurrentUser(&r)
 				if user != nil && err == nil {
@@ -176,7 +199,7 @@ func challengeCode(h http.Handler) http.Handler {
 					return
 
 				}
-			}
+			}*/
 		}
 	})
 }
