@@ -252,11 +252,11 @@ func Init(r *gin.Engine, db *gorm.DB) {
 	r.Any("/*resources", gin.WrapH(mux))
 	ab.Events.After(authboss.EventAuth, func(w http.ResponseWriter, r *http.Request, handled bool) (bool, error) {
 		challenge, _ := authboss.GetSession(r, "Challenge")
-		fromURL := ""
+		fromURL, _ := authboss.GetSession(r, "fromURL")
 
 		if *flagAPI {
-			challenge := r.Header.Get("Challenge")
-			fromURL = r.Header.Get("fromURL")
+			//challenge := r.Header.Get("Challenge")
+			//fromURL = r.Header.Get("fromURL")
 
 			if len(challenge) == 0 {
 				return true, nil
@@ -296,7 +296,14 @@ func Init(r *gin.Engine, db *gorm.DB) {
 				}
 
 				http.SetCookie(w, &c)
-				http.Redirect(w, r, resp.RedirectTo, http.StatusTemporaryRedirect)
+				//http.Get(resp.RedirectTo)
+				/*
+				res, _ := resty.SetCookie(&c).R().
+					SetHeader("Content-Type", "application/json").
+					Get(resp.RedirectTo)
+		*/
+
+				//http.Redirect(w, r, resp.RedirectTo, http.StatusTemporaryRedirect)
 			} else {
 				ro := authboss.RedirectOptions{
 					Code:         http.StatusTemporaryRedirect,

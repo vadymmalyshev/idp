@@ -12,7 +12,6 @@ import (
 	"github.com/justinas/nosurf"
 	. "github.com/ory/hydra/sdk/go/hydra/swagger"
 	"github.com/sirupsen/logrus"
-	"github.com/ory/hydra/sdk/go/hydra/swagger"
 	log "github.com/sirupsen/logrus"
 	"github.com/volatiletech/authboss"
 	"golang.org/x/oauth2"
@@ -32,11 +31,11 @@ func acceptPost(h http.Handler) http.Handler {
 		defer h.ServeHTTP(w, r)
 		if r.URL.Path == "/api/login" && r.Method == "POST" && *flagAPI {
 			fromURL, challenge := getChallengeFromURL(r, w)
-			r.Header.Set("Challenge", challenge)
-			r.Header.Set("fromURL", fromURL)
-
-			//authboss.PutSession(w, "Challenge", challenge)
-			//authboss.PutSession(w, "fromURL", fromURL)
+			//r.Header.Set("Challenge", challenge)
+			//r.Header.Set("fromURL", fromURL)
+			k:= r.Cookies();fmt.Println(k)
+			authboss.PutSession(w, "Challenge", challenge)
+			authboss.PutSession(w, "fromURL", fromURL)
 			return
 		}
 	})
@@ -108,7 +107,6 @@ func challengeCode(h http.Handler) http.Handler {
 				// return link to hydra
 				data := layoutData(w, &r, redirectUrl)
 				r = r.WithContext(context.WithValue(r.Context(), authboss.CTXKeyData, data))
-				h.ServeHTTP(w, r)
 
 				if !*flagAPI {
 					ro := authboss.RedirectOptions{
@@ -119,7 +117,8 @@ func challengeCode(h http.Handler) http.Handler {
 					ab.Core.Redirector.Redirect(w, r, ro)
 				}
 
-				return
+				ab.Core.Responder.Respond(w, r, http.StatusOK,"api/login",data)
+
 			}
 
 			challengeResp, err := hydra.CheckChallengeCode(challenge)
@@ -184,7 +183,8 @@ func callbackToken(h http.Handler) http.Handler {
 				return
 			}
 
-			//user, err := ab.LoadCurrentUser(&r)
+			user, err := ab.LoadCurrentUser(&r)
+			/*
 			var introToken swagger.OAuth2TokenIntrospection
 			hydraConfig,_ := config.GetHydraConfig()
 			introspectUrl := hydraConfig.Introspect
@@ -195,7 +195,7 @@ func callbackToken(h http.Handler) http.Handler {
 
 			err = json.Unmarshal(res.Body(), &introToken)
 			user, err := ab.Storage.Server.Load(context.TODO(),introToken.Sub)
-
+*/
 			if user != nil && err == nil {
 				user1 := user.(*users.User)
 				user1.PutOAuth2AccessToken(token.AccessToken)
