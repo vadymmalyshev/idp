@@ -29,33 +29,11 @@ func ServeHTTP (w http.ResponseWriter, req *http.Request) {
 func acceptPost(h http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		defer h.ServeHTTP(w, r)
-
 		if r.URL.Path == "/api/login" && r.Method == "POST" && *flagAPI {
-			//hydraConfig,_ := config.GetHydraConfig()
-			//oauthClient = InitClient(hydraConfig.ClientID, hydraConfig.ClientSecret)
-			//redirectUrl := oauthClient.AuthCodeURL("state123")
-
-			//res, _ := resty.R().Get(redirectUrl)
-			//k := res.Cookies();
-			//http.SetCookie(w, k[0])
-			//http.SetCookie(w, k[1])
-
-
-		/*
-			bodyBytes, _ := ioutil.ReadAll(r.Body)
-			fromURLString := ""
-			var t map[string]string
-			b:=bodyBytes
-			json.Unmarshal(b, &t)
-
-
-			if t["fromURL"] != "" {
-				fromURLString = t["fromURL"]
-
-			}
-			r.Body = ioutil.NopCloser(bytes.NewBuffer(bodyBytes))
-			authboss.PutSession(w, "fromURL", fromURLString)
-		*/
+			fromURL, challenge := getChallengeFromURL(r, w)
+			authboss.PutSession(w, "Challenge", challenge)
+			authboss.PutSession(w, "fromURL", fromURL)
+			//k, _ := r.Cookie("oauth2_authentication_csrf");
 		}
 	})
 }
@@ -121,24 +99,29 @@ func challengeCode(h http.Handler) http.Handler {
 		defer h.ServeHTTP(w, r)
 
 		if r.URL.Path == "/api/login" && r.Method == "GET" {
-			challenge := r.URL.Query().Get("login_challenge")
+			challenge := r.URL.Query().Get("Challenge")
 			if len(challenge) == 0 { // obtain login challenge
-				if *flagAPI {
-					return
-				}
 
 				hydraConfig,_ := config.GetHydraConfig()
 				oauthClient = InitClient(hydraConfig.ClientID, hydraConfig.ClientSecret)
 				redirectUrl := oauthClient.AuthCodeURL("state123")
+				// return link to hydra
+				data := layoutData(w, &r, redirectUrl)
+				r = r.WithContext(context.WithValue(r.Context(), authboss.CTXKeyData, data))
+				h.ServeHTTP(w, r)
 
-				ro := authboss.RedirectOptions{
-					Code:         http.StatusTemporaryRedirect,
-					RedirectPath: redirectUrl,
-					Success:      "Obtaining login challenge",
+				if !*flagAPI {
+					ro := authboss.RedirectOptions{
+						Code:         http.StatusTemporaryRedirect,
+						RedirectPath: redirectUrl,
+						Success:      "Obtaining login challenge",
+					}
+					ab.Core.Redirector.Redirect(w, r, ro)
 				}
-				ab.Core.Redirector.Redirect(w, r, ro)
+
 				return
 			}
+
 
 			challengeResp, err := hydra.CheckChallengeCode(challenge)
 
@@ -157,49 +140,23 @@ func challengeCode(h http.Handler) http.Handler {
 				ab.Core.Redirector.Redirect(w, r, ro)}
 				return
 			}
-
 			challengeCode := challengeResp.Challenge
-			authboss.PutSession(w, "Challenge", challengeCode)
-			// get cookies
-			c2 := http.Cookie{
-				Name: "Challenge",
-				Value: challengeCode,
-				//Domain: "localhost",
-				Path:     "/",
+
+			if !*flagAPI {
+				authboss.PutSession(w, "Challenge", challengeCode)
 			}
-				c1,_ := r.Cookie("oauth2_authentication_csrf")
-				http.SetCookie(w, c1)
-			    http.SetCookie(w, &c2)
-				h.ServeHTTP(w, r)
-			//
-/*
+
+			// put login_challenge in cookies
 			if *flagAPI {
-				user, err := ab.LoadCurrentUser(&r)
-				if user != nil && err == nil {
-					user := user.(*users.User)
-
-					resp, errConfirm := hydra.ConfirmLogin(user.ID, false, challenge)
-
-					if errConfirm != nil {
-						w.Header().Set("Content-Type", "application/json")
-						w.WriteHeader(http.StatusNoContent)
-						fmt.Fprintf(w, `{"hydra/login/accept request has been failed"}`)
-
-						logrus.WithFields(logrus.Fields{
-							"Email":     user.Email,
-							"UserID":    user.ID,
-							"Challenge": challenge,
-						}).Error("hydra/login/accept request has been failed")
-						return
-					}
-
-					data := layoutData(w, &r, resp.RedirectTo)
-					r = r.WithContext(context.WithValue(r.Context(), authboss.CTXKeyData, data))
-					h.ServeHTTP(w, r)
-					return
-
+				c2 := http.Cookie{
+					Name:  "Challenge",
+					Value: challengeCode,
+					//Domain: "localhost",
+					Path: "/",
 				}
-			}*/
+				http.SetCookie(w, &c2)
+				h.ServeHTTP(w, r)
+			}
 		}
 	})
 }
@@ -390,24 +347,25 @@ func getScopes() []string {
 	return []string{"openid", "offline"}
 }
 
-func getFromURL(r *http.Request, w http.ResponseWriter) string {
-	bodyBytes, err := ioutil.ReadAll(r.Body)
+func getChallengeFromURL(r *http.Request, w http.ResponseWriter) (string, string) {
+	bodyBytes, _ := ioutil.ReadAll(r.Body)
+	b:=bodyBytes
 	fromURLString := ""
+	chalengeString := ""
 
-	if err != nil {
-		return fromURLString
-	}
-
-	decoder := json.NewDecoder(r.Body)
 	var t map[string]string
-	decoder.Decode(&t)
+	json.Unmarshal(b, &t)
 
 	if t["fromURL"] != "" {
 		fromURLString = t["fromURL"]
 
 	}
+	if t["Challenge"] != "" {
+		chalengeString = t["Challenge"]
+
+	}
 	r.Body = ioutil.NopCloser(bytes.NewBuffer(bodyBytes))
-	return fromURLString
+	return fromURLString, chalengeString
 }
 
 func setRedirectURL(redirectURL string, w http.ResponseWriter) {

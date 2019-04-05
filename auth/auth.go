@@ -5,9 +5,9 @@ import (
 	"encoding/base32"
 	"encoding/base64"
 	"flag"
+	"fmt"
 	"github.com/volatiletech/authboss/remember"
 	"golang.org/x/oauth2"
-	"gopkg.in/resty.v1"
 	"net/http"
 	"regexp"
 
@@ -253,17 +253,12 @@ func Init(r *gin.Engine, db *gorm.DB) {
 	r.Any("/*resources", gin.WrapH(mux))
 	ab.Events.After(authboss.EventAuth, func(w http.ResponseWriter, r *http.Request, handled bool) (bool, error) {
 		challenge, _ := authboss.GetSession(r, "Challenge")
-		var csrf,sess *http.Cookie
+		//fromURL, _ := authboss.GetSession(r, "fromURL");
 
 		if *flagAPI {
-			hydraConfig, _ := config.GetHydraConfig()
-			oauthClient = InitClient(hydraConfig.ClientID, hydraConfig.ClientSecret)
-			redirectUrl := oauthClient.AuthCodeURL("state123")
-			res, _ := resty.R().Get(redirectUrl)
-			k := res.Cookies()
-			csrf = k[0]
-			challenge = k[1].Value
-			sess = k[2]
+			if len(challenge) == 0 {
+				return true, nil
+			}
 		}
 
 		if len(challenge) == 0 {
@@ -290,18 +285,25 @@ func Init(r *gin.Engine, db *gorm.DB) {
 				}).Error("hydra/login/accept request has been failed")
 			}
 			if *flagAPI {
+				k := r.Cookies(); fmt.Println(k)
+				http.Redirect(w, r, resp.RedirectTo, http.StatusTemporaryRedirect)
+				//res, _ := resty.R().Get(resp.RedirectTo)
+
+				/*
 				http.SetCookie(w, csrf)
 				http.SetCookie(w, sess)
-				setRedirectURL(resp.RedirectTo, w)
-				return true, nil
+				setRedirectURL(resp.RedirectTo, w)*/
+				//return true, nil
+
+			} else {
+				ro := authboss.RedirectOptions{
+					Code:         http.StatusTemporaryRedirect,
+					RedirectPath: resp.RedirectTo,
+					Success:      "Hydra redirect",
+				}
+				logrus.Infof("user will be redirected to %s", resp.RedirectTo)
+				ab.Core.Redirector.Redirect(w, r, ro)
 			}
-			ro := authboss.RedirectOptions{
-				Code:         http.StatusTemporaryRedirect,
-				RedirectPath: resp.RedirectTo,
-				Success:      "Hydra redirect",
-			}
-			logrus.Infof("user will be redirected to %s", resp.RedirectTo)
-			ab.Core.Redirector.Redirect(w, r, ro)
 		}
 		return true, nil
 	})
