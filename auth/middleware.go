@@ -35,11 +35,9 @@ func acceptPost(h http.Handler) http.Handler {
 			r.Header.Set("Challenge", challenge)
 			r.Header.Set("fromURL", fromURL)
 
-			authboss.PutSession(w, "Challenge", challenge)
-			authboss.PutSession(w, "fromURL", fromURL)
+			//authboss.PutSession(w, "Challenge", challenge)
+			//authboss.PutSession(w, "fromURL", fromURL)
 			return
-
-			//k, _ := r.Cookie("oauth2_authentication_csrf");
 		}
 	})
 }
@@ -81,11 +79,6 @@ func acceptConsent(h http.Handler) http.Handler {
 			}
 
 			if *flagAPI {
-				/*data := layoutData(w, &r, url)
-				r = r.WithContext(context.WithValue(r.Context(), authboss.CTXKeyData, data))
-				h.ServeHTTP(w, r)*/
-				//setRedirectURL(url, w)
-				//h.ServeHTTP(w, r)
 				http.Redirect(w, r, url, http.StatusTemporaryRedirect)
 				return
 			}
@@ -129,7 +122,6 @@ func challengeCode(h http.Handler) http.Handler {
 				return
 			}
 
-
 			challengeResp, err := hydra.CheckChallengeCode(challenge)
 
 			if err != nil {
@@ -172,6 +164,7 @@ func callbackToken(h http.Handler) http.Handler {
 
 		if r.URL.Path == "/api/callback" && r.Method == "GET" {
 			code := r.URL.Query().Get("code")
+			fmt.Println("Code: ", code)
 			token, err := oauthClient.Exchange(oauth2.NoContext, code)
 
 			if err != nil {
@@ -193,16 +186,15 @@ func callbackToken(h http.Handler) http.Handler {
 
 			//user, err := ab.LoadCurrentUser(&r)
 			var introToken swagger.OAuth2TokenIntrospection
+			hydraConfig,_ := config.GetHydraConfig()
+			introspectUrl := hydraConfig.Introspect
 
-			introspectUrl := "http://localhost:4445/oauth2/introspect"
 			res, err := resty.R().SetFormData(map[string]string{"token": token.AccessToken}).
 				SetHeader("Content-Type", "application/x-www-form-urlencoded").
 				SetHeader("Accept", "application/json").Post(introspectUrl)
 
 			err = json.Unmarshal(res.Body(), &introToken)
 			user, err := ab.Storage.Server.Load(context.TODO(),introToken.Sub)
-
-
 
 			if user != nil && err == nil {
 				user1 := user.(*users.User)
@@ -221,10 +213,10 @@ func callbackToken(h http.Handler) http.Handler {
 			c := http.Cookie{
 				Name: "Authorization",
 				Value: token.AccessToken,
-				//Domain: "localhost",
+				//Domain: "id.hiveon.local",
 				Path:     "/",
 			}
-			http.SetCookie(w, &c)
+
 
 			portalConfig, err := config.GetPortalConfig()
 			if err != nil {
@@ -238,8 +230,9 @@ func callbackToken(h http.Handler) http.Handler {
 				if fromURL =="" {
 					fromURL = portalConfig.Callback
 				}
-
 				setRedirectURL(fromURL, w)
+				http.SetCookie(w, &c)
+
 				h.ServeHTTP(w, r)
 
 				return

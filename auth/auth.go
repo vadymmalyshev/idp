@@ -251,13 +251,13 @@ func Init(r *gin.Engine, db *gorm.DB) {
 
 	r.Any("/*resources", gin.WrapH(mux))
 	ab.Events.After(authboss.EventAuth, func(w http.ResponseWriter, r *http.Request, handled bool) (bool, error) {
-		//challenge, _ := authboss.GetSession(r, "Challenge")
-		//fromURL, _ := authboss.GetSession(r, "fromURL");
-
-		challenge := r.Header.Get("Challenge")
-		//fromURL := r.Header.Get("fromURL")
+		challenge, _ := authboss.GetSession(r, "Challenge")
+		fromURL := ""
 
 		if *flagAPI {
+			challenge := r.Header.Get("Challenge")
+			fromURL = r.Header.Get("fromURL")
+
 			if len(challenge) == 0 {
 				return true, nil
 			}
@@ -286,16 +286,17 @@ func Init(r *gin.Engine, db *gorm.DB) {
 					"Challenge": challenge,
 				}).Error("hydra/login/accept request has been failed")
 			}
+
 			if *flagAPI {
+				c := http.Cookie{
+					Name: "fromURL",
+					Value: fromURL,
+					//Domain: "id.hiveon.local",
+					Path:     "/",
+				}
+
+				http.SetCookie(w, &c)
 				http.Redirect(w, r, resp.RedirectTo, http.StatusTemporaryRedirect)
-				//res, _ := resty.R().Get(resp.RedirectTo)
-
-				/*
-				http.SetCookie(w, csrf)
-				http.SetCookie(w, sess)
-				setRedirectURL(resp.RedirectTo, w)*/
-				//return true, nil
-
 			} else {
 				ro := authboss.RedirectOptions{
 					Code:         http.StatusTemporaryRedirect,
