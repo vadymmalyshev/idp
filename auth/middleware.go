@@ -101,9 +101,6 @@ func challengeCode(h http.Handler) http.Handler {
 		if r.URL.Path == "/api/login" && r.Method == "GET" {
 			challenge := r.URL.Query().Get("login_challenge")
 			if len(challenge) == 0 { // obtain login challenge
-				if *flagAPI {
-					return
-				}
 				// move to auth
 				hydraConfig, _ := config.GetHydraConfig()
 				oauthClient = InitClient(hydraConfig.ClientID, hydraConfig.ClientSecret)

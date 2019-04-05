@@ -57,7 +57,7 @@ services:
     <<: *idp_hiveon-dev-network
     container_name: idp
     hostname: idp
-    image: registry.tor.ph/hiveon/idp:${IDP_BUILD_NUMBER:-latest}
+    image: registry.tor.ph/hiveon/idp:${CI_PIPELINE_ID:-latest}
     ports:
       - "${IDP_LOCAL_PORT:-3000}:3000"
     external_links:
