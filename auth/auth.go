@@ -207,7 +207,7 @@ func Init(r *gin.Engine, db *gorm.DB) {
 		render.JSON(w, 200, user)
 	})
 
-	mux.Get("/api/loginchalenge", func(w http.ResponseWriter, r *http.Request) {
+	mux.Get("/api/loginchallenge", func(w http.ResponseWriter, r *http.Request) {
 
 		hydraConfig, _ := config.GetHydraConfig()
 		oauthClient = InitClient(hydraConfig.ClientID, hydraConfig.ClientSecret)
