@@ -191,12 +191,13 @@ func Init(r *gin.Engine, db *gorm.DB) {
 	mux := chi.NewRouter()
 
 	mux.Use(ab.LoadClientStateMiddleware, remember.Middleware(ab), dataInjector)
-	mux.Use(challengeCode)
-	mux.Use(acceptConsent)
-	mux.Use(callbackToken)
-	mux.Use(acceptPost)
 
 	render := renderPkg.New()
+
+	mux.Get("/api/login", challengeCode)
+	mux.Get("/api/callback", callbackToken)
+	mux.Get("/api/consent", acceptConsent)
+	mux.Post("/api/login", acceptPost)
 
 	mux.Get("/api/users/email/{email}", func(w http.ResponseWriter, r *http.Request) {
 		user, err := getAuthbossUser(r)
