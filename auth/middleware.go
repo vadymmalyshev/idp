@@ -26,221 +26,193 @@ func ServeHTTP(w http.ResponseWriter, req *http.Request) {
 
 }
 
-func acceptPost(h http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		defer h.ServeHTTP(w, r)
-		if r.URL.Path == "/api/login" && r.Method == "POST" && *flagAPI {
-			fromURL, challenge := getChallengeFromURL(r, w)
-			//r.Header.Set("Challenge", challenge)
-			//r.Header.Set("fromURL", fromURL)
-			k := r.Cookies()
-			fmt.Println(k)
-			authboss.PutSession(w, "Challenge", challenge)
-			authboss.PutSession(w, "fromURL", fromURL)
-			return
-		}
-	})
+func acceptPost(w http.ResponseWriter, r *http.Request) {
+	fromURL, challenge := getChallengeFromURL(r, w)
+	//r.Header.Set("Challenge", challenge)
+	//r.Header.Set("fromURL", fromURL)
+	k := r.Cookies()
+	fmt.Println(k)
+	authboss.PutSession(w, "Challenge", challenge)
+	authboss.PutSession(w, "fromURL", fromURL)
 }
 
-func acceptConsent(h http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		defer h.ServeHTTP(w, r)
+func acceptConsent(w http.ResponseWriter, r *http.Request) {
+	challenge := r.URL.Query().Get("consent_challenge")
 
-		if r.URL.Path == "/api/consent" && r.Method == "GET" {
-			challenge := r.URL.Query().Get("consent_challenge")
+	if len(challenge) == 0 {
+		ro := authboss.RedirectOptions{
+			Code:         http.StatusTemporaryRedirect,
+			RedirectPath: "/",
+			Failure:      "You have no consent challenge",
+		}
+		ab.Core.Redirector.Redirect(w, r, ro)
+		return
+	}
 
-			if len(challenge) == 0 {
-				ro := authboss.RedirectOptions{
-					Code:         http.StatusTemporaryRedirect,
-					RedirectPath: "/",
-					Failure:      "You have no consent challenge",
-				}
-				ab.Core.Redirector.Redirect(w, r, ro)
-				return
-			}
+	url, err := hydra.AcceptConsentChallengeCode(challenge)
 
-			url, err := hydra.AcceptConsentChallengeCode(challenge)
+	if err != nil {
+		if *flagAPI {
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusNoContent)
+			fmt.Fprintf(w, `{"consent challenge code isn't right"}`)
 
-			if err != nil {
-				if *flagAPI {
-					w.Header().Set("Content-Type", "application/json")
-					w.WriteHeader(http.StatusNoContent)
-					fmt.Fprintf(w, `{"consent challenge code isn't right"}`)
-
-				} else {
-					ro := authboss.RedirectOptions{
-						Code:         http.StatusTemporaryRedirect,
-						RedirectPath: "/",
-						Failure:      "consent challenge code isn't right",
-					}
-					ab.Core.Redirector.Redirect(w, r, ro)
-				}
-				return
-			}
-
-			if *flagAPI {
-				http.Redirect(w, r, url, http.StatusTemporaryRedirect)
-				return
-			}
-
+		} else {
 			ro := authboss.RedirectOptions{
 				Code:         http.StatusTemporaryRedirect,
-				RedirectPath: url,
-				Success:      "Consent code accepted",
+				RedirectPath: "/",
+				Failure:      "consent challenge code isn't right",
 			}
 			ab.Core.Redirector.Redirect(w, r, ro)
-			return
 		}
-	})
+		return
+	}
+
+	if *flagAPI {
+		http.Redirect(w, r, url, http.StatusTemporaryRedirect)
+		return
+	}
+
+	ro := authboss.RedirectOptions{
+		Code:         http.StatusTemporaryRedirect,
+		RedirectPath: url,
+		Success:      "Consent code accepted",
+	}
+	ab.Core.Redirector.Redirect(w, r, ro)
+	return
 }
 
-func challengeCode(h http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		defer h.ServeHTTP(w, r)
+func challengeCode(w http.ResponseWriter, r *http.Request) {
+	challenge := r.URL.Query().Get("login_challenge")
+	if len(challenge) == 0 { // obtain login challenge
+		// move to auth
+		hydraConfig, _ := config.GetHydraConfig()
+		oauthClient = InitClient(hydraConfig.ClientID, hydraConfig.ClientSecret)
+		redirectUrl := oauthClient.AuthCodeURL("state123")
+		// return link to hydra
+		data := layoutData(w, &r, redirectUrl)
+		r = r.WithContext(context.WithValue(r.Context(), authboss.CTXKeyData, data))
 
-		if r.URL.Path == "/api/login" && r.Method == "GET" {
-			challenge := r.URL.Query().Get("login_challenge")
-			if len(challenge) == 0 { // obtain login challenge
-				// move to auth
-				hydraConfig, _ := config.GetHydraConfig()
-				oauthClient = InitClient(hydraConfig.ClientID, hydraConfig.ClientSecret)
-				redirectUrl := oauthClient.AuthCodeURL("state123")
-				// return link to hydra
-				data := layoutData(w, &r, redirectUrl)
-				r = r.WithContext(context.WithValue(r.Context(), authboss.CTXKeyData, data))
-
-				if !*flagAPI {
-					ro := authboss.RedirectOptions{
-						Code:         http.StatusTemporaryRedirect,
-						RedirectPath: redirectUrl,
-						Success:      "Obtaining login challenge",
-					}
-					ab.Core.Redirector.Redirect(w, r, ro)
-				}
-				h.ServeHTTP(w, r)
-				return
+		if !*flagAPI {
+			ro := authboss.RedirectOptions{
+				Code:         http.StatusTemporaryRedirect,
+				RedirectPath: redirectUrl,
+				Success:      "Obtaining login challenge",
 			}
-
-			challengeResp, err := hydra.CheckChallengeCode(challenge)
-
-			if err != nil {
-				if *flagAPI {
-					w.Header().Set("Content-Type", "application/json")
-					w.WriteHeader(http.StatusNoContent)
-					fmt.Fprintf(w, `{"You have wrong login challenge"}`)
-
-				} else {
-					ro := authboss.RedirectOptions{
-						Code:         http.StatusTemporaryRedirect,
-						RedirectPath: "/",
-						Success:      "You have wrong login challenge",
-					}
-					ab.Core.Redirector.Redirect(w, r, ro)
-				}
-				return
-			}
-			challengeCode := challengeResp.Challenge
-			authboss.PutSession(w, "Challenge", challengeCode)
-
-			// put login_challenge in cookies
-			if *flagAPI {
-				c := http.Cookie{
-					Name:  "Challenge",
-					Value: challengeCode,
-					//Domain: "localhost",
-					Path: "/",
-				}
-				http.SetCookie(w, &c)
-				h.ServeHTTP(w, r)
-			}
+			ab.Core.Redirector.Redirect(w, r, ro)
 		}
-	})
+		return
+	}
+
+	challengeResp, err := hydra.CheckChallengeCode(challenge)
+
+	if err != nil {
+		if *flagAPI {
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusNoContent)
+			fmt.Fprintf(w, `{"You have wrong login challenge"}`)
+
+		} else {
+			ro := authboss.RedirectOptions{
+				Code:         http.StatusTemporaryRedirect,
+				RedirectPath: "/",
+				Success:      "You have wrong login challenge",
+			}
+			ab.Core.Redirector.Redirect(w, r, ro)
+		}
+		return
+	}
+	challengeCode := challengeResp.Challenge
+	authboss.PutSession(w, "Challenge", challengeCode)
+
+	// put login_challenge in cookies
+	if *flagAPI {
+		c := http.Cookie{
+			Name:  "Challenge",
+			Value: challengeCode,
+			//Domain: "localhost",
+			Path: "/",
+		}
+		http.SetCookie(w, &c)
+	}
 }
 
-func callbackToken(h http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		defer h.ServeHTTP(w, r)
+func callbackToken(w http.ResponseWriter, r *http.Request) {
+	code := r.URL.Query().Get("code")
+	fmt.Println("Code: ", code)
+	token, err := oauthClient.Exchange(oauth2.NoContext, code)
 
-		if r.URL.Path == "/api/callback" && r.Method == "GET" {
-			code := r.URL.Query().Get("code")
-			fmt.Println("Code: ", code)
-			token, err := oauthClient.Exchange(oauth2.NoContext, code)
+	if err != nil {
+		if *flagAPI {
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusInternalServerError)
+			fmt.Fprintf(w, `{"Can't obtain authorization token"}`)
 
-			if err != nil {
-				if *flagAPI {
-					w.Header().Set("Content-Type", "application/json")
-					w.WriteHeader(http.StatusInternalServerError)
-					fmt.Fprintf(w, `{"Can't obtain authorization token"}`)
-
-				} else {
-					ro := authboss.RedirectOptions{
-						Code:         http.StatusInternalServerError,
-						RedirectPath: "/",
-						Failure:      "Can't obtain authorization token",
-					}
-					ab.Core.Redirector.Redirect(w, r, ro)
-				}
-				return
+		} else {
+			ro := authboss.RedirectOptions{
+				Code:         http.StatusInternalServerError,
+				RedirectPath: "/",
+				Failure:      "Can't obtain authorization token",
 			}
-
-			user, err := ab.LoadCurrentUser(&r)
-			/*
-				var introToken swagger.OAuth2TokenIntrospection
-				hydraConfig,_ := config.GetHydraConfig()
-				introspectUrl := hydraConfig.Introspect
-
-				res, err := resty.R().SetFormData(map[string]string{"token": token.AccessToken}).
-					SetHeader("Content-Type", "application/x-www-form-urlencoded").
-					SetHeader("Accept", "application/json").Post(introspectUrl)
-
-				err = json.Unmarshal(res.Body(), &introToken)
-				user, err := ab.Storage.Server.Load(context.TODO(),introToken.Sub)
-			*/
-			if user != nil && err == nil {
-				user1 := user.(*users.User)
-				user1.PutOAuth2AccessToken(token.AccessToken)
-				user1.PutOAuth2RefreshToken(token.RefreshToken)
-				user1.PutOAuth2Expiry(token.Expiry)
-
-				ab.Config.Storage.Server.Save(r.Context(), user1)
-			}
-
-			if err != nil {
-				http.Error(w, err.Error(), http.StatusNoContent)
-				return
-			}
-
-			c := http.Cookie{
-				Name:  "Authorization",
-				Value: token.AccessToken,
-				//Domain: "id.hiveon.local",
-				Path: "/",
-			}
-
-			portalConfig, err := config.GetPortalConfig()
-			if err != nil {
-				http.Error(w, err.Error(), http.StatusNoContent)
-				return
-			}
-
-			if *flagAPI {
-				fromURL, _ := authboss.GetSession(r, "fromURL")
-
-				if fromURL == "" {
-					fromURL = portalConfig.Callback
-				}
-				setRedirectURL(fromURL, w)
-				http.SetCookie(w, &c)
-
-				h.ServeHTTP(w, r)
-
-				return
-			}
-
-			http.Redirect(w, r, portalConfig.Callback, http.StatusPermanentRedirect)
-			return
+			ab.Core.Redirector.Redirect(w, r, ro)
 		}
-	})
+		return
+	}
+
+	user, err := ab.LoadCurrentUser(&r)
+	/*
+		var introToken swagger.OAuth2TokenIntrospection
+		hydraConfig,_ := config.GetHydraConfig()
+		introspectUrl := hydraConfig.Introspect
+
+		res, err := resty.R().SetFormData(map[string]string{"token": token.AccessToken}).
+			SetHeader("Content-Type", "application/x-www-form-urlencoded").
+			SetHeader("Accept", "application/json").Post(introspectUrl)
+
+		err = json.Unmarshal(res.Body(), &introToken)
+		user, err := ab.Storage.Server.Load(context.TODO(),introToken.Sub)
+	*/
+	if user != nil && err == nil {
+		user1 := user.(*users.User)
+		user1.PutOAuth2AccessToken(token.AccessToken)
+		user1.PutOAuth2RefreshToken(token.RefreshToken)
+		user1.PutOAuth2Expiry(token.Expiry)
+
+		ab.Config.Storage.Server.Save(r.Context(), user1)
+	}
+
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusNoContent)
+		return
+	}
+
+	c := http.Cookie{
+		Name:  "Authorization",
+		Value: token.AccessToken,
+		//Domain: "id.hiveon.local",
+		Path: "/",
+	}
+
+	portalConfig, err := config.GetPortalConfig()
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusNoContent)
+		return
+	}
+
+	if *flagAPI {
+		fromURL, _ := authboss.GetSession(r, "fromURL")
+
+		if fromURL == "" {
+			fromURL = portalConfig.Callback
+		}
+		setRedirectURL(fromURL, w)
+		http.SetCookie(w, &c)
+
+		return
+	}
+
+	http.Redirect(w, r, portalConfig.Callback, http.StatusPermanentRedirect)
+	return
 }
 
 //nosurfing is a more verbose wrapper around csrf handling
