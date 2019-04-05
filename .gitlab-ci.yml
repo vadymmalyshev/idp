@@ -1,0 +1,23 @@
+image: registry.tor.ph/infra/d3:latest
+stages:
+  - build
+  - deploy
+
+before_script:
+  - docker login -u gitlab-ci-token -p "${CI_JOB_TOKEN}" ${CI_REGISTRY}
+
+build:
+  stage: build
+  tags:
+    - hiveon.dev
+  script:
+    - docker-compose -f idp-docker-compose.yaml build
+    - docker push registry.tor.ph/hiveon/idp
+deploy:
+  stage: deploy
+  tags:
+    - hiveon.dev
+  script:
+    - cd /opt/idp
+    - docker-compose -f idp-docker-compose.yaml pull
+    - docker-compose -f idp-docker-compose.yaml up -d idp --force-recreate

@@ -1,0 +1,61 @@
+hydra:
+  admin: "http://localhost:4445"
+  api: "http://localhost:4444"  
+  docker: hydra
+  client_id: "idp"
+  client_secret: "idp-secret"
+
+idp:
+  port: 3000
+  host: "0.0.0.0"
+  client_id: "idp"
+  client_secret: "idp-secret"
+  callback: "http://localhost:3000/callback"
+  db:
+    host: "localhost"
+    port: "5432"
+    name: "idp"
+    user: "idp"
+    sslmode: false
+    password: "8GWbz2JF4FMe1Q8X"
+
+portal:
+  port: 8080
+  host: "0.0.0.0"
+  callback: "https://hiveon.dev"
+  client_id: "portal"
+  client_secret: "portal-secret"
+
+admin:
+  port: 3002
+  host: "0.0.0.0"
+  client_id: "admin"
+  client_secret: "admin-secret"    
+  callback: "https://admin.hiveon.dev/callback"
+  db:
+    host: "postgres"
+    port: "5432"
+    name: "hiveon_dev"
+    user: "idp"
+    sslmode: false
+    password: "8GWbz2JF4FMe1Q8X"
+
+auth:
+  sign_key: "Th1s!sMyR4Nd0MStri4gPleaseChangeIt"
+
+
+mail:
+  active: "true"
+  smtp: "smtp.gmail.com"
+  port: 465
+  user: "hiveonid"
+  password: "Hiveon!23"
+  from: "id@hiveon.net"
+
+redis:
+  host: "redis"
+  port: 6379
+  db: 1
+  password: ""
+
+remember_for: 360000
