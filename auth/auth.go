@@ -269,15 +269,17 @@ func Init(r *gin.Engine, db *gorm.DB) {
 
 		// challenge := r.Header.Get("login_challenge")
 		// fromURL := r.Header.Get("fromUrl")
-		r.ParseForm()
-		challenge := r.Form.Get("login_challenge")
-		fromURL := r.Form.Get("fromUrl")
 
-		if *flagAPI {
-			if len(challenge) == 0 {
-				render.JSON(w, 200, map[string]string{"fromURL": fromURL, "challenge": challenge})
-				return true, nil
-			}
+		var challenge, fromURL string
+
+		if challenge := (r).Context().Value("login_challenge"); challenge != nil {
+			render.JSON(w, 500, map[string]string{"error": "no challenge code"})
+			return true, nil
+		}
+
+		if fromURL := (r).Context().Value("fromURL"); fromURL != nil {
+			render.JSON(w, 500, map[string]string{"error": "no fromURL"})
+			return true, nil
 		}
 
 		// if len(challenge) == 0 {
