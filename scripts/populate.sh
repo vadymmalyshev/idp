@@ -4,7 +4,7 @@ SCRIPTPATH=$(dirname "$BASH_SOURCE")
 . "${SCRIPTPATH}/parse_yaml.sh"
 . "${SCRIPTPATH}/manage_hosts.sh"
 
-eval $(parse_yaml "${SCRIPTPATH}/../config/config.local.yaml" "config_")
+eval $(parse_yaml "${SCRIPTPATH}/../config/config.yaml" "config_")
 
 add_client() {
     local client_id=$1
@@ -34,9 +34,9 @@ add_client() {
 
 #idp must be last item
 
-add_client $config_admin_client_id, $config_admin_client_secret, $config_admin_callback
-add_client $config_portal_client_id, $config_portal_client_secret, $config_portal_callback
-add_client $config_idp_client_id, $config_idp_client_secret, $config_idp_callback
+add_client $config_admin_client_id $config_admin_client_secret $config_admin_callback
+add_client $config_portal_client_id $config_portal_client_secret $config_portal_callback
+add_client $config_idp_client_id $config_idp_client_secret $config_idp_callback
 
 echo "Please enter your password if requested."
 

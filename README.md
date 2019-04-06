@@ -6,6 +6,10 @@ docker-compose up -d
 
 #Create idp hydra client with localhost callbacks
 
+./scripts/populate.sh
+
+IF IT DOESN'T WORK TRY THINGS BELOW
+
 docker exec -it hydra hydra clients create \
  --endpoint http://localhost:4445 \
     --id idp \
@@ -15,7 +19,7 @@ docker exec -it hydra hydra clients create \
     --scope openid,offline \
     --callbacks https://localhost:3000/api/callback
 #Now you can access localhost:4444 - hydra public port, localhost:4445 - hydra admin port
-./scripts/populate.sh
+
 
 go mod vendor
 go mod tidy
