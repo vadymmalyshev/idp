@@ -259,7 +259,7 @@ func Init(r *gin.Engine, db *gorm.DB) {
 
 	mux.Group(func(mux chi.Router) {
 		mux.Use(authboss.ModuleListMiddleware(ab))
-		mux.Use(acceptPost)
+		// mux.Use(acceptPost)
 		mux.Mount("/api", http.StripPrefix("/api", ab.Config.Core.Router))
 	})
 
@@ -267,8 +267,11 @@ func Init(r *gin.Engine, db *gorm.DB) {
 
 	ab.Events.After(authboss.EventAuth, func(w http.ResponseWriter, r *http.Request, handled bool) (bool, error) {
 
-		challenge := r.Header.Get("Challenge")
-		fromURL := r.Header.Get("Fromurl")
+		// challenge := r.Header.Get("login_challenge")
+		// fromURL := r.Header.Get("fromUrl")
+
+		challenge := r.FormValue("login_challenge")
+		fromURL := r.FormValue("fromUrl")
 
 		if *flagAPI {
 			if len(challenge) == 0 {
@@ -276,22 +279,22 @@ func Init(r *gin.Engine, db *gorm.DB) {
 			}
 		}
 
-		if len(challenge) == 0 {
-			ro := authboss.RedirectOptions{
-				Code:         http.StatusTemporaryRedirect,
-				RedirectPath: "/",
-				Success:      "You have no login challenge",
-			}
-			ab.Core.Redirector.Redirect(w, r, ro)
-			return true, nil
-		}
+		// if len(challenge) == 0 {
+		// 	ro := authboss.RedirectOptions{
+		// 		Code:         http.StatusTemporaryRedirect,
+		// 		RedirectPath: "/",
+		// 		Success:      "You have no login challenge",
+		// 	}
+		// 	ab.Core.Redirector.Redirect(w, r, ro)
+		// 	return true, nil
+		// }
 
 		user, err := ab.LoadCurrentUser(&r)
 		if user != nil && err == nil {
 			user := user.(*users.User)
 
 			resp, errConfirm := hydra.ConfirmLogin(user.ID, false, challenge)
-			r.Header.Del("Challenge")
+			// r.Header.Del("Challenge")
 
 			if errConfirm != nil {
 				logrus.WithFields(logrus.Fields{

@@ -5,11 +5,16 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+
 	"git.tor.ph/hiveon/idp/config"
 	"git.tor.ph/hiveon/idp/internal/hydra"
 	"git.tor.ph/hiveon/idp/models/users"
 	"github.com/davecgh/go-spew/spew"
+
 	//"github.com/gorilla/csrf"
+	"io/ioutil"
+	"net/http"
+
 	"github.com/justinas/nosurf"
 	. "github.com/ory/hydra/sdk/go/hydra/swagger"
 	"github.com/sirupsen/logrus"
@@ -18,8 +23,6 @@ import (
 	"github.com/volatiletech/authboss"
 	"golang.org/x/oauth2"
 	"gopkg.in/resty.v1"
-	"io/ioutil"
-	"net/http"
 )
 
 var oauthClient *oauth2.Config
@@ -32,21 +35,21 @@ func init() {
 	render = renderPkg.New()
 }
 
-func acceptPost(h http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if r.URL.Path == "/api/login" && r.Method == "POST" && *flagAPI {
-			oauth2_auth_csrf,_ := r.Cookie("oauth2_authentication_csrf")
+// func acceptPost(h http.Handler) http.Handler {
+// 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+// 		if r.URL.Path == "/api/login" && r.Method == "POST" && *flagAPI {
+// 			oauth2_auth_csrf,_ := r.Cookie("oauth2_authentication_csrf")
 
-			fromURL, challenge := getChallengeFromURL(r, w)
-			r.Header.Set("Challenge", challenge)
-			r.Header.Set("fromURL", fromURL)
-			r.Header.Set("oauth2_authentication_csrf", oauth2_auth_csrf.Value)
+// 			fromURL, challenge := getChallengeFromURL(r, w)
+// 			r.Header.Set("Challenge", challenge)
+// 			r.Header.Set("fromURL", fromURL)
+// 			r.Header.Set("oauth2_authentication_csrf", oauth2_auth_csrf.Value)
 
-			h.ServeHTTP(w, r)
-			return
-		}
-	})
-}
+// 			h.ServeHTTP(w, r)
+// 			return
+// 		}
+// 	})
+// }
 
 func acceptConsent(w http.ResponseWriter, r *http.Request) {
 	challenge := r.URL.Query().Get("consent_challenge")
