@@ -9,6 +9,7 @@ import (
 	"git.tor.ph/hiveon/idp/internal/hydra"
 	"git.tor.ph/hiveon/idp/models/users"
 	"github.com/davecgh/go-spew/spew"
+	"github.com/gorilla/csrf"
 	"github.com/justinas/nosurf"
 	. "github.com/ory/hydra/sdk/go/hydra/swagger"
 	"github.com/sirupsen/logrus"
@@ -31,21 +32,17 @@ func init() {
 	render = renderPkg.New()
 }
 
-
 func acceptPost(h http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path == "/api/login" && r.Method == "POST" && *flagAPI {
 			//oauth2_auth_csrf := r.Header.Get("oauth2_csrf")
-			//t :=csrf.Token(r)
-			//k:=r.Cookies()
-			k1 := r.Header
+			t := csrf.Token(r)
 			fromURL, challenge := getChallengeFromURL(r, w)
 			r.Header.Set("Challenge", challenge)
 			r.Header.Set("fromURL", fromURL)
-			//w.Header().Set("X-CSRF-Token", k1)
-
+			w.Header().Set("X-CSRF-Token", t)
 			//r.Header.Set("oauth2_authentication_csrf", oauth2_auth_csrf)
-			render.JSON(w,200,k1)
+			render.JSON(w, 200, t)
 			//h.ServeHTTP(w, r)
 			return
 		}
@@ -99,7 +96,9 @@ func acceptConsent(w http.ResponseWriter, r *http.Request) {
 }
 
 func challengeCode(w http.ResponseWriter, r *http.Request) {
-	challenge := r.URL.Query().Get("login_challenge"); k := r.Cookies(); fmt.Println(k)
+	challenge := r.URL.Query().Get("login_challenge")
+	k := r.Cookies()
+	fmt.Println(k)
 	if len(challenge) == 0 { // obtain login challenge
 		// move to auth
 		hydraConfig, _ := config.GetHydraConfig()
@@ -143,14 +142,14 @@ func challengeCode(w http.ResponseWriter, r *http.Request) {
 
 	// put login_challenge in cookies
 	if *flagAPI {
-		oauth2_auth_csrf,_ := r.Cookie("oauth2_authentication_csrf")
-/*
-		c := http.Cookie{
-			Name:  "Challenge",
-			Value: challengeCode,
-			//Domain: "localhost",
-			Path: "/",
-		}*/
+		oauth2_auth_csrf, _ := r.Cookie("oauth2_authentication_csrf")
+		/*
+			c := http.Cookie{
+				Name:  "Challenge",
+				Value: challengeCode,
+				//Domain: "localhost",
+				Path: "/",
+			}*/
 		c1 := http.Cookie{
 			Name:  "oauth2_csrf",
 			Value: oauth2_auth_csrf.Value,
@@ -188,16 +187,16 @@ func callbackToken(w http.ResponseWriter, r *http.Request) {
 
 	//user, err := ab.LoadCurrentUser(&r)
 
-		var introToken OAuth2TokenIntrospection
-		hydraConfig,_ := config.GetHydraConfig()
-		introspectUrl := hydraConfig.Introspect
+	var introToken OAuth2TokenIntrospection
+	hydraConfig, _ := config.GetHydraConfig()
+	introspectUrl := hydraConfig.Introspect
 
-		res, err := resty.R().SetFormData(map[string]string{"token": token.AccessToken}).
-			SetHeader("Content-Type", "application/x-www-form-urlencoded").
-			SetHeader("Accept", "application/json").Post(introspectUrl)
+	res, err := resty.R().SetFormData(map[string]string{"token": token.AccessToken}).
+		SetHeader("Content-Type", "application/x-www-form-urlencoded").
+		SetHeader("Accept", "application/json").Post(introspectUrl)
 
-		err = json.Unmarshal(res.Body(), &introToken)
-		user, err := ab.Storage.Server.Load(context.TODO(),introToken.Sub)
+	err = json.Unmarshal(res.Body(), &introToken)
+	user, err := ab.Storage.Server.Load(context.TODO(), introToken.Sub)
 
 	if user != nil && err == nil {
 		user1 := user.(*users.User)
@@ -227,7 +226,7 @@ func callbackToken(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if *flagAPI {
-		fromURL,_ :=authboss.GetSession(r, "fromURL")
+		fromURL, _ := authboss.GetSession(r, "fromURL")
 
 		if fromURL == "" {
 			fromURL = portalConfig.Callback
@@ -237,7 +236,7 @@ func callbackToken(w http.ResponseWriter, r *http.Request) {
 
 		r.Header.Set("Accesstoken", token.AccessToken)
 		fmt.Fprintf(w, `%q`, token.AccessToken)
-		ServeHTTP(w,r)
+		ServeHTTP(w, r)
 		//render.JSON(w, 200, map[string]string{"fromURL": fromURL, "Access token": token.AccessToken})
 	}
 
