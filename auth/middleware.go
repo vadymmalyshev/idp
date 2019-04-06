@@ -35,10 +35,13 @@ func init() {
 func acceptPost(h http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path == "/api/login" && r.Method == "POST" && *flagAPI {
+			//oauth2_auth_csrf, err := r.Cookie("oauth2_csrf")
+			oauth2_auth_csrf := r.Header.Get("oauth2_csrf")
+
 			fromURL, challenge := getChallengeFromURL(r, w)
 			r.Header.Set("Challenge", challenge)
 			r.Header.Set("fromURL", fromURL)
-
+			r.Header.Set("oauth2_authentication_csrf", oauth2_auth_csrf)
 			h.ServeHTTP(w, r)
 			return
 		}
@@ -92,7 +95,7 @@ func acceptConsent(w http.ResponseWriter, r *http.Request) {
 }
 
 func challengeCode(w http.ResponseWriter, r *http.Request) {
-	challenge := r.URL.Query().Get("login_challenge")
+	challenge := r.URL.Query().Get("login_challenge"); k := r.Cookies(); fmt.Println(k)
 	if len(challenge) == 0 { // obtain login challenge
 		// move to auth
 		hydraConfig, _ := config.GetHydraConfig()
@@ -110,6 +113,7 @@ func challengeCode(w http.ResponseWriter, r *http.Request) {
 		}
 
 		render.JSON(w, 200, map[string]string{"redirectURL": redirectUrl})
+		return
 	}
 
 	challengeResp, err := hydra.CheckChallengeCode(challenge)
@@ -135,15 +139,25 @@ func challengeCode(w http.ResponseWriter, r *http.Request) {
 
 	// put login_challenge in cookies
 	if *flagAPI {
+		oauth2_auth_csrf,_ := r.Cookie("oauth2_authentication_csrf")
+/*
 		c := http.Cookie{
 			Name:  "Challenge",
 			Value: challengeCode,
 			//Domain: "localhost",
 			Path: "/",
+		}*/
+		c1 := http.Cookie{
+			Name:  "oauth2_csrf",
+			Value: oauth2_auth_csrf.Value,
+			//Domain: "localhost",
+			Path: "/",
 		}
-		http.SetCookie(w, &c)
+
+		http.SetCookie(w, &c1)
 	}
-	render.JSON(w, 200, nil)
+	render.JSON(w, 200, map[string]string{"challenge": challengeCode})
+	return
 }
 
 func callbackToken(w http.ResponseWriter, r *http.Request) {
@@ -224,7 +238,6 @@ func callbackToken(w http.ResponseWriter, r *http.Request) {
 	}
 
 	http.Redirect(w, r, portalConfig.Callback, http.StatusPermanentRedirect)
-	return
 }
 
 //nosurfing is a more verbose wrapper around csrf handling

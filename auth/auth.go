@@ -301,8 +301,7 @@ func Init(r *gin.Engine, db *gorm.DB) {
 			}
 
 			if *flagAPI {
-				authboss.PutSession(w, "fromURL", fromURL)
-				csrfToken := r.Header.Get("Oauth2_authentication_csrf")
+				csrfToken := r.Header.Get("oauth2_csrf")
 
 				c := http.Cookie{
 					Name:  "oauth2_authentication_csrf",
@@ -316,7 +315,17 @@ func Init(r *gin.Engine, db *gorm.DB) {
 					SetHeader("Accept", "application/json").Get(resp.RedirectTo)
 
 				accessToken := res.RawResponse.Header.Get("Set-Cookie")
-				render.JSON(w, 200, map[string]string{"fromURL": fromURL, "Authorization": formatToken(accessToken)})
+			    accessToken = formatToken(accessToken)
+
+				cAuth := http.Cookie{
+					Name:  "Authorization",
+					Value: accessToken,
+					//Domain: "localhost",
+					Path: "/",
+				}
+				http.SetCookie(w, &cAuth)
+
+				render.JSON(w, 200, map[string]string{"fromURL": fromURL, "Authorization": accessToken})
 			} else {
 				ro := authboss.RedirectOptions{
 					Code:         http.StatusTemporaryRedirect,
