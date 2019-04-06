@@ -5,11 +5,12 @@ import (
 	"encoding/base32"
 	"encoding/base64"
 	"flag"
-	"github.com/volatiletech/authboss/remember"
-	"gopkg.in/resty.v1"
 	"net/http"
 	"regexp"
 	"strings"
+
+	"github.com/volatiletech/authboss/remember"
+	"gopkg.in/resty.v1"
 
 	"golang.org/x/oauth2"
 
@@ -33,7 +34,7 @@ import (
 
 	renderPkg "github.com/unrolled/render"
 	clientState "github.com/volatiletech/authboss-clientstate"
-	"github.com/volatiletech/authboss-renderer"
+	abrenderer "github.com/volatiletech/authboss-renderer"
 )
 
 const IDPSessionName = "idp_session"
@@ -55,6 +56,8 @@ var (
 
 	cookieStore  clientState.CookieStorer
 	sessionStore clientState.SessionStorer
+
+	cookieAuthenticationCSRFName = "oauth2_authentication_csrf"
 )
 
 var (
@@ -254,8 +257,6 @@ func Init(r *gin.Engine, db *gorm.DB) {
 		render.JSON(w, 200, updatedToken)
 	})
 
-
-
 	mux.Group(func(mux chi.Router) {
 		mux.Use(authboss.ModuleListMiddleware(ab))
 		mux.Use(acceptPost)
@@ -301,21 +302,14 @@ func Init(r *gin.Engine, db *gorm.DB) {
 			}
 
 			if *flagAPI {
+				oauth2_auth_csrf, _ := r.Cookie(cookieAuthenticationCSRFName)
 
-				csrfToken := r.Header.Get("oauth2_authentication_csrf")
-				c1 := http.Cookie{
-					Name:  "oauth2_authentication_csrf",
-					Value: csrfToken,
-					//Domain: "localhost",
-					Path: "/",
-				}
-
-				res, _ := resty.SetCookie(&c1).R().
-					SetHeader("Oauth2_authentication_csrf", csrfToken).
-					SetHeader("Accept", "application/json").Get(resp.RedirectTo)
+				res, _ := resty.SetCookie(oauth2_auth_csrf).R().
+					SetHeader("Accept", "application/json").
+					Get(resp.RedirectTo)
 
 				accessToken := res.RawResponse.Header.Get("Set-Cookie")
-			    accessToken = formatToken(accessToken)
+				accessToken = formatToken(accessToken)
 
 				cAuth := http.Cookie{
 					Name:  "Authorization",
@@ -346,7 +340,7 @@ func getAuthbossUser(r *http.Request) (authboss.User, error) {
 	return user, err
 }
 
-func formatToken (token string) string {
+func formatToken(token string) string {
 	token = strings.Replace(token, "Authorization=", "", 1)
 	token = strings.Replace(token, "; Path=/", "", 1)
 	return token
