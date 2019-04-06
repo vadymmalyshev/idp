@@ -8,14 +8,14 @@ hydra:
 
 idp:
   port: 3000
-  host: "id.hiveon.local"
+  host: "0.0.0.0"
   client_id: "idp"
   client_secret: "idp-secret"
-  callback: "http://id.hiveon.local:3000/callback"
+  callback: "http://localhost:3000/callback"
   db:
     host: "localhost"
-    port: "54320"
-    name: "idp_dev"
+    port: "5432"
+    name: "idp"
     user: "idp"
     sslmode: false
     password: "8GWbz2JF4FMe1Q8X"

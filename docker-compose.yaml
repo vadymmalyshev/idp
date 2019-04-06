@@ -2,19 +2,19 @@ version: '3.5'
 
 #Networking (docker networks)
 networks:
-  pool_pool-network-dev:
+  idp_hiveon-dev-network:
     external: true
 #Templates
-x-pool_pool-network-dev:
-  &pool_pool-network-dev
+x-idp_hiveon-dev-network:
+  &idp_hiveon-dev-network
   networks:
-    - pool_pool-network-dev
+    - idp_pool-network-dev
 
 #Containers
 services:
   hydra:
     #    restart: on-failure
-    <<: *pool_pool-network-dev
+    <<: *idp_hiveon-dev-network
     container_name: hydra
     hostname: hydra
     image: oryd/hydra:${HYDRA_VERSION:-v1.0.0-rc.6_oryOS.10}
@@ -38,7 +38,7 @@ services:
 
   hydra-migrate:
     #    restart: on-failure
-    <<: *pool_pool-network-dev
+    <<: *idp_hiveon-dev-network
     container_name: hydra-migrate
     hostname: hydra-migrate
     image: oryd/hydra:${HYDRA_VERSION:-v1.0.0-rc.6_oryOS.10}
@@ -51,15 +51,15 @@ services:
     env_file:
       - ./.env
 
-  idp:
+#  idp:
     #    restart: on-failure
-    <<: *pool_pool-network-dev
-    container_name: idp
-    hostname: idp
-    image: registry.tor.ph/hiveon/idp:${IDP_BUILD_NUMBER:-latest}
-    ports:
-      - "3000:3000"
-    external_links:
-      - postgres:postgres
-    env_file:
-      - ./.env
+#    <<: *idp_hiveon-dev-network
+#    container_name: idp
+#    hostname: idp
+#    image: registry.tor.ph/hiveon/idp:${IDP_BUILD_NUMBER:-latest}
+#    ports:
+#      - "3000:3000"
+#    external_links:
+#      - postgres:postgres
+#    env_file:
+#      - ./.env
