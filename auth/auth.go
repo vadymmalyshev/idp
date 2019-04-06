@@ -5,7 +5,6 @@ import (
 	"encoding/base32"
 	"encoding/base64"
 	"flag"
-	"fmt"
 	"github.com/volatiletech/authboss/remember"
 	"gopkg.in/resty.v1"
 	"net/http"
@@ -302,17 +301,8 @@ func Init(r *gin.Engine, db *gorm.DB) {
 			}
 
 			if *flagAPI {
-				//csrfToken := r.Header.Get("oauth2_csrf")
-/*
-				c := http.Cookie{
-					Name:  "oauth2_authentication_csrf",
-					Value: csrfToken,
-					//Domain: "localhost",
-					Path: "/",
-				}*/
 
-				csrfToken := r.Header.Get("X-CSRF-Token")
-				fmt.Println(csrfToken)
+				csrfToken := r.Header.Get("oauth2_authentication_csrf")
 				c1 := http.Cookie{
 					Name:  "oauth2_authentication_csrf",
 					Value: csrfToken,
@@ -322,7 +312,6 @@ func Init(r *gin.Engine, db *gorm.DB) {
 
 				res, _ := resty.SetCookie(&c1).R().
 					SetHeader("Oauth2_authentication_csrf", csrfToken).
-					//SetHeader("X-CSRF-Token", csrfToken).
 					SetHeader("Accept", "application/json").Get(resp.RedirectTo)
 
 				accessToken := res.RawResponse.Header.Get("Set-Cookie")
