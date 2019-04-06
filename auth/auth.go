@@ -306,11 +306,10 @@ func Init(r *gin.Engine, db *gorm.DB) {
 				c1 := http.Cookie{
 					Name:  "oauth2_authentication_csrf",
 					Value: csrfToken,
+					HttpOnly: true,
 					//Domain: "localhost",
 					Path: "/",
 				}
-				render.JSON(w,200,csrfToken)
-				return true, nil
 
 				res, _ := resty.SetCookie(&c1).R().
 					SetHeader("Oauth2_authentication_csrf", csrfToken).
