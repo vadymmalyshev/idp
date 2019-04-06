@@ -16,6 +16,7 @@ require (
 	github.com/gofrs/uuid v3.2.0+incompatible // indirect
 	github.com/gogap/config v0.0.0-20180418140818-a1522129698c // indirect
 	github.com/gogap/logrus_mate v1.1.0
+	github.com/gorilla/csrf v1.5.1
 	github.com/gorilla/schema v1.0.2
 	github.com/gorilla/sessions v1.1.3
 	github.com/jinzhu/gorm v1.9.2

@@ -19,6 +19,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	renderPkg "github.com/unrolled/render"
+    "github.com/gorilla/csrf"
 )
 
 var oauthClient *oauth2.Config
@@ -35,14 +36,15 @@ func init() {
 func acceptPost(h http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path == "/api/login" && r.Method == "POST" && *flagAPI {
-			//oauth2_auth_csrf, err := r.Cookie("oauth2_csrf")
-			oauth2_auth_csrf := r.Header.Get("oauth2_csrf")
-
+			//oauth2_auth_csrf := r.Header.Get("oauth2_csrf")
+			t :=csrf.Token(r)
 			fromURL, challenge := getChallengeFromURL(r, w)
 			r.Header.Set("Challenge", challenge)
 			r.Header.Set("fromURL", fromURL)
-			r.Header.Set("oauth2_authentication_csrf", oauth2_auth_csrf)
-			h.ServeHTTP(w, r)
+			w.Header().Set("X-CSRF-Token", t)
+			//r.Header.Set("oauth2_authentication_csrf", oauth2_auth_csrf)
+			render.JSON(w,200,t)
+			//h.ServeHTTP(w, r)
 			return
 		}
 	})
