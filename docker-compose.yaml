@@ -23,7 +23,7 @@ services:
       - SYSTEM_SECRET=${HYDRA_SYSTEM_SECRET:-hydra}
       - DATABASE_URL=postgres://${IDP_DB_USER:-idp}:${IDP_DB_PASS:-8GWbz2JF4FMe1Q8X}@${IDP_DB_HOST:-postgres}:5432/${HYDRA_DB_NAME:-hydra}?sslmode=disable
       - OAUTH2_CONSENT_URL=http://${BROWSER_IDP_HOST:-localhost}:3000/api/consent
-      - OAUTH2_LOGIN_URL=http://${BROWSER_IDP_HOST:-localhost}:3000/api/login
+      - OAUTH2_LOGIN_URL=http://${BROWSER_IDP_HOST:-localhost}:3000/login
       - OAUTH2_ISSUER_URL=http://${BROWSER_HYDRA_HOST:-localhost}:4444
       - OAUTH2_SHARE_ERROR_DEBUG=1
     depends_on:

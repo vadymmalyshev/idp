@@ -4,7 +4,7 @@ SCRIPTPATH=$(dirname "$BASH_SOURCE")
 . "${SCRIPTPATH}/parse_yaml.sh"
 . "${SCRIPTPATH}/manage_hosts.sh"
 
-eval $(parse_yaml "${SCRIPTPATH}/../config/config.yaml" "config_")
+eval $(parse_yaml "${SCRIPTPATH}/../config/config.local.yaml" "config_")
 
 add_client() {
     local client_id=$1

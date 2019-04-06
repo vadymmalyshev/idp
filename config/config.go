@@ -10,29 +10,29 @@ import (
 )
 
 const (
-	serverPort         = "idp.port"
-	serverHost         = "idp.host"
+	serverPort = "idp.port"
+	serverHost = "idp.host"
 
-	hydraAdmin         = "hydra.admin"
-	hydraAPI           = "hydra.api"
-	hydraClientID      = "hydra.client_id"
-	hydraClientSecret  = "hydra.client_secret"
-	hydraIntrospect    = "hydra.introspect"
+	hydraAdmin        = "hydra.admin"
+	hydraAPI          = "hydra.api"
+	hydraClientID     = "hydra.client_id"
+	hydraClientSecret = "hydra.client_secret"
+	hydraIntrospect   = "hydra.introspect"
 
-	dbHost             = "idp.db.host"
-	dbPort     		   = "idp.db.port"
-	dbName     		   = "idp.db.name"
-	dbUser     		   = "idp.db.user"
-	dbPassword 		   = "idp.db.password"
-	dbSSLMode  		   = "idp.db.sslmode"
+	dbHost     = "idp.db.host"
+	dbPort     = "idp.db.port"
+	dbName     = "idp.db.name"
+	dbUser     = "idp.db.user"
+	dbPassword = "idp.db.password"
+	dbSSLMode  = "idp.db.sslmode"
 
-	authSignKey 	   = "auth.sign_key"
+	authSignKey = "auth.sign_key"
 
-	mailFrom     	   = "mail.from"
-	mailSMTP     	   = "mail.smtp"
-	mailPort    	   = "mail.port"
-	mailUser   		   = "mail.user"
-	mailPassword	   = "mail.password"
+	mailFrom     = "mail.from"
+	mailSMTP     = "mail.smtp"
+	mailPort     = "mail.port"
+	mailUser     = "mail.user"
+	mailPassword = "mail.password"
 
 	portalPort         = "portal.port"
 	portalHost         = "portal.host"
@@ -48,7 +48,7 @@ func init() {
 	viper.AddConfigPath("./config")
 	viper.SetConfigType("yaml")
 	viper.AutomaticEnv()
-	viper.SetConfigName("config")
+	viper.SetConfigName("config.local")
 
 	if err := viper.ReadInConfig(); err != nil {
 		log.Fatalf("Error reading config file, %s", err)
@@ -171,19 +171,19 @@ func GetMailConfig() (MailConfig, error) {
 }
 
 type PortalConfig struct {
-	Port     int
-	Host     string
-	Callback string
+	Port         int
+	Host         string
+	Callback     string
 	ClientID     string
 	ClientSecret string
 }
 
 func GetPortalConfig() (PortalConfig, error) {
 	config := PortalConfig{
-		Port:     viper.GetInt(portalPort),
-		Host:     viper.GetString(portalHost),
-		Callback: viper.GetString(portalCallback),
-		ClientID: viper.GetString(portalClientID),
+		Port:         viper.GetInt(portalPort),
+		Host:         viper.GetString(portalHost),
+		Callback:     viper.GetString(portalCallback),
+		ClientID:     viper.GetString(portalClientID),
 		ClientSecret: viper.GetString(portalClientSecret),
 	}
 
