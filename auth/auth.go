@@ -269,9 +269,9 @@ func Init(r *gin.Engine, db *gorm.DB) {
 
 		// challenge := r.Header.Get("login_challenge")
 		// fromURL := r.Header.Get("fromUrl")
-
-		challenge := r.FormValue("login_challenge")
-		fromURL := r.FormValue("fromUrl")
+		r.ParseForm()
+		challenge := r.Form.Get("login_challenge")
+		fromURL := r.Form.Get("fromUrl")
 
 		if *flagAPI {
 			if len(challenge) == 0 {
