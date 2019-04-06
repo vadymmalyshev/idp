@@ -282,6 +282,12 @@ func Init(r *gin.Engine, db *gorm.DB) {
 			return true, nil
 		}
 
+		render.JSON(w, 200, map[string]string{
+			"challenge": challenge,
+			"fromURL":   fromURL,
+		})
+		return true, nil
+
 		// if len(challenge) == 0 {
 		// 	ro := authboss.RedirectOptions{
 		// 		Code:         http.StatusTemporaryRedirect,
@@ -310,7 +316,8 @@ func Init(r *gin.Engine, db *gorm.DB) {
 			if *flagAPI {
 				oauth2_auth_csrf, _ := r.Cookie(cookieAuthenticationCSRFName)
 
-				res, _ := resty.SetCookie(oauth2_auth_csrf).R().
+				res, _ := resty.SetCookie(oauth2_auth_csrf).
+					R().
 					SetHeader("Accept", "application/json").
 					Get(resp.RedirectTo)
 
