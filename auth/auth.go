@@ -275,6 +275,7 @@ func Init(r *gin.Engine, db *gorm.DB) {
 
 		if *flagAPI {
 			if len(challenge) == 0 {
+				render.JSON(w, 200, map[string]string{"fromURL": fromURL, "challenge": challenge})
 				return true, nil
 			}
 		}
