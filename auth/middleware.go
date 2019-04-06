@@ -13,13 +13,12 @@ import (
 	. "github.com/ory/hydra/sdk/go/hydra/swagger"
 	"github.com/sirupsen/logrus"
 	log "github.com/sirupsen/logrus"
+	renderPkg "github.com/unrolled/render"
 	"github.com/volatiletech/authboss"
 	"golang.org/x/oauth2"
 	"gopkg.in/resty.v1"
 	"io/ioutil"
 	"net/http"
-	renderPkg "github.com/unrolled/render"
-    "github.com/gorilla/csrf"
 )
 
 var oauthClient *oauth2.Config
@@ -37,13 +36,16 @@ func acceptPost(h http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path == "/api/login" && r.Method == "POST" && *flagAPI {
 			//oauth2_auth_csrf := r.Header.Get("oauth2_csrf")
-			t :=csrf.Token(r)
+			//t :=csrf.Token(r)
+			//k:=r.Cookies()
+			k1 := r.Header
 			fromURL, challenge := getChallengeFromURL(r, w)
 			r.Header.Set("Challenge", challenge)
 			r.Header.Set("fromURL", fromURL)
-			w.Header().Set("X-CSRF-Token", t)
+			//w.Header().Set("X-CSRF-Token", k1)
+
 			//r.Header.Set("oauth2_authentication_csrf", oauth2_auth_csrf)
-			render.JSON(w,200,t)
+			render.JSON(w,200,k1)
 			//h.ServeHTTP(w, r)
 			return
 		}
