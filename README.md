@@ -1,17 +1,28 @@
 ```
+#Up containers
 source .env
 docker-compose -f db-docker-compose.yaml up -d
 docker-compose up -d
 
+#Create idp hydra client with localhost callbacks
+
+docker exec -it hydra hydra clients create \
+ --endpoint http://localhost:4445 \
+    --id idp \
+    --secret idp-secret \
+    --response-types code,id_token \
+    --grant-types refresh_token,authorization_code \
+    --scope openid,offline \
+    --callbacks https://localhost:3000/api/callback
+#Now you can access localhost:4444 - hydra public port, localhost:4445 - hydra admin port
 ./scripts/populate.sh
 
 go mod vendor
 go mod tidy
 
-go build ./...
 go run .
 ```
-
+-------------------------------------------------------------------------------
 FYI
 https://medium.com/12plus1/oauth2-with-ory-hydra-vapor-3-and-ios-12-ca0e61c28f5a
 
