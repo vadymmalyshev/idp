@@ -9,7 +9,7 @@ import (
 	"git.tor.ph/hiveon/idp/internal/hydra"
 	"git.tor.ph/hiveon/idp/models/users"
 	"github.com/davecgh/go-spew/spew"
-	"github.com/gorilla/csrf"
+	//"github.com/gorilla/csrf"
 	"github.com/justinas/nosurf"
 	. "github.com/ory/hydra/sdk/go/hydra/swagger"
 	"github.com/sirupsen/logrus"
@@ -36,11 +36,12 @@ func acceptPost(h http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path == "/api/login" && r.Method == "POST" && *flagAPI {
 			//oauth2_auth_csrf := r.Header.Get("oauth2_csrf")
-			t := csrf.Token(r)
+			t := r.Cookies()
+
 			fromURL, challenge := getChallengeFromURL(r, w)
 			r.Header.Set("Challenge", challenge)
 			r.Header.Set("fromURL", fromURL)
-			w.Header().Set("X-CSRF-Token", t)
+			//w.Header().Set("X-CSRF-Token", t)
 			//r.Header.Set("oauth2_authentication_csrf", oauth2_auth_csrf)
 			render.JSON(w, 200, t)
 			//h.ServeHTTP(w, r)
