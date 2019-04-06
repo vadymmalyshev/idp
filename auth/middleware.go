@@ -37,12 +37,14 @@ func acceptPost(h http.Handler) http.Handler {
 		if r.URL.Path == "/api/login" && r.Method == "POST" && *flagAPI {
 			oauth2_auth_csrf,_ := r.Cookie("oauth2_authentication_csrf")
 			c := r.Cookies()
+			render.JSON(w,200,c)
+			return
 			fromURL, challenge := getChallengeFromURL(r, w)
 
 			r.Header.Set("Challenge", challenge)
 			r.Header.Set("fromURL", fromURL)
 			r.Header.Set("oauth2_authentication_csrf", oauth2_auth_csrf.Value)
-			render.JSON(w,200,c)
+
 			//h.ServeHTTP(w, r)
 			return
 		}
