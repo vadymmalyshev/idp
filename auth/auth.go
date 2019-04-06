@@ -306,7 +306,6 @@ func Init(r *gin.Engine, db *gorm.DB) {
 				c1 := http.Cookie{
 					Name:  "oauth2_authentication_csrf",
 					Value: csrfToken,
-					HttpOnly: true,
 					//Domain: "localhost",
 					Path: "/",
 				}
