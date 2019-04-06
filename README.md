@@ -1,4 +1,6 @@
 ```
+source .env
+docker-compose -f db-docker-compose.yaml up -d
 docker-compose up -d
 
 ./scripts/populate.sh
