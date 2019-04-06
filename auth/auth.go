@@ -6,8 +6,10 @@ import (
 	"encoding/base64"
 	"flag"
 	"github.com/volatiletech/authboss/remember"
+	"gopkg.in/resty.v1"
 	"net/http"
 	"regexp"
+	"strings"
 
 	"golang.org/x/oauth2"
 
@@ -192,13 +194,9 @@ func Init(r *gin.Engine, db *gorm.DB) {
 	mux := chi.NewRouter()
 	mux.Use(ab.LoadClientStateMiddleware, remember.Middleware(ab), dataInjector)
 
-
 	mux.Get("/api/login", challengeCode)
 	mux.Get("/api/callback", callbackToken)
 	mux.Get("/api/consent", acceptConsent)
-	//mux.Post("/api/login", acceptPost)
-
-
 
 	mux.Get("/api/users/email/{email}", func(w http.ResponseWriter, r *http.Request) {
 		user, err := getAuthbossUser(r)
@@ -268,11 +266,8 @@ func Init(r *gin.Engine, db *gorm.DB) {
 
 	ab.Events.After(authboss.EventAuth, func(w http.ResponseWriter, r *http.Request, handled bool) (bool, error) {
 
-		challengeC,_ := r.Cookie("Challenge")
-		fromURLC,_ := r.Cookie("fromURL")
-
-		challenge := challengeC.Value
-		fromURL := fromURLC.Value
+		challenge := r.Header.Get("Challenge")
+		fromURL := r.Header.Get("Fromurl")
 
 		if *flagAPI {
 			if len(challenge) == 0 {
@@ -295,6 +290,7 @@ func Init(r *gin.Engine, db *gorm.DB) {
 			user := user.(*users.User)
 
 			resp, errConfirm := hydra.ConfirmLogin(user.ID, false, challenge)
+			r.Header.Del("Challenge")
 
 			if errConfirm != nil {
 				logrus.WithFields(logrus.Fields{
@@ -305,22 +301,22 @@ func Init(r *gin.Engine, db *gorm.DB) {
 			}
 
 			if *flagAPI {
+				authboss.PutSession(w, "fromURL", fromURL)
+				csrfToken := r.Header.Get("Oauth2_authentication_csrf")
+
 				c := http.Cookie{
-					Name:  "fromURL",
-					Value: fromURL,
-					//Domain: "id.hiveon.local",
+					Name:  "oauth2_authentication_csrf",
+					Value: csrfToken,
+					//Domain: "localhost",
 					Path: "/",
 				}
 
-				http.SetCookie(w, &c)
-				http.Get(resp.RedirectTo)
-				/*
-					res, _ := resty.SetCookie(&c).R().
-						SetHeader("Content-Type", "application/json").
-						Get(resp.RedirectTo)
-				*/
+				res, _ := resty.SetCookie(&c).R().
+					SetHeader("Oauth2_authentication_csrf", csrfToken).
+					SetHeader("Accept", "application/json").Get(resp.RedirectTo)
 
-				//http.Redirect(w, r, resp.RedirectTo, http.StatusTemporaryRedirect)
+				accessToken := res.RawResponse.Header.Get("Set-Cookie")
+				render.JSON(w, 200, map[string]string{"fromURL": fromURL, "Authorization": formatToken(accessToken)})
 			} else {
 				ro := authboss.RedirectOptions{
 					Code:         http.StatusTemporaryRedirect,
@@ -339,4 +335,10 @@ func getAuthbossUser(r *http.Request) (authboss.User, error) {
 	email := chi.URLParam(r, "email")
 	user, err := ab.Config.Storage.Server.Load(r.Context(), email)
 	return user, err
+}
+
+func formatToken (token string) string {
+	token = strings.Replace(token, "Authorization=", "", 1)
+	token = strings.Replace(token, "; Path=/", "", 1)
+	return token
 }

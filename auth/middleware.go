@@ -36,20 +36,8 @@ func acceptPost(h http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path == "/api/login" && r.Method == "POST" && *flagAPI {
 			fromURL, challenge := getChallengeFromURL(r, w)
-			c1 := http.Cookie{
-				Name:  "Challenge",
-				Value: challenge,
-				//Domain: "localhost",
-				Path: "/",
-			}
-			c2 := http.Cookie{
-				Name:  "fromURL",
-				Value: fromURL,
-				//Domain: "localhost",
-				Path: "/",
-			}
-			http.SetCookie(w, &c1)
-			http.SetCookie(w, &c2)
+			r.Header.Set("Challenge", challenge)
+			r.Header.Set("fromURL", fromURL)
 
 			h.ServeHTTP(w, r)
 			return
@@ -180,9 +168,9 @@ func callbackToken(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	user, err := ab.LoadCurrentUser(&r)
-	/*
-		var introToken swagger.OAuth2TokenIntrospection
+	//user, err := ab.LoadCurrentUser(&r)
+
+		var introToken OAuth2TokenIntrospection
 		hydraConfig,_ := config.GetHydraConfig()
 		introspectUrl := hydraConfig.Introspect
 
@@ -192,7 +180,7 @@ func callbackToken(w http.ResponseWriter, r *http.Request) {
 
 		err = json.Unmarshal(res.Body(), &introToken)
 		user, err := ab.Storage.Server.Load(context.TODO(),introToken.Sub)
-	*/
+
 	if user != nil && err == nil {
 		user1 := user.(*users.User)
 		user1.PutOAuth2AccessToken(token.AccessToken)
@@ -221,15 +209,18 @@ func callbackToken(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if *flagAPI {
-		fromURL, _ := authboss.GetSession(r, "fromURL")
+		fromURL,_ :=authboss.GetSession(r, "fromURL")
 
 		if fromURL == "" {
 			fromURL = portalConfig.Callback
 		}
-		setRedirectURL(fromURL, w)
+
 		http.SetCookie(w, &c)
 
-		return
+		r.Header.Set("Accesstoken", token.AccessToken)
+		fmt.Fprintf(w, `%q`, token.AccessToken)
+		ServeHTTP(w,r)
+		//render.JSON(w, 200, map[string]string{"fromURL": fromURL, "Access token": token.AccessToken})
 	}
 
 	http.Redirect(w, r, portalConfig.Callback, http.StatusPermanentRedirect)
