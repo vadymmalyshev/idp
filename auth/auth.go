@@ -75,9 +75,10 @@ const (
 	tplPath = "views/"
 )
 
-type respLogin struct {
-	LoginChallenge string `json:"login_challenge"`
-	FromURL        string `json:"fromUrl"`
+type ResponseError struct {
+	Status  string `json:"status"`
+	Success bool   `json:"success"`
+	Error   string `json:"string"`
 }
 
 func Init(r *gin.Engine, db *gorm.DB) {
@@ -121,18 +122,7 @@ func Init(r *gin.Engine, db *gorm.DB) {
 	ab.Config.Storage.SessionState = sessionStore
 	ab.Config.Storage.CookieState = cookieStore
 
-	if !*flagAPI {
-		// Prevent us from having to use Javascript in our basic HTML
-		// to create a delete method, but don't override this default for the API
-		// version
-		ab.Config.Modules.LogoutMethod = "GET"
-	}
-
-	if *flagAPI {
-		ab.Config.Core.ViewRenderer = defaults.JSONRenderer{}
-	} else {
-		ab.Config.Core.ViewRenderer = abrenderer.NewHTML("/", tplPath)
-	}
+	ab.Config.Core.ViewRenderer = defaults.JSONRenderer{}
 
 	ab.Config.Modules.RegisterPreserveFields = []string{"email", "username"}
 
@@ -266,22 +256,10 @@ func Init(r *gin.Engine, db *gorm.DB) {
 
 	mux.Group(func(mux chi.Router) {
 		mux.Use(authboss.ModuleListMiddleware(ab))
-		// mux.Use(acceptPost)
 		mux.Mount("/api", http.StripPrefix("/api", ab.Config.Core.Router))
 	})
 
 	r.Any("/*resources", gin.WrapH(mux))
-
-	// ab.Events.Before(authboss.EventAuthHijack, func(w http.ResponseWriter, r *http.Request, handled bool) (bool, error) {
-	// 	b, _ := ioutil.ReadAll(r.Body)
-	// 	defer r.Body.Close()
-	// 	var resp respLogin
-
-	// 	json.Unmarshal(b, &resp)
-
-	// 	isHandled := true
-	// 	return isHandled, nil
-	// })
 
 	ab.Events.After(authboss.EventAuth, func(w http.ResponseWriter, r *http.Request, handled bool) (bool, error) {
 
@@ -298,12 +276,14 @@ func Init(r *gin.Engine, db *gorm.DB) {
 
 			resp, errConfirm := hydra.ConfirmLogin(user.ID, false, challenge)
 
-			if errConfirm != nil {
-				logrus.WithFields(logrus.Fields{
-					"Email":     user.Email,
-					"UserID":    user.ID,
-					"Challenge": challenge,
-				}).Error("hydra/login/accept request has been failed")
+			if errConfirm != nil || resp.RedirectTo == "" {
+				logrus.Debugf("probably challenge has been expired")
+				render.JSON(w, 500, &ResponseError{
+					Status:  "error",
+					Success: false,
+					Error:   "challenge code has been expired",
+				})
+				return true, nil
 			}
 
 			oauth2_auth_csrf, _ := r.Cookie(cookieAuthenticationCSRFName)

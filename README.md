@@ -5,8 +5,10 @@ docker-compose -f db-docker-compose.yaml up -d
 docker-compose up -d
 
 #Create idp hydra client with localhost callbacks
-
 ./scripts/populate.sh
+
+go build
+./idp -api=true
 
 IF IT DOESN'T WORK TRY THINGS BELOW
 

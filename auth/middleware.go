@@ -51,33 +51,15 @@ func acceptConsent(w http.ResponseWriter, r *http.Request) {
 	url, err := hydra.AcceptConsentChallengeCode(challenge)
 
 	if err != nil {
-		if *flagAPI {
-			w.Header().Set("Content-Type", "application/json")
-			w.WriteHeader(http.StatusNoContent)
-			fmt.Fprintf(w, `{"consent challenge code isn't right"}`)
-
-		} else {
-			ro := authboss.RedirectOptions{
-				Code:         http.StatusTemporaryRedirect,
-				RedirectPath: "/",
-				Failure:      "consent challenge code isn't right",
-			}
-			ab.Core.Redirector.Redirect(w, r, ro)
-		}
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusNoContent)
+		logrus.Debugf("consent challenge code isn't right")
 		return
 	}
 
-	if *flagAPI {
-		http.Redirect(w, r, url, http.StatusTemporaryRedirect)
-		return
-	}
+	logrus.Debugf("Consent code accepted")
 
-	ro := authboss.RedirectOptions{
-		Code:         http.StatusTemporaryRedirect,
-		RedirectPath: url,
-		Success:      "Consent code accepted",
-	}
-	ab.Core.Redirector.Redirect(w, r, ro)
+	http.Redirect(w, r, url, http.StatusTemporaryRedirect)
 	return
 }
 
@@ -90,16 +72,6 @@ func challengeCode(w http.ResponseWriter, r *http.Request) {
 		hydraConfig, _ := config.GetHydraConfig()
 		oauthClient = InitClient(hydraConfig.ClientID, hydraConfig.ClientSecret)
 		redirectUrl := oauthClient.AuthCodeURL("state123")
-		// return link to hydra
-
-		if !*flagAPI {
-			ro := authboss.RedirectOptions{
-				Code:         http.StatusTemporaryRedirect,
-				RedirectPath: redirectUrl,
-				Success:      "Obtaining login challenge",
-			}
-			ab.Core.Redirector.Redirect(w, r, ro)
-		}
 
 		render.JSON(w, 200, map[string]string{"redirectURL": redirectUrl})
 		return
@@ -108,19 +80,9 @@ func challengeCode(w http.ResponseWriter, r *http.Request) {
 	challengeResp, err := hydra.CheckChallengeCode(challenge)
 
 	if err != nil {
-		if *flagAPI {
-			w.Header().Set("Content-Type", "application/json")
-			w.WriteHeader(http.StatusNoContent)
-			fmt.Fprintf(w, `{"You have wrong login challenge"}`)
-
-		} else {
-			ro := authboss.RedirectOptions{
-				Code:         http.StatusTemporaryRedirect,
-				RedirectPath: "/",
-				Success:      "You have wrong login challenge",
-			}
-			ab.Core.Redirector.Redirect(w, r, ro)
-		}
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusNoContent)
+		logrus.Debugf("wrong login challenge")
 		return
 	}
 	challengeCode := challengeResp.Challenge
@@ -136,19 +98,9 @@ func callbackToken(w http.ResponseWriter, r *http.Request) {
 	token, err := oauthClient.Exchange(oauth2.NoContext, code)
 
 	if err != nil {
-		if *flagAPI {
-			w.Header().Set("Content-Type", "application/json")
-			w.WriteHeader(http.StatusInternalServerError)
-			fmt.Fprintf(w, `{"Can't obtain authorization token"}`)
-
-		} else {
-			ro := authboss.RedirectOptions{
-				Code:         http.StatusInternalServerError,
-				RedirectPath: "/",
-				Failure:      "Can't obtain authorization token",
-			}
-			ab.Core.Redirector.Redirect(w, r, ro)
-		}
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusInternalServerError)
+		logrus.Debugf("Can't obtain authorization token")
 		return
 	}
 
@@ -192,20 +144,17 @@ func callbackToken(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if *flagAPI {
-		fromURL, _ := authboss.GetSession(r, "fromURL")
+	fromURL, _ := authboss.GetSession(r, "fromURL")
 
-		if fromURL == "" {
-			fromURL = portalConfig.Callback
-		}
-
-		http.SetCookie(w, &c)
-
-		r.Header.Set("Accesstoken", token.AccessToken)
-		fmt.Fprintf(w, `%q`, token.AccessToken)
-		ServeHTTP(w, r)
-		//render.JSON(w, 200, map[string]string{"fromURL": fromURL, "Access token": token.AccessToken})
+	if fromURL == "" {
+		fromURL = portalConfig.Callback
 	}
+
+	http.SetCookie(w, &c)
+
+	r.Header.Set("Accesstoken", token.AccessToken)
+	fmt.Fprintf(w, `%q`, token.AccessToken)
+	ServeHTTP(w, r)
 
 	http.Redirect(w, r, portalConfig.Callback, http.StatusPermanentRedirect)
 }
