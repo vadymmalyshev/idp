@@ -78,7 +78,7 @@ const (
 type ResponseError struct {
 	Status  string `json:"status"`
 	Success bool   `json:"success"`
-	Error   string `json:"string"`
+	Error   string `json:"errorMsg"`
 }
 
 func Init(r *gin.Engine, db *gorm.DB) {
@@ -266,7 +266,12 @@ func Init(r *gin.Engine, db *gorm.DB) {
 		challenge := r.Header.Get("Challenge")
 
 		if challenge == "" {
-			render.JSON(w, 500, map[string]string{"error": "no challenge code"})
+			render.JSON(w, 500, &ResponseError{
+				Status:  "error",
+				Success: false,
+				Error:   "no challenge code has been provided",
+			})
+
 			return true, nil
 		}
 
@@ -294,8 +299,11 @@ func Init(r *gin.Engine, db *gorm.DB) {
 				Get(resp.RedirectTo)
 
 			if err != nil {
-				render.JSON(w, 500, map[string]string{"error": "no csrf token"})
-			}
+				render.JSON(w, 500, &ResponseError{
+					Status:  "error",
+					Success: false,
+					Error:   "no csrf token has been provided",
+				})
 
 			accessToken := res.RawResponse.Header.Get("Set-Cookie")
 			accessToken = formatToken(accessToken)
