@@ -308,10 +308,14 @@ func Init(r *gin.Engine, db *gorm.DB) {
 
 			oauth2_auth_csrf, _ := r.Cookie(cookieAuthenticationCSRFName)
 
-			res, _ := resty.SetCookie(oauth2_auth_csrf).
+			res, err := resty.SetCookie(oauth2_auth_csrf).
 				R().
 				SetHeader("Accept", "application/json").
 				Get(resp.RedirectTo)
+
+			if err != nil {
+				render.JSON(w, 500, map[string]string{"error": "no csrf token"})
+			}
 
 			accessToken := res.RawResponse.Header.Get("Set-Cookie")
 			accessToken = formatToken(accessToken)
