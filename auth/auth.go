@@ -5,9 +5,11 @@ import (
 	"encoding/base32"
 	"encoding/base64"
 	"flag"
+	"fmt"
 	"net/http"
 	"regexp"
 	"strings"
+	"time"
 
 	"github.com/volatiletech/authboss/remember"
 	"gopkg.in/resty.v1"
@@ -63,7 +65,7 @@ var (
 var (
 	ab *authboss.Authboss
 
-	flagAPI = flag.Bool("api", false, "configure the app to be an api instead of an html app")
+	flagAPI = flag.Bool("api", true, "configure the app to be an api instead of an html app")
 )
 
 const (
@@ -72,6 +74,11 @@ const (
 
 	tplPath = "views/"
 )
+
+type respLogin struct {
+	LoginChallenge string `json:"login_challenge"`
+	FromURL        string `json:"fromUrl"`
+}
 
 func Init(r *gin.Engine, db *gorm.DB) {
 	flag.Parse()
@@ -265,45 +272,31 @@ func Init(r *gin.Engine, db *gorm.DB) {
 
 	r.Any("/*resources", gin.WrapH(mux))
 
+	// ab.Events.Before(authboss.EventAuthHijack, func(w http.ResponseWriter, r *http.Request, handled bool) (bool, error) {
+	// 	b, _ := ioutil.ReadAll(r.Body)
+	// 	defer r.Body.Close()
+	// 	var resp respLogin
+
+	// 	json.Unmarshal(b, &resp)
+
+	// 	isHandled := true
+	// 	return isHandled, nil
+	// })
+
 	ab.Events.After(authboss.EventAuth, func(w http.ResponseWriter, r *http.Request, handled bool) (bool, error) {
 
-		// challenge := r.Header.Get("login_challenge")
-		// fromURL := r.Header.Get("fromUrl")
+		challenge := r.Header.Get("Challenge")
 
-		var challenge, fromURL string
-
-		if challenge := (r).Context().Value("login_challenge"); challenge != nil {
+		if challenge == "" {
 			render.JSON(w, 500, map[string]string{"error": "no challenge code"})
 			return true, nil
 		}
-
-		if fromURL := (r).Context().Value("fromURL"); fromURL != nil {
-			render.JSON(w, 500, map[string]string{"error": "no fromURL"})
-			return true, nil
-		}
-
-		render.JSON(w, 200, map[string]string{
-			"challenge": challenge,
-			"fromURL":   fromURL,
-		})
-		return true, nil
-
-		// if len(challenge) == 0 {
-		// 	ro := authboss.RedirectOptions{
-		// 		Code:         http.StatusTemporaryRedirect,
-		// 		RedirectPath: "/",
-		// 		Success:      "You have no login challenge",
-		// 	}
-		// 	ab.Core.Redirector.Redirect(w, r, ro)
-		// 	return true, nil
-		// }
 
 		user, err := ab.LoadCurrentUser(&r)
 		if user != nil && err == nil {
 			user := user.(*users.User)
 
 			resp, errConfirm := hydra.ConfirmLogin(user.ID, false, challenge)
-			// r.Header.Del("Challenge")
 
 			if errConfirm != nil {
 				logrus.WithFields(logrus.Fields{
@@ -313,35 +306,29 @@ func Init(r *gin.Engine, db *gorm.DB) {
 				}).Error("hydra/login/accept request has been failed")
 			}
 
-			if *flagAPI {
-				oauth2_auth_csrf, _ := r.Cookie(cookieAuthenticationCSRFName)
+			oauth2_auth_csrf, _ := r.Cookie(cookieAuthenticationCSRFName)
 
-				res, _ := resty.SetCookie(oauth2_auth_csrf).
-					R().
-					SetHeader("Accept", "application/json").
-					Get(resp.RedirectTo)
+			res, _ := resty.SetCookie(oauth2_auth_csrf).
+				R().
+				SetHeader("Accept", "application/json").
+				Get(resp.RedirectTo)
 
-				accessToken := res.RawResponse.Header.Get("Set-Cookie")
-				accessToken = formatToken(accessToken)
+			accessToken := res.RawResponse.Header.Get("Set-Cookie")
+			accessToken = formatToken(accessToken)
 
-				cAuth := http.Cookie{
-					Name:  "Authorization",
-					Value: accessToken,
-					//Domain: "localhost",
-					Path: "/",
-				}
-				http.SetCookie(w, &cAuth)
+			expire := time.Now().AddDate(0, 0, 1)
 
-				render.JSON(w, 200, map[string]string{"fromURL": fromURL, "Authorization": accessToken})
-			} else {
-				ro := authboss.RedirectOptions{
-					Code:         http.StatusTemporaryRedirect,
-					RedirectPath: resp.RedirectTo,
-					Success:      "Hydra redirect",
-				}
-				logrus.Infof("user will be redirected to %s", resp.RedirectTo)
-				ab.Core.Redirector.Redirect(w, r, ro)
+			cAuth := http.Cookie{
+				Name:    "Authorization",
+				Value:   accessToken,
+				Expires: expire,
 			}
+			http.SetCookie(w, &cAuth)
+
+			render.JSON(w, 200, map[string]string{
+				"access_token": accessToken,
+				"token_type":   "bearer",
+			})
 		}
 		return true, nil
 	})
@@ -356,5 +343,5 @@ func getAuthbossUser(r *http.Request) (authboss.User, error) {
 func formatToken(token string) string {
 	token = strings.Replace(token, "Authorization=", "", 1)
 	token = strings.Replace(token, "; Path=/", "", 1)
-	return token
+	return fmt.Sprintf("Bearer %s", token)
 }

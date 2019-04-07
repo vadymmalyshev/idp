@@ -1,17 +1,17 @@
 hydra:
-  admin: "http://localhost:4445"
-  api: "http://localhost:4444"
+  admin: "http://hiveon.localhost:4445"
+  api: "http://hiveon.localhost:4444"
   docker: hydra
   client_id: "idp"
   client_secret: "idp-secret"
-  introspect: "http://localhost:4445/oauth2/introspect"
+  introspect: "http://hiveon.localhost:4445/oauth2/introspect"
 
 idp:
   port: 3000
   host: "0.0.0.0"
   client_id: "idp"
   client_secret: "idp-secret"
-  callback: "http://hiveon.local:3000/api/callback"
+  callback: "http://hiveon.localhost:3000/api/callback"
   db:
     host: "localhost"
     port: "5432"
@@ -22,8 +22,8 @@ idp:
 
 portal:
   port: 3001
-  host: "hiveon.local"
-  callback: "http://hiveon.local:8080"
+  host: "hiveon.localhost"
+  callback: "http://hiveon.localhost:8080"
   client_id: "portal"
   client_secret: "portal-secret"
 
@@ -32,7 +32,7 @@ admin:
   host: "admin.local"
   client_id: "admin"
   client_secret: "admin-secret"
-  callback: "http://admin.local:3002/callback"
+  callback: "http://admin.localhost:3002/callback"
   db:
     host: "localhost"
     port: "54320"

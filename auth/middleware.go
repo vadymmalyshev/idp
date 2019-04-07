@@ -35,22 +35,6 @@ func init() {
 	render = renderPkg.New()
 }
 
-// func acceptPost(h http.Handler) http.Handler {
-// 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-// 		if r.URL.Path == "/api/login" && r.Method == "POST" && *flagAPI {
-// 			oauth2_auth_csrf,_ := r.Cookie("oauth2_authentication_csrf")
-
-// 			fromURL, challenge := getChallengeFromURL(r, w)
-// 			r.Header.Set("Challenge", challenge)
-// 			r.Header.Set("fromURL", fromURL)
-// 			r.Header.Set("oauth2_authentication_csrf", oauth2_auth_csrf.Value)
-
-// 			h.ServeHTTP(w, r)
-// 			return
-// 		}
-// 	})
-// }
-
 func acceptConsent(w http.ResponseWriter, r *http.Request) {
 	challenge := r.URL.Query().Get("consent_challenge")
 
@@ -142,25 +126,6 @@ func challengeCode(w http.ResponseWriter, r *http.Request) {
 	challengeCode := challengeResp.Challenge
 	authboss.PutSession(w, "Challenge", challengeCode)
 
-	// put login_challenge in cookies
-	if *flagAPI {
-		oauth2_auth_csrf, _ := r.Cookie("oauth2_authentication_csrf")
-		/*
-			c := http.Cookie{
-				Name:  "Challenge",
-				Value: challengeCode,
-				//Domain: "localhost",
-				Path: "/",
-			}*/
-		c1 := http.Cookie{
-			Name:  "oauth2_csrf",
-			Value: oauth2_auth_csrf.Value,
-			//Domain: "localhost",
-			Path: "/",
-		}
-
-		http.SetCookie(w, &c1)
-	}
 	render.JSON(w, 200, map[string]string{"challenge": challengeCode})
 	return
 }

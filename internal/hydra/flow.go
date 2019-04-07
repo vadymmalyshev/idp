@@ -88,8 +88,11 @@ func ConfirmLogin(userID uint, remember bool, challenge string) (LoginResponse, 
 	request.RememberFor = RememberFor
 	// request.ACR = "normal"
 
-	res, err := resty.R().SetBody(request).
-		SetHeader("Content-Type", "application/json").Put(url)
+	res, err := resty.R().
+		SetBody(request).
+		SetHeader("Content-Type", "application/json").
+		Put(url)
+
 	if err != nil {
 		logrus.WithFields(logrus.Fields{
 			"Challenge": challenge,

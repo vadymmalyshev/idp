@@ -12,7 +12,7 @@
             "program": "${workspaceRoot}/main.go",
             "env": {
             },
-            "args": []
+            "args": ["-api=true"]
         },
         {
             "name": "Debug",
@@ -22,7 +22,7 @@
             "program": "${workspaceRoot}/main.go",
             "env": {
             },
-            "args": []
+            "args": ["-api=true"]
         }    
 
     ]
