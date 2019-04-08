@@ -321,7 +321,7 @@ func Init(r *gin.Engine, db *gorm.DB) {
 				"access_token": accessToken,
 				"token_type":   "bearer",
 			})
-		}
+		}}
 		return true, nil
 	})
 }
