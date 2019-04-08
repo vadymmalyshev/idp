@@ -124,7 +124,7 @@ func Init(r *gin.Engine, db *gorm.DB) {
 
 	ab.Config.Core.ViewRenderer = defaults.JSONRenderer{}
 
-	ab.Config.Modules.RegisterPreserveFields = []string{"email", "username"}
+	ab.Config.Modules.RegisterPreserveFields = []string{"email", "login", "name"}
 
 	ab.Config.Modules.TOTP2FAIssuer = "HiveonID"
 	ab.Config.Modules.TwoFactorEmailAuthRequired = false
@@ -144,14 +144,18 @@ func Init(r *gin.Engine, db *gorm.DB) {
 		MinLength: 4,
 	}
 	nameRule := defaults.Rules{
-		FieldName: "name", Required: true,
+		FieldName: "name", Required: false,
+		AllowWhitespace: true,
+	}
+	loginRule := defaults.Rules{
+		FieldName: "login", Required: true,
 		MinLength: 2,
 	}
 
 	ab.Config.Core.BodyReader = defaults.HTTPBodyReader{
 		ReadJSON: *flagAPI,
 		Rulesets: map[string][]defaults.Rules{
-			"register":      {emailRule, passwordRule, nameRule},
+			"register":      {emailRule, passwordRule, nameRule, loginRule},
 			"recover_start": {emailRule},
 			"recover_end":   {passwordRule},
 		},
@@ -160,7 +164,7 @@ func Init(r *gin.Engine, db *gorm.DB) {
 			"recover_end": {"password", authboss.ConfirmPrefix + "password"},
 		},
 		Whitelist: map[string][]string{
-			"register": []string{"email", "name", "password"},
+			"register": []string{"email", "name", "login", "password"},
 		},
 	}
 

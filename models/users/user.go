@@ -9,7 +9,8 @@ import (
 // User using by IDP to store users and their credentials
 type User struct {
 	gorm.Model
-	Username string `gorm:"not null"`
+	Login    string `gorm:"not null"`
+	Name     string `gorm:"not null"`
 	Email    string `gorm:"not null;unique_index"`
 	Password string `gorm:"not null"`
 
@@ -111,8 +112,11 @@ func (u *User) PutOAuth2Expiry(expiry time.Time) { u.OAuth2Expiry = expiry }
 
 // PutArbitrary into user
 func (u *User) PutArbitrary(values map[string]string) {
-	if n, ok := values["username"]; ok {
-		u.Username = n
+	if n, ok := values["login"]; ok {
+		u.Login = n
+	}
+	if n, ok := values["name"]; ok {
+		u.Name = n
 	}
 }
 
@@ -185,6 +189,6 @@ func (u User) GetOAuth2Expiry() (expiry time.Time) { return u.OAuth2Expiry }
 // GetArbitrary from user
 func (u User) GetArbitrary() map[string]string {
 	return map[string]string{
-		"username": u.Username,
+		"login": u.Login,
 	}
 }

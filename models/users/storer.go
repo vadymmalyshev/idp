@@ -44,7 +44,7 @@ func (store UserStorer) Load(ctx context.Context, key string) (authboss.User, er
 	notFoundByEmail := store.db.First(&user, "email = ?", key).RecordNotFound()
 
 	if notFoundByEmail {
-		notFoundByName := store.db.First(&user, "username = ?", key).RecordNotFound()
+		notFoundByName := store.db.First(&user, "login = ?", key).RecordNotFound()
 		if notFoundByName {
 			notFoundByID := store.db.First(&user, "id = ?", key).RecordNotFound()
 			if notFoundByID {

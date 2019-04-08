@@ -185,7 +185,7 @@ func layoutData(w http.ResponseWriter, r **http.Request, redirect string) authbo
 	currentUserName := ""
 	userInter, err := ab.LoadCurrentUser(r)
 	if userInter != nil && err == nil {
-		currentUserName = userInter.(*users.User).Username
+		currentUserName = userInter.(*users.User).Login
 	}
 
 	return authboss.HTMLData{
