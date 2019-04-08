@@ -304,7 +304,7 @@ func Init(r *gin.Engine, db *gorm.DB) {
 					Success: false,
 					Error:   "no csrf token has been provided",
 				})
-
+			}
 			accessToken := res.RawResponse.Header.Get("Set-Cookie")
 			accessToken = formatToken(accessToken)
 
@@ -321,7 +321,7 @@ func Init(r *gin.Engine, db *gorm.DB) {
 				"access_token": accessToken,
 				"token_type":   "bearer",
 			})
-		}}
+		}
 		return true, nil
 	})
 }
