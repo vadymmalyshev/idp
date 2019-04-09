@@ -5,7 +5,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-
 	"git.tor.ph/hiveon/idp/config"
 	"git.tor.ph/hiveon/idp/internal/hydra"
 	"git.tor.ph/hiveon/idp/models/users"
@@ -59,7 +58,28 @@ func acceptConsent(w http.ResponseWriter, r *http.Request) {
 
 	logrus.Debugf("Consent code accepted")
 
-	http.Redirect(w, r, url, http.StatusTemporaryRedirect)
+
+	var oauth2_consent_csrf *http.Cookie
+	oauth2_auth_csrf, _ := r.Cookie(cookieAuthenticationCSRFName)
+
+	k :=r.Cookies();
+	for i,v :=range k {
+		if v.Name == cookieConsentCSRFName {
+			oauth2_consent_csrf = k[i]
+		}
+	}
+
+	res, _ := resty.SetCookie(oauth2_consent_csrf).
+		SetCookie(oauth2_auth_csrf).
+		R().
+		SetHeader("Accept", "application/json").
+		Get(url)
+
+	accessToken := res.RawResponse.Header.Get("Set-Cookie")
+	accessToken = formatToken(accessToken)
+	w.Header().Set("Authorization", accessToken)
+	ServeHTTP(w, r)
+
 	return
 }
 
@@ -138,25 +158,18 @@ func callbackToken(w http.ResponseWriter, r *http.Request) {
 		Path: "/",
 	}
 
-	portalConfig, err := config.GetPortalConfig()
+	//portalConfig, err := config.GetPortalConfig()
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusNoContent)
 		return
 	}
 
-	fromURL, _ := authboss.GetSession(r, "fromURL")
-
-	if fromURL == "" {
-		fromURL = portalConfig.Callback
-	}
-
 	http.SetCookie(w, &c)
 
-	r.Header.Set("Accesstoken", token.AccessToken)
-	fmt.Fprintf(w, `%q`, token.AccessToken)
 	ServeHTTP(w, r)
+	return
 
-	http.Redirect(w, r, portalConfig.Callback, http.StatusPermanentRedirect)
+	//http.Redirect(w, r, portalConfig.Callback, http.StatusPermanentRedirect)
 }
 
 //nosurfing is a more verbose wrapper around csrf handling

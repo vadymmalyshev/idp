@@ -6,13 +6,12 @@ import (
 	"encoding/base64"
 	"flag"
 	"fmt"
+	"github.com/volatiletech/authboss/remember"
+	"gopkg.in/resty.v1"
 	"net/http"
 	"regexp"
 	"strings"
 	"time"
-
-	"github.com/volatiletech/authboss/remember"
-	"gopkg.in/resty.v1"
 
 	"golang.org/x/oauth2"
 
@@ -36,7 +35,7 @@ import (
 
 	renderPkg "github.com/unrolled/render"
 	clientState "github.com/volatiletech/authboss-clientstate"
-	abrenderer "github.com/volatiletech/authboss-renderer"
+	"github.com/volatiletech/authboss-renderer"
 )
 
 const IDPSessionName = "idp_session"
@@ -60,6 +59,7 @@ var (
 	sessionStore clientState.SessionStorer
 
 	cookieAuthenticationCSRFName = "oauth2_authentication_csrf"
+    cookieConsentCSRFName        = "oauth2_consent_csrf"
 )
 
 var (
@@ -303,11 +303,15 @@ func handleLogin(challenge string, w http.ResponseWriter, r *http.Request) (bool
 		}
 
 		oauth2_auth_csrf, _ := r.Cookie(cookieAuthenticationCSRFName)
+		cookieArray:= []*http.Cookie{}
+		resty.DefaultClient.Cookies = cookieArray
 
 		res, err := resty.SetCookie(oauth2_auth_csrf).
 			R().
 			SetHeader("Accept", "application/json").
 			Get(resp.RedirectTo)
+
+
 
 		if err != nil {
 			render.JSON(w, 500, &ResponseError{
@@ -316,8 +320,10 @@ func handleLogin(challenge string, w http.ResponseWriter, r *http.Request) (bool
 				Error:   "no csrf token has been provided",
 			})
 		}
-		accessToken := res.RawResponse.Header.Get("Set-Cookie")
-		accessToken = formatToken(accessToken)
+		accessToken := res.RawResponse.Header.Get("Authorization")
+		//accessToken := res.RawResponse.Header.Get("Set-Cookie")
+
+		//accessToken = formatToken(accessToken)
 
 		expire := time.Now().AddDate(0, 0, 1)
 
