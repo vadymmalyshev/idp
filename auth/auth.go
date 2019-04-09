@@ -265,69 +265,76 @@ func Init(r *gin.Engine, db *gorm.DB) {
 
 	r.Any("/*resources", gin.WrapH(mux))
 
-	ab.Events.After(authboss.EventAuth, func(w http.ResponseWriter, r *http.Request, handled bool) (bool, error) {
-
+	ab.Events.After(authboss.EventRegister, func(w http.ResponseWriter, r *http.Request, handled bool) (bool, error) {
 		challenge := r.Header.Get("Challenge")
+		return handleLogin(challenge, w, r)
+	})
 
-		if challenge == "" {
+	ab.Events.After(authboss.EventAuth, func(w http.ResponseWriter, r *http.Request, handled bool) (bool, error) {
+		challenge := r.Header.Get("Challenge")
+		return handleLogin(challenge, w, r)
+	})
+}
+
+func handleLogin(challenge string, w http.ResponseWriter, r *http.Request) (bool, error) {
+	if challenge == "" {
+		render.JSON(w, 500, &ResponseError{
+			Status:  "error",
+			Success: false,
+			Error:   "no challenge code has been provided",
+		})
+
+		return true, nil
+	}
+
+	user, err := ab.LoadCurrentUser(&r)
+	if user != nil && err == nil {
+		user := user.(*users.User)
+
+		resp, errConfirm := hydra.ConfirmLogin(user.ID, false, challenge)
+
+		if errConfirm != nil || resp.RedirectTo == "" {
+			logrus.Debugf("probably challenge has been expired")
 			render.JSON(w, 500, &ResponseError{
 				Status:  "error",
 				Success: false,
-				Error:   "no challenge code has been provided",
+				Error:   "challenge code has been expired",
 			})
-
 			return true, nil
 		}
 
-		user, err := ab.LoadCurrentUser(&r)
-		if user != nil && err == nil {
-			user := user.(*users.User)
+		oauth2_auth_csrf, _ := r.Cookie(cookieAuthenticationCSRFName)
 
-			resp, errConfirm := hydra.ConfirmLogin(user.ID, false, challenge)
+		res, err := resty.SetCookie(oauth2_auth_csrf).
+			R().
+			SetHeader("Accept", "application/json").
+			Get(resp.RedirectTo)
 
-			if errConfirm != nil || resp.RedirectTo == "" {
-				logrus.Debugf("probably challenge has been expired")
-				render.JSON(w, 500, &ResponseError{
-					Status:  "error",
-					Success: false,
-					Error:   "challenge code has been expired",
-				})
-				return true, nil
-			}
-
-			oauth2_auth_csrf, _ := r.Cookie(cookieAuthenticationCSRFName)
-
-			res, err := resty.SetCookie(oauth2_auth_csrf).
-				R().
-				SetHeader("Accept", "application/json").
-				Get(resp.RedirectTo)
-
-			if err != nil {
-				render.JSON(w, 500, &ResponseError{
-					Status:  "error",
-					Success: false,
-					Error:   "no csrf token has been provided",
-				})
-			}
-			accessToken := res.RawResponse.Header.Get("Set-Cookie")
-			accessToken = formatToken(accessToken)
-
-			expire := time.Now().AddDate(0, 0, 1)
-
-			cAuth := http.Cookie{
-				Name:    "Authorization",
-				Value:   accessToken,
-				Expires: expire,
-			}
-			http.SetCookie(w, &cAuth)
-
-			render.JSON(w, 200, map[string]string{
-				"access_token": accessToken,
-				"token_type":   "bearer",
+		if err != nil {
+			render.JSON(w, 500, &ResponseError{
+				Status:  "error",
+				Success: false,
+				Error:   "no csrf token has been provided",
 			})
 		}
-		return true, nil
-	})
+		accessToken := res.RawResponse.Header.Get("Set-Cookie")
+		accessToken = formatToken(accessToken)
+
+		expire := time.Now().AddDate(0, 0, 1)
+
+		cAuth := http.Cookie{
+			Name:    "Authorization",
+			Value:   accessToken,
+			Expires: expire,
+		}
+		http.SetCookie(w, &cAuth)
+
+		render.JSON(w, 200, map[string]string{
+			"access_token": accessToken,
+			"token_type":   "bearer",
+		})
+	}
+	return true, nil
 }
 
 func getAuthbossUser(r *http.Request) (authboss.User, error) {
