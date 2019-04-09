@@ -82,7 +82,6 @@ type ResponseError struct {
 }
 
 func Init(r *gin.Engine, db *gorm.DB) {
-	flag.Parse()
 	signingKey, _ := config.GetSignKey()
 
 	signingKeyBytes := []byte(signingKey)

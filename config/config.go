@@ -2,6 +2,7 @@ package config
 
 import (
 	"errors"
+	"flag"
 	"fmt"
 	"log"
 
@@ -41,14 +42,17 @@ const (
 	portalClientSecret = "portal.client_secret"
 )
 
-func init() {
+var configName = flag.String("c", "config", "config file name from config directory")
+
+func InitViperConfig() {
 	logrus.Info("THAT'S HAPPEN'")
+	logrus.Infof("used config file: %s.yaml", *configName)
 	// viper.AddConfigPath("$HOME/config")
 	viper.AddConfigPath("./")
 	viper.AddConfigPath("./config")
 	viper.SetConfigType("yaml")
 	viper.AutomaticEnv()
-	viper.SetConfigName("config")
+	viper.SetConfigName(*configName)
 
 	if err := viper.ReadInConfig(); err != nil {
 		log.Fatalf("Error reading config file, %s", err)

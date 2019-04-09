@@ -10,6 +10,13 @@ docker-compose up -d
 go build
 ./idp -api=true
 
+#Use custom config file:
+use flags to set config file name from ./config directory by default used config.yaml
+note: use configName without ".yaml"
+-c=configName      OR:   --c=configName
+-c configName            --c configName
+ 
+
 IF IT DOESN'T WORK TRY THINGS BELOW
 
 docker exec -it hydra hydra clients create \

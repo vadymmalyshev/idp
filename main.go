@@ -1,6 +1,7 @@
 package main
 
 import (
+	"flag"
 	"fmt"
 	"os"
 	"os/signal"
@@ -28,6 +29,8 @@ func init() {
 }
 
 func main() {
+	flag.Parse()
+	config.InitViperConfig()
 
 	r := gin.New()
 
