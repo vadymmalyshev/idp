@@ -59,7 +59,7 @@ var (
 	sessionStore clientState.SessionStorer
 
 	cookieAuthenticationCSRFName = "oauth2_authentication_csrf"
-    cookieConsentCSRFName        = "oauth2_consent_csrf"
+	cookieConsentCSRFName        = "oauth2_consent_csrf"
 )
 
 var (
@@ -277,7 +277,7 @@ func Init(r *gin.Engine, db *gorm.DB) {
 
 func handleLogin(challenge string, w http.ResponseWriter, r *http.Request) (bool, error) {
 	if challenge == "" {
-		render.JSON(w, 500, &ResponseError{
+		render.JSON(w, 422, &ResponseError{
 			Status:  "error",
 			Success: false,
 			Error:   "no challenge code has been provided",
@@ -289,12 +289,14 @@ func handleLogin(challenge string, w http.ResponseWriter, r *http.Request) (bool
 	user, err := ab.LoadCurrentUser(&r)
 	if user != nil && err == nil {
 
-		user := user.(*users.User); val :=user.GetArbitrary(); fmt.Println(val)
+		user := user.(*users.User)
+		val := user.GetArbitrary()
+		fmt.Println(val)
 		resp, errConfirm := hydra.ConfirmLogin(user.ID, false, challenge)
 
 		if errConfirm != nil || resp.RedirectTo == "" {
 			logrus.Debugf("probably challenge has been expired")
-			render.JSON(w, 500, &ResponseError{
+			render.JSON(w, 422, &ResponseError{
 				Status:  "error",
 				Success: false,
 				Error:   "challenge code has been expired",
@@ -303,7 +305,7 @@ func handleLogin(challenge string, w http.ResponseWriter, r *http.Request) (bool
 		}
 
 		oauth2_auth_csrf, _ := r.Cookie(cookieAuthenticationCSRFName)
-		cookieArray:= []*http.Cookie{}
+		cookieArray := []*http.Cookie{}
 		resty.DefaultClient.Cookies = cookieArray
 
 		res, err := resty.SetCookie(oauth2_auth_csrf).
@@ -312,7 +314,7 @@ func handleLogin(challenge string, w http.ResponseWriter, r *http.Request) (bool
 			Get(resp.RedirectTo)
 
 		if err != nil {
-			render.JSON(w, 500, &ResponseError{
+			render.JSON(w, 422, &ResponseError{
 				Status:  "error",
 				Success: false,
 				Error:   "no csrf token has been provided",
@@ -322,7 +324,7 @@ func handleLogin(challenge string, w http.ResponseWriter, r *http.Request) (bool
 
 		accessToken := res.RawResponse.Header.Get("Authorization")
 		if accessToken == "" {
-			render.JSON(w, 500, &ResponseError{
+			render.JSON(w, 422, &ResponseError{
 				Status:  "error",
 				Success: false,
 				Error:   "No access token has been obtained",
