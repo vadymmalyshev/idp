@@ -189,6 +189,6 @@ func (u User) GetOAuth2Expiry() (expiry time.Time) { return u.OAuth2Expiry }
 // GetArbitrary from user
 func (u User) GetArbitrary() map[string]string {
 	return map[string]string{
-		"login": u.Login,
+		"login": u.Login, "name": u.Name,
 	}
 }

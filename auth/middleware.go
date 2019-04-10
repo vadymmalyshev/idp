@@ -58,7 +58,6 @@ func acceptConsent(w http.ResponseWriter, r *http.Request) {
 
 	logrus.Debugf("Consent code accepted")
 
-
 	var oauth2_consent_csrf *http.Cookie
 	oauth2_auth_csrf, _ := r.Cookie(cookieAuthenticationCSRFName)
 
@@ -69,13 +68,28 @@ func acceptConsent(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	res, _ := resty.SetCookie(oauth2_consent_csrf).
+	res, err := resty.SetCookie(oauth2_consent_csrf).
 		SetCookie(oauth2_auth_csrf).
 		R().
 		SetHeader("Accept", "application/json").
 		Get(url)
 
+	if err != nil {
+		render.JSON(w, 500, &ResponseError{
+			Status:  "error",
+			Success: false,
+			Error:   "no consent csrf token has been provided",
+		})
+	}
+
 	accessToken := res.RawResponse.Header.Get("Set-Cookie")
+	if accessToken == "" {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusNoContent)
+		logrus.Error("Can't obtain access token!")
+		return
+	}
+
 	accessToken = formatToken(accessToken)
 	w.Header().Set("Authorization", accessToken)
 	ServeHTTP(w, r)

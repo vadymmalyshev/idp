@@ -288,8 +288,8 @@ func handleLogin(challenge string, w http.ResponseWriter, r *http.Request) (bool
 
 	user, err := ab.LoadCurrentUser(&r)
 	if user != nil && err == nil {
-		user := user.(*users.User)
 
+		user := user.(*users.User); val :=user.GetArbitrary(); fmt.Println(val)
 		resp, errConfirm := hydra.ConfirmLogin(user.ID, false, challenge)
 
 		if errConfirm != nil || resp.RedirectTo == "" {
@@ -311,19 +311,24 @@ func handleLogin(challenge string, w http.ResponseWriter, r *http.Request) (bool
 			SetHeader("Accept", "application/json").
 			Get(resp.RedirectTo)
 
-
-
 		if err != nil {
 			render.JSON(w, 500, &ResponseError{
 				Status:  "error",
 				Success: false,
 				Error:   "no csrf token has been provided",
 			})
+			return true, nil
 		}
-		accessToken := res.RawResponse.Header.Get("Authorization")
-		//accessToken := res.RawResponse.Header.Get("Set-Cookie")
 
-		//accessToken = formatToken(accessToken)
+		accessToken := res.RawResponse.Header.Get("Authorization")
+		if accessToken == "" {
+			render.JSON(w, 500, &ResponseError{
+				Status:  "error",
+				Success: false,
+				Error:   "No access token has been obtained",
+			})
+			return true, nil
+		}
 
 		expire := time.Now().AddDate(0, 0, 1)
 
