@@ -6,6 +6,7 @@ import (
 	"encoding/base64"
 	"flag"
 	"fmt"
+	"github.com/volatiletech/authboss/otp/twofactor/totp2fa"
 	"github.com/volatiletech/authboss/remember"
 	"gopkg.in/resty.v1"
 	"net/http"
@@ -188,6 +189,11 @@ func Init(r *gin.Engine, db *gorm.DB) {
 	modRecover := recover.Recover{}
 	if err := modRecover.Init(ab); err != nil {
 		logrus.Panicf("can't initialize authboss's recover mod", err)
+	}
+
+	modTotp := &totp2fa.TOTP{Authboss: ab}
+	if err := modTotp.Setup(); err != nil {
+		logrus.Panicf("can't initialize authboss's totp2fa mod", err)
 	}
 
 	schemaDec := schema.NewDecoder()
