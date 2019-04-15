@@ -114,7 +114,7 @@ func Init(r *gin.Engine, db *gorm.DB) {
 	serverConfig, _ := config.GetServerConfig()
 
 	ab.Config.Paths.RootURL = serverConfig.Addr
-	ab.Config.Paths.Mount = "/"
+	// ab.Config.Paths.Mount = "/"
 
 	ab.Config.Storage.Server = users.NewUserStorer(db)
 	ab.Config.Storage.SessionState = sessionStore
