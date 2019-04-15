@@ -279,7 +279,7 @@ func nosurfing(h http.Handler) http.Handler {
 	return surfing
 }
 
-func handleHydraSession(handler http.Handler) http.Handler {
+func handleUserSession(handler http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 
 		user, err := getUserFromHydraSession(w, r)

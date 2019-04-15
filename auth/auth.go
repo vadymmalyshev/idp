@@ -200,8 +200,9 @@ func Init(r *gin.Engine, db *gorm.DB) {
 
 	mux := chi.NewRouter()
 
-	mux.Use(ab.LoadClientStateMiddleware, remember.Middleware(ab), dataInjector)
-	mux.Use(handleHydraSession)
+	mux.Use(ab.LoadClientStateMiddleware, remember.Middleware(ab))
+	mux.Use(handleUserSession)
+	mux.Use(dataInjector)
 
 	mux.Get("/api/userinfo", func(w http.ResponseWriter, r *http.Request) {
 		user, err := ab.LoadCurrentUser(&r)
