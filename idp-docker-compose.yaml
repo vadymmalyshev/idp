@@ -22,7 +22,7 @@ services:
       - LOG_LEVEL=debug
       - SYSTEM_SECRET=${HYDRA_SYSTEM_SECRET:-youReallyNeedToChangeThis}
       - DATABASE_URL=postgres://${IDP_DB_USER:-idp}:${IDP_DB_PASS:-8GWbz2JF4FMe1Q8X}@${IDP_DB_HOST:-postgres}:5432/${HYDRA_DB_NAME:-hydra}?sslmode=disable
-      - OAUTH2_CONSENT_URL=https//id.hiveon.dev/api/consent
+      - OAUTH2_CONSENT_URL=https://id.hiveon.dev/api/consent
       - OAUTH2_LOGIN_URL=https://id.hiveon.dev/api/login
       - OAUTH2_ISSUER_URL=https://id.hiveon.dev
       - OAUTH2_SHARE_ERROR_DEBUG=1
@@ -41,7 +41,7 @@ services:
     <<: *idp_hiveon-dev-network
     container_name: hydra-migrate
     hostname: hydra-migrate
-    image: oryd/hydra:${HYDRA_VERSION:-v1.0.0-rc.6_oryOS.10}
+    image: oryd/hydra:${HYDRA_VERSION:-v1.0.0-rc.8_oryOS.10}
     environment:
       - LOG_LEVEL=debug
     external_links:
