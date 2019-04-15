@@ -2,6 +2,7 @@ package users
 
 import (
 	"context"
+	"strconv"
 
 	"github.com/jinzhu/gorm"
 	"github.com/sirupsen/logrus"
@@ -46,8 +47,12 @@ func (store UserStorer) Load(ctx context.Context, key string) (authboss.User, er
 	if notFoundByEmail {
 		notFoundByName := store.db.First(&user, "login = ?", key).RecordNotFound()
 		if notFoundByName {
-			notFoundByID := store.db.First(&user, "id = ?", key).RecordNotFound()
-			if notFoundByID {
+			if _, err := strconv.Atoi(key); err == nil {
+				notFoundByID := store.db.First(&user, "id = ?", key).RecordNotFound()
+				if notFoundByID {
+					return nil, authboss.ErrUserNotFound
+				}
+			} else {
 				return nil, authboss.ErrUserNotFound
 			}
 		}

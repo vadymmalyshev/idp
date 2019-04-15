@@ -61,8 +61,8 @@ func acceptConsent(w http.ResponseWriter, r *http.Request) {
 	var oauth2_consent_csrf *http.Cookie
 	oauth2_auth_csrf, _ := r.Cookie(cookieAuthenticationCSRFName)
 
-	k :=r.Cookies();
-	for i,v :=range k {
+	k := r.Cookies()
+	for i, v := range k {
 		if v.Name == cookieConsentCSRFName {
 			oauth2_consent_csrf = k[i]
 		}
@@ -75,7 +75,7 @@ func acceptConsent(w http.ResponseWriter, r *http.Request) {
 		Get(url)
 
 	if err != nil {
-		render.JSON(w, 500, &ResponseError{
+		render.JSON(w, 422, &ResponseError{
 			Status:  "error",
 			Success: false,
 			Error:   "no consent csrf token has been provided",
@@ -133,7 +133,7 @@ func callbackToken(w http.ResponseWriter, r *http.Request) {
 
 	if err != nil {
 		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusInternalServerError)
+		w.WriteHeader(http.StatusUnprocessableEntity)
 		logrus.Debugf("Can't obtain authorization token")
 		return
 	}
