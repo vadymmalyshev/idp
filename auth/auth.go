@@ -199,9 +199,19 @@ func Init(r *gin.Engine, db *gorm.DB) {
 	render := renderPkg.New()
 
 	mux := chi.NewRouter()
-	mux.Use(ab.LoadClientStateMiddleware, remember.Middleware(ab), dataInjector)
 
-	mux.Get("/api/userinfo", UserInfo)
+	mux.Use(ab.LoadClientStateMiddleware, remember.Middleware(ab), dataInjector)
+	mux.Use(handleHydraSession)
+
+	mux.Get("/api/userinfo", func(w http.ResponseWriter, r *http.Request) {
+		user, err := ab.LoadCurrentUser(&r)
+		if err != nil {
+			render.JSON(w, 401, err.Error())
+			return
+		}
+		RefreshToken(w, r, user)
+	})
+
 	mux.Get("/api/login", challengeCode)
 	mux.Get("/api/callback", callbackToken)
 	mux.Get("/api/consent", acceptConsent)
@@ -243,19 +253,16 @@ func Init(r *gin.Engine, db *gorm.DB) {
 
 	r.Any("/*resources", gin.WrapH(mux))
 
-	ab.Events.Before(authboss.EventGetUserSession, func(w http.ResponseWriter, r *http.Request, handled bool) (bool, error) {
-		user, err := ab.CurrentUser(r)
+	// ab.Events.Before(authboss.EventGetUserSession, func(w http.ResponseWriter, r *http.Request, handled bool) (bool, error) {
+	// 	user, err := getUserFromHydraSession(w, r)
+	// 	if err != nil {
+	// 		return true, err
+	// 	}
 
-		if err != nil {
-			return true, err
-		}
+	// 	ab.Config.Storage.Server.Save(r.Context(), user)
 
-		if user != nil {
-			return true, nil
-		}
-
-		return true, nil
-	})
+	// 	return true, nil
+	// })
 
 	ab.Events.After(authboss.EventRegister, func(w http.ResponseWriter, r *http.Request, handled bool) (bool, error) {
 		challenge := r.Header.Get("Challenge")

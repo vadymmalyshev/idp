@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"strings"
 
@@ -99,35 +100,22 @@ func acceptConsent(w http.ResponseWriter, r *http.Request) {
 	return
 }
 
-// UserInfo checking request for hydra' access token and refeshing token if access token exist
-func UserInfo(w http.ResponseWriter, r *http.Request) {
-
-	if user := r.Context().Value(authboss.CTXKeyUser); user != nil {
-		logrus.Info("OK")
-	}
-
-	if user, err := ab.CurrentUser(r); err != nil {
-		logrus.Info(user.(*users.User).Email)
-	}
-
+func getUserFromHydraSession(w http.ResponseWriter, r *http.Request) (authboss.User, error) {
 	hydraConfig, _ := config.GetHydraConfig()
 	reqTokenCookie, err := r.Cookie("Authorization")
 	if err != nil {
-		render.JSON(w, 401, map[string]string{"error": "Authorization token missed"})
-		return
+		return nil, errors.New("Authorization token missed")
 	}
 
 	reqToken := reqTokenCookie.Value
 
 	if len(reqToken) == 0 {
-		render.JSON(w, 401, map[string]string{"error": "Authorization token missed"})
-		return
+		return nil, errors.New("Authorization token missed")
 	}
 
 	splitToken := strings.Split(reqToken, "Bearer")
 	if len(splitToken) != 2 {
-		render.JSON(w, 401, map[string]string{"error": "Token is wrong"})
-		return
+		return nil, errors.New("Token is wrong")
 	}
 
 	token := strings.TrimSpace(splitToken[1])
@@ -138,22 +126,23 @@ func UserInfo(w http.ResponseWriter, r *http.Request) {
 		SetHeader("Accept", "application/json").Post(introspectURL)
 
 	if err != nil {
-		render.JSON(w, 401, map[string]string{"error": "Can't check token"})
+		return nil, errors.New("Can't check token")
 	}
 	var introToken swagger.OAuth2TokenIntrospection
 
 	err = json.Unmarshal(res.Body(), &introToken)
 	if err != nil {
-		render.JSON(w, 401, map[string]string{"error": "Can't unmarshall token"})
+		return nil, errors.New("Can't unmarshall token")
 	}
 
 	user, err := getAuthbossUserByEmail(r, introToken.Sub)
 	if err != nil {
-		render.JSON(w, 401, map[string]string{"error": "can't find user"})
-		return
+		return nil, errors.New("can't find user")
 	}
 
-	RefreshToken(w, r, user)
+	// RefreshToken(w, r, user)
+
+	return user, nil
 }
 
 // RefreshToken refreshing token via hydra for specified user
@@ -288,6 +277,23 @@ func nosurfing(h http.Handler) http.Handler {
 		w.WriteHeader(http.StatusBadRequest)
 	}))
 	return surfing
+}
+
+func handleHydraSession(handler http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+
+		user, err := getUserFromHydraSession(w, r)
+		if err != nil || user == nil {
+			authboss.DelAllSession(w, ab.Config.Storage.SessionStateWhitelistKeys)
+			authboss.DelKnownSession(w)
+			authboss.DelKnownCookie(w)
+
+			logrus.Error(err.Error())
+		} else {
+			r = r.WithContext(context.WithValue(r.Context(), authboss.CTXKeyPID, user.(*users.User).Email))
+		}
+		handler.ServeHTTP(w, r)
+	})
 }
 
 func dataInjector(handler http.Handler) http.Handler {
