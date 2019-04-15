@@ -14,6 +14,8 @@ const (
 	serverPort = "idp.port"
 	serverHost = "idp.host"
 
+	cookieDomain = "cookie_domain"
+
 	hydraAdmin        = "hydra.admin"
 	hydraAPI          = "hydra.api"
 	hydraClientID     = "hydra.client_id"
@@ -69,6 +71,8 @@ func InitViperConfig() {
 	viper.SetDefault(hydraAdmin, "localhost:4445")
 	viper.SetDefault(hydraClientID, "")
 	viper.SetDefault(hydraClientSecret, "")
+
+	viper.SetDefault(cookieDomain, ".hiveon.localhost")
 }
 
 type DBConfig struct {
@@ -192,4 +196,8 @@ func GetPortalConfig() (PortalConfig, error) {
 	}
 
 	return config, nil
+}
+
+func GetCookieDomain() (string, error) {
+	return viper.GetString(cookieDomain), nil
 }

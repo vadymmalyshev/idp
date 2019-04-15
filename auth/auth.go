@@ -335,10 +335,13 @@ func handleLogin(challenge string, w http.ResponseWriter, r *http.Request) (bool
 
 		expire := time.Now().AddDate(0, 0, 1)
 
+		cookieDomain, _ := config.GetCookieDomain()
+
 		cAuth := http.Cookie{
 			Name:    "Authorization",
 			Value:   accessToken,
 			Expires: expire,
+			Domain:  cookieDomain,
 		}
 		http.SetCookie(w, &cAuth)
 

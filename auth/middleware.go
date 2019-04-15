@@ -113,8 +113,8 @@ func getUserFromHydraSession(w http.ResponseWriter, r *http.Request) (authboss.U
 		return nil, errors.New("Authorization token missed")
 	}
 
-	splitToken := strings.Split(reqToken, "Bearer")
-	if len(splitToken) != 2 {
+	splitToken := strings.Split(reqToken, " ")
+	if len(splitToken) < 1 {
 		return nil, errors.New("Token is wrong")
 	}
 
@@ -166,11 +166,11 @@ func RefreshToken(w http.ResponseWriter, r *http.Request, abUser authboss.User) 
 
 		ab.Config.Storage.Server.Save(r.Context(), user)
 	}
-
+	cookieDomain, _ := config.GetCookieDomain()
 	c := http.Cookie{
 		Name:   "Authorization",
 		Value:  updatedToken.AccessToken,
-		Domain: "hiveon.local",
+		Domain: cookieDomain,
 		Path:   "/",
 	}
 
@@ -247,12 +247,12 @@ func callbackToken(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusNoContent)
 		return
 	}
-
+	cookieDomain, _ := config.GetCookieDomain()
 	c := http.Cookie{
-		Name:  "Authorization",
-		Value: token.AccessToken,
-		//Domain: "id.hiveon.local",
-		Path: "/",
+		Name:   "Authorization",
+		Value:  token.AccessToken,
+		Domain: cookieDomain,
+		Path:   "/",
 	}
 
 	//portalConfig, err := config.GetPortalConfig()
