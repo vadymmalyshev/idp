@@ -20,7 +20,7 @@ idp:
 portal:
   port: 3001
   host: "hiveon.dev"
-  callback: "http://hiveon.dev/callback"
+  callback: "http://hiveon.dev"
   client_id: "portal"
   client_secret: "portal-secret"
 

@@ -112,9 +112,12 @@ func Init(r *gin.Engine, db *gorm.DB) {
 
 	ab = authboss.New()
 
-	serverConfig, _ := config.GetServerConfig()
+	//serverConfig, _ := config.GetServerConfig()
 
-	ab.Config.Paths.RootURL = serverConfig.Addr
+	//ab.Config.Paths.RootURL = serverConfig.Addr
+	portalConfig, _ := config.GetPortalConfig()
+
+	ab.Config.Paths.RootURL = portalConfig.Callback
 	ab.Config.Paths.Mount = "/"
 
 	ab.Config.Storage.Server = users.NewUserStorer(db)
