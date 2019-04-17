@@ -26,7 +26,7 @@ docker exec -it hydra hydra clients create \
     --response-types code,id_token \
     --grant-types refresh_token,authorization_code \
     --scope openid,offline \
-    --callbacks https://localhost:3000/api/callback
+    --callbacks http://localhost:3000/api/callback
 #Now you can access localhost:4444 - hydra public port, localhost:4445 - hydra admin port
 
 
