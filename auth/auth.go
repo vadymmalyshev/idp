@@ -1,19 +1,18 @@
 package auth
 
 import (
-	"context"
 	"encoding/base32"
 	"encoding/base64"
 	"flag"
 	"fmt"
-	"github.com/volatiletech/authboss/remember"
-	"gopkg.in/resty.v1"
 	"net/http"
 	"regexp"
 	"strings"
 	"time"
 
-	"golang.org/x/oauth2"
+	"github.com/volatiletech/authboss/otp/twofactor/totp2fa"
+	"github.com/volatiletech/authboss/remember"
+	"gopkg.in/resty.v1"
 
 	"github.com/volatiletech/authboss/recover"
 
@@ -35,7 +34,7 @@ import (
 
 	renderPkg "github.com/unrolled/render"
 	clientState "github.com/volatiletech/authboss-clientstate"
-	"github.com/volatiletech/authboss-renderer"
+	abrenderer "github.com/volatiletech/authboss-renderer"
 )
 
 const IDPSessionName = "idp_session"
@@ -115,7 +114,7 @@ func Init(r *gin.Engine, db *gorm.DB) {
 	serverConfig, _ := config.GetServerConfig()
 
 	ab.Config.Paths.RootURL = serverConfig.Addr
-	ab.Config.Paths.Mount = "/"
+	// ab.Config.Paths.Mount = "/"
 
 	ab.Config.Storage.Server = users.NewUserStorer(db)
 	ab.Config.Storage.SessionState = sessionStore
@@ -190,12 +189,29 @@ func Init(r *gin.Engine, db *gorm.DB) {
 		logrus.Panicf("can't initialize authboss's recover mod", err)
 	}
 
+	modTotp := &totp2fa.TOTP{Authboss: ab}
+	if err := modTotp.Setup(); err != nil {
+		logrus.Panicf("can't initialize authboss's totp2fa mod", err)
+	}
+
 	schemaDec := schema.NewDecoder()
 	schemaDec.IgnoreUnknownKeys(true)
 	render := renderPkg.New()
 
 	mux := chi.NewRouter()
-	mux.Use(ab.LoadClientStateMiddleware, remember.Middleware(ab), dataInjector)
+
+	mux.Use(ab.LoadClientStateMiddleware, remember.Middleware(ab))
+	mux.Use(handleUserSession)
+	mux.Use(dataInjector)
+
+	mux.Get("/api/userinfo", func(w http.ResponseWriter, r *http.Request) {
+		user, err := ab.LoadCurrentUser(&r)
+		if err != nil {
+			render.JSON(w, 401, err.Error())
+			return
+		}
+		RefreshToken(w, r, user)
+	})
 
 	mux.Get("/api/login", challengeCode)
 	mux.Get("/api/callback", callbackToken)
@@ -221,40 +237,14 @@ func Init(r *gin.Engine, db *gorm.DB) {
 	})
 
 	mux.Get("/api/token/refresh/{email}", func(w http.ResponseWriter, r *http.Request) {
-		user, err := getAuthbossUser(r)
+		email := chi.URLParam(r, "email")
+		user, err := ab.Config.Storage.Server.Load(r.Context(), email)
 		if err != nil {
-			http.Error(w, err.Error(), http.StatusNoContent)
+			render.JSON(w, 500, map[string]string{"error": "user not found"})
 			return
 		}
-		user1 := user.(*users.User)
-		refreshToken := user1.GetOAuth2RefreshToken()
-		accessToken := user1.GetOAuth2AccessToken()
-		expiry := user1.GetOAuth2Expiry()
 
-		if refreshToken == "" {
-			http.Error(w, "No refresh token", http.StatusForbidden)
-			return
-		}
-		token := oauth2.Token{RefreshToken: refreshToken, AccessToken: accessToken, Expiry: expiry}
-		updatedToken, _ := oauthClient.TokenSource(context.TODO(), &token).Token()
-
-		if accessToken != updatedToken.AccessToken {
-			user1.PutOAuth2AccessToken(updatedToken.AccessToken)
-			user1.PutOAuth2RefreshToken(updatedToken.RefreshToken)
-			user1.PutOAuth2Expiry(updatedToken.Expiry)
-
-			ab.Config.Storage.Server.Save(r.Context(), user1)
-		}
-
-		c := http.Cookie{
-			Name:   "Authorization",
-			Value:  updatedToken.AccessToken,
-			Domain: "hiveon.local",
-			Path:   "/",
-		}
-
-		http.SetCookie(w, &c)
-		render.JSON(w, 200, updatedToken)
+		RefreshToken(w, r, user)
 	})
 
 	mux.Group(func(mux chi.Router) {
@@ -263,6 +253,17 @@ func Init(r *gin.Engine, db *gorm.DB) {
 	})
 
 	r.Any("/*resources", gin.WrapH(mux))
+
+	// ab.Events.Before(authboss.EventGetUserSession, func(w http.ResponseWriter, r *http.Request, handled bool) (bool, error) {
+	// 	user, err := getUserFromHydraSession(w, r)
+	// 	if err != nil {
+	// 		return true, err
+	// 	}
+
+	// 	ab.Config.Storage.Server.Save(r.Context(), user)
+
+	// 	return true, nil
+	// })
 
 	ab.Events.After(authboss.EventRegister, func(w http.ResponseWriter, r *http.Request, handled bool) (bool, error) {
 		challenge := r.Header.Get("Challenge")
@@ -334,10 +335,13 @@ func handleLogin(challenge string, w http.ResponseWriter, r *http.Request) (bool
 
 		expire := time.Now().AddDate(0, 0, 1)
 
+		cookieDomain, _ := config.GetCookieDomain()
+
 		cAuth := http.Cookie{
 			Name:    "Authorization",
 			Value:   accessToken,
 			Expires: expire,
+			Domain:  cookieDomain,
 		}
 		http.SetCookie(w, &cAuth)
 
@@ -351,6 +355,11 @@ func handleLogin(challenge string, w http.ResponseWriter, r *http.Request) (bool
 
 func getAuthbossUser(r *http.Request) (authboss.User, error) {
 	email := chi.URLParam(r, "email")
+	user, err := ab.Config.Storage.Server.Load(r.Context(), email)
+	return user, err
+}
+
+func getAuthbossUserByEmail(r *http.Request, email string) (authboss.User, error) {
 	user, err := ab.Config.Storage.Server.Load(r.Context(), email)
 	return user, err
 }
