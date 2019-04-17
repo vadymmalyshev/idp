@@ -43,7 +43,7 @@ func checkRegistrationCredentials(h http.Handler) http.Handler {
 			var values map[string]string
 
 			b, err := ioutil.ReadAll(r.Body)
-			bodyBytes :=b
+			bodyBytes := b
 
 			if err != nil {
 				fmt.Println(err, "failed to read http body")
@@ -160,12 +160,8 @@ func getUserFromHydraSession(w http.ResponseWriter, r *http.Request) (authboss.U
 	if len(splitToken) < 1 {
 		return nil, errors.New("Token is wrong")
 	}
-	var token string
-	if len(splitToken) > 1 {
-		token = strings.TrimSpace(splitToken[1])
-	} else {
-		token = strings.TrimSpace(splitToken[0])
-	}
+
+	token := strings.TrimSpace(splitToken[1])
 
 	introspectURL := fmt.Sprintf("%s/oauth2/introspect", hydraConfig.Admin)
 
