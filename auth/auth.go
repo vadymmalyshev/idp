@@ -8,7 +8,6 @@ import (
 	"net/http"
 	"regexp"
 	"strings"
-	"time"
 
 	"github.com/volatiletech/authboss/otp/twofactor/totp2fa"
 	"github.com/volatiletech/authboss/remember"
@@ -119,6 +118,7 @@ func Init(r *gin.Engine, db *gorm.DB) {
 	ab.Config.Storage.Server = users.NewUserStorer(db)
 	ab.Config.Storage.SessionState = sessionStore
 	ab.Config.Storage.CookieState = cookieStore
+	ab.Config.Storage.SessionStateWhitelistKeys = []string{"Authorization", "oauth2_authentication_csrf", "access_token"}
 
 	ab.Config.Core.ViewRenderer = defaults.JSONRenderer{}
 
@@ -323,7 +323,7 @@ func handleLogin(challenge string, w http.ResponseWriter, r *http.Request) (bool
 			return true, nil
 		}
 
-		accessToken := res.RawResponse.Header.Get("Authorization")
+		accessToken := res.RawResponse.Header.Get("access_token")
 		if accessToken == "" {
 			render.JSON(w, 422, &ResponseError{
 				Status:  "error",
@@ -333,17 +333,7 @@ func handleLogin(challenge string, w http.ResponseWriter, r *http.Request) (bool
 			return true, nil
 		}
 
-		expire := time.Now().AddDate(0, 0, 1)
-
-		cookieDomain, _ := config.GetCookieDomain()
-
-		cAuth := http.Cookie{
-			Name:    "Authorization",
-			Value:   accessToken,
-			Expires: expire,
-			Domain:  cookieDomain,
-		}
-		http.SetCookie(w, &cAuth)
+		SetAccessTokenCookie(w, accessToken)
 
 		render.JSON(w, 200, map[string]string{
 			"access_token": accessToken,
