@@ -30,9 +30,6 @@ import (
 var oauthClient *oauth2.Config
 var render *renderPkg.Render
 
-func ServeHTTP(w http.ResponseWriter, req *http.Request) {
-
-}
 func init() {
 	render = renderPkg.New()
 }
@@ -114,7 +111,8 @@ func acceptConsent(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	res, err := resty.SetCookie(oauth2_consent_csrf).
+	res, err := resty.
+		SetCookie(oauth2_consent_csrf).
 		SetCookie(oauth2_auth_csrf).
 		R().
 		SetHeader("Accept", "application/json").
@@ -129,18 +127,16 @@ func acceptConsent(w http.ResponseWriter, r *http.Request) {
 	}
 
 	accessToken := res.RawResponse.Header.Get("Set-Cookie")
-	if accessToken == "" {
+	splitToken := strings.Split(accessToken, " ")
+	if len(splitToken) < 2 {
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusNoContent)
 		logrus.Error("Can't obtain access token!")
 		return
 	}
 
-	accessToken = formatToken(accessToken)
-	w.Header().Set("Authorization", accessToken)
-	ServeHTTP(w, r)
-
-	return
+	// accessToken = formatToken(accessToken)
+	w.Header().Set("access_token", splitToken[1])
 }
 
 func getUserFromHydraSession(w http.ResponseWriter, r *http.Request) (authboss.User, error) {
@@ -160,13 +156,8 @@ func getUserFromHydraSession(w http.ResponseWriter, r *http.Request) (authboss.U
 	if len(splitToken) < 1 {
 		return nil, errors.New("Token is wrong")
 	}
-	var token string
-	if len(splitToken) > 1 {
-		token = strings.TrimSpace(splitToken[1])
-	} else {
-		token = strings.TrimSpace(splitToken[0])
-	}
 
+	token := strings.TrimSpace(splitToken[1])
 	introspectURL := fmt.Sprintf("%s/oauth2/introspect", hydraConfig.Admin)
 
 	res, err := resty.R().SetFormData(map[string]string{"token": token}).
@@ -214,15 +205,9 @@ func RefreshToken(w http.ResponseWriter, r *http.Request, abUser authboss.User) 
 
 		ab.Config.Storage.Server.Save(r.Context(), user)
 	}
-	cookieDomain, _ := config.GetCookieDomain()
-	c := http.Cookie{
-		Name:   "Authorization",
-		Value:  updatedToken.AccessToken,
-		Domain: cookieDomain,
-		Path:   "/",
-	}
 
-	http.SetCookie(w, &c)
+	SetAccessTokenCookie(w, updatedToken.AccessToken)
+
 	render.JSON(w, 200, map[string]string{
 		"access_token": updatedToken.AccessToken,
 	})
@@ -295,13 +280,6 @@ func callbackToken(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusNoContent)
 		return
 	}
-	cookieDomain, _ := config.GetCookieDomain()
-	c := http.Cookie{
-		Name:   "Authorization",
-		Value:  token.AccessToken,
-		Domain: cookieDomain,
-		Path:   "/",
-	}
 
 	//portalConfig, err := config.GetPortalConfig()
 	if err != nil {
@@ -309,9 +287,8 @@ func callbackToken(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	http.SetCookie(w, &c)
+	SetAccessTokenCookie(w, token.AccessToken)
 
-	ServeHTTP(w, r)
 	return
 
 	//http.Redirect(w, r, portalConfig.Callback, http.StatusPermanentRedirect)
@@ -373,7 +350,7 @@ func layoutData(w http.ResponseWriter, r **http.Request, redirect string) authbo
 	}
 }
 
-func debugMw(h http.Handler) http.Handler {
+func debugMw(handler http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		fmt.Printf("\n%s %s %s\n", r.Method, r.URL.Path, r.Proto)
 
@@ -402,7 +379,7 @@ func debugMw(h http.Handler) http.Handler {
 			fmt.Printf("CTX Values: %s", spew.Sdump(val))
 		}
 
-		h.ServeHTTP(w, r)
+		handler.ServeHTTP(w, r)
 	})
 }
 
