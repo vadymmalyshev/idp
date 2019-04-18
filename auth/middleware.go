@@ -40,7 +40,7 @@ func checkRegistrationCredentials(h http.Handler) http.Handler {
 			var values map[string]string
 
 			b, err := ioutil.ReadAll(r.Body)
-			bodyBytes :=b
+			bodyBytes := b
 
 			if err != nil {
 				fmt.Println(err, "failed to read http body")
