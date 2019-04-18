@@ -3,6 +3,7 @@ package auth
 import (
 	"fmt"
 	"net/http"
+	"reflect"
 	"strings"
 
 	"git.tor.ph/hiveon/idp/config"
@@ -30,4 +31,36 @@ func SetAccessTokenCookie(w http.ResponseWriter, token string) {
 	}
 
 	http.SetCookie(w, &cookie)
+}
+
+func ToMap(in interface{}, tag string) (map[string]interface{}, error){
+	out := make(map[string]interface{})
+
+	v := reflect.ValueOf(in)
+	if v.Kind() == reflect.Ptr {
+		v = v.Elem()
+	}
+
+	// we only accept structs
+	if v.Kind() != reflect.Struct {
+		return nil, fmt.Errorf("ToMap only accepts structs; got %T", v)
+	}
+
+	typ := v.Type()
+	for i := 0; i < v.NumField(); i++ {
+		// gets us a StructField
+		fi := typ.Field(i)
+		if tagv := fi.Tag.Get(tag); tagv == "" {
+			// set key of map to value in struct field
+			if fi.Name == "TOTPSecretKey" {
+				out["Enabled2fa"] = false
+				if value := v.Field(i).String(); value != "" {
+					out["Enabled2fa"] = true
+				}
+				continue
+			}
+			out[fi.Name] = v.Field(i).Interface()
+		}
+	}
+	return out, nil
 }

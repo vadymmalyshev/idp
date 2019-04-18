@@ -37,7 +37,7 @@ type User struct {
 	OAuth2Expiry       time.Time `gorm:"column:oauth_expiry" json:"-"`
 
 	// 2fa
-	TOTPSecretKey      string `json:"-"`
+	TOTPSecretKey      string
 	SMSPhoneNumber     string
 	SMSSeedPhoneNumber string
 	RecoveryCodes      string `json:"-"`

@@ -33,7 +33,7 @@ import (
 
 	renderPkg "github.com/unrolled/render"
 	clientState "github.com/volatiletech/authboss-clientstate"
-	abrenderer "github.com/volatiletech/authboss-renderer"
+	"github.com/volatiletech/authboss-renderer"
 )
 
 const IDPSessionName = "idp_session"
@@ -206,12 +206,14 @@ func Init(r *gin.Engine, db *gorm.DB) {
 	mux.Use(checkRegistrationCredentials)
 
 	mux.Get("/api/userinfo", func(w http.ResponseWriter, r *http.Request) {
-		user, err := ab.LoadCurrentUser(&r)
+		user, err := getUserFromHydraSession(w, r)
+		//user, err := ab.LoadCurrentUser(&r)
 		if err != nil {
 			render.JSON(w, http.StatusUnauthorized, err.Error())
 			return
 		}
-		render.JSON(w, http.StatusOK, user)
+		OutUser,_ := ToMap(user, "json")
+		render.JSON(w, http.StatusOK, OutUser)
 	})
 
 	mux.Get("/api/login", challengeCode)
