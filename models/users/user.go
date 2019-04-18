@@ -15,19 +15,19 @@ type User struct {
 	Password string `gorm:"not null" json:"-"`
 
 	// Confirm
-	ConfirmSelector string
-	ConfirmVerifier string
-	Confirmed       bool
+	ConfirmSelector string `json:"-"`
+	ConfirmVerifier string `json:"-"`
+	Confirmed       bool   `json:"-"`
 
 	// Lock
-	AttemptCount int
-	LastAttempt  time.Time
-	Locked       time.Time
+	AttemptCount int       `json:"-"`
+	LastAttempt  time.Time `json:"-"`
+	Locked       time.Time `json:"-"`
 
 	// Recover
-	RecoverSelector    string
-	RecoverVerifier    string
-	RecoverTokenExpiry time.Time
+	RecoverSelector    string    `json:"-"`
+	RecoverVerifier    string    `json:"-"`
+	RecoverTokenExpiry time.Time `json:"-"`
 
 	// OAuth2
 	OAuth2UID          string    `gorm:"column:oauth_uid" json:"-"`
@@ -40,7 +40,7 @@ type User struct {
 	TOTPSecretKey      string `json:"-"`
 	SMSPhoneNumber     string
 	SMSSeedPhoneNumber string
-	RecoveryCodes      string
+	RecoveryCodes      string `json:"-"`
 
 	// Remember is in another table
 }
