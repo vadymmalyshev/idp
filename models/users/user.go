@@ -12,7 +12,7 @@ type User struct {
 	Login    string `gorm:"not null"`
 	Name     string `gorm:"not null"`
 	Email    string `gorm:"not null;unique_index"`
-	Password string `gorm:"not null"`
+	Password string `gorm:"not null" json:"-"`
 
 	// Confirm
 	ConfirmSelector string
@@ -30,14 +30,14 @@ type User struct {
 	RecoverTokenExpiry time.Time
 
 	// OAuth2
-	OAuth2UID          string    `gorm:"column:oauth_uid"`
-	OAuth2Provider     string    `gorm:"column:oauth_provider"`
-	OAuth2AccessToken  string    `gorm:"column:oauth_access_token"`
-	OAuth2RefreshToken string    `gorm:"column:oauth_refresh_token"`
-	OAuth2Expiry       time.Time `gorm:"column:oauth_expiry"`
+	OAuth2UID          string    `gorm:"column:oauth_uid" json:"-"`
+	OAuth2Provider     string    `gorm:"column:oauth_provider" json:"-"`
+	OAuth2AccessToken  string    `gorm:"column:oauth_access_token" json:"-"`
+	OAuth2RefreshToken string    `gorm:"column:oauth_refresh_token" json:"-"`
+	OAuth2Expiry       time.Time `gorm:"column:oauth_expiry" json:"-"`
 
 	// 2fa
-	TOTPSecretKey      string
+	TOTPSecretKey      string `json:"-"`
 	SMSPhoneNumber     string
 	SMSSeedPhoneNumber string
 	RecoveryCodes      string
