@@ -23,6 +23,7 @@ require (
 	github.com/jinzhu/now v1.0.0 // indirect
 	github.com/justinas/nosurf v0.0.0-20190118163749-6453469bdcc9
 	github.com/mattn/go-sqlite3 v1.10.0 // indirect
+	github.com/mitchellh/mapstructure v1.1.2
 	github.com/ory/fosite v0.29.0 // indirect
 	github.com/ory/hydra v0.0.0-20181203105159-55654c084cc2
 	github.com/pkg/errors v0.8.1 // indirect

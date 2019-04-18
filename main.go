@@ -30,7 +30,7 @@ func init() {
 
 func main() {
 	flag.Parse()
-	config.InitViperConfig()
+	conf := config.InitViperConfig()
 
 	r := gin.New()
 
@@ -50,14 +50,12 @@ func main() {
 
 	auth.Init(r, db)
 
-	serverConfig, _ := config.GetServerConfig()
-
 	errs := make(chan error, 2)
 
 	go func() {
-		logrus.Infof("api-mode. IDP has started on http://%s", serverConfig.Addr)
+		logrus.Infof("api-mode. IDP has started on http://%s", conf.ServerConfig.Addr)
 		//errs <- r.RunTLS(serverConfig.Addr, "./config/certs/hiveon.local.crt", "./config/certs/hiveon.local.key")
-		errs <- r.Run(serverConfig.Addr)
+		errs <- r.Run(conf.ServerConfig.Addr)
 	}()
 
 	go func() {

@@ -1,7 +1,6 @@
 package auth
 
 import (
-	"encoding/base32"
 	"encoding/base64"
 	"flag"
 	"fmt"
@@ -50,9 +49,6 @@ var (
 	CookieDomain  string
 	SessionCookie bool
 
-	signingKey       string
-	signingKeyBase32 string
-
 	cookieStore  clientState.CookieStorer
 	sessionStore clientState.SessionStorer
 
@@ -80,14 +76,7 @@ type ResponseError struct {
 }
 
 func Init(r *gin.Engine, db *gorm.DB) {
-	signingKey, _ := config.GetSignKey()
-
-	signingKeyBytes := []byte(signingKey)
-	signingKeyBase32 = base32.StdEncoding.EncodeToString(signingKeyBytes)
-
-	// cookieAuthenticationKey := signingKeyBytes
-	// cookieEncryptionKey := signingKeyBytes[:32]
-
+	//TODO move to config
 	cookieStoreKey, _ := base64.StdEncoding.DecodeString(`NpEPi8pEjKVjLGJ6kYCS+VTCzi6BUuDzU0wrwXyf5uDPArtlofn2AG6aTMiPmN3C909rsEWMNqJqhIVPGP3Exg==`)
 	sessionStoreKey, _ := base64.StdEncoding.DecodeString(`AbfYwmmt8UCwUuhd9qvfNA9UCuN1cVcKJN1ofbiky6xCyyBj20whe40rJa3Su0WOWLWcPpO1taqJdsEI/65+JA==`)
 

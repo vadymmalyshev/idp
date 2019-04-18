@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"strconv"
+	"time"
 
 	. "git.tor.ph/hiveon/idp/pkg/errors"
 
@@ -13,7 +14,7 @@ import (
 	"gopkg.in/resty.v1"
 )
 
-var RememberFor = 30 * 24 * 60 * 60
+var RememberFor = time.Hour * 24 * 30 //30 * 24 * 60 * 60
 
 func init() {
 	resty.SetRedirectPolicy(resty.FlexibleRedirectPolicy(20))
@@ -34,7 +35,7 @@ func AcceptConsentChallengeCode(challenge string) (string, error) {
 	json.Unmarshal(res.Body(), &consent)
 
 	req := hydraConsent.HandledConsentRequest{GrantedScope: getScopes(), GrantedAudience: consent.RequestedAudience,
-		Remember: false, RememberFor: RememberFor}
+		Remember: false, RememberFor: int(RememberFor.Seconds())}
 
 	accept := hydraConsent.RequestHandlerResponse{}
 
@@ -85,7 +86,7 @@ func ConfirmLogin(userID uint, remember bool, challenge string) (LoginResponse, 
 	request := LoginRequest{}
 	request.Subject = strconv.FormatUint(uint64(userID), 10)
 	request.Remember = remember
-	request.RememberFor = RememberFor
+	request.RememberFor = int(RememberFor.Seconds())
 	// request.ACR = "normal"
 
 	res, err := resty.R().

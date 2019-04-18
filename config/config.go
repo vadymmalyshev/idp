@@ -4,10 +4,10 @@ import (
 	"errors"
 	"flag"
 	"fmt"
-	"log"
-
+	"github.com/mitchellh/mapstructure"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
+	"log"
 )
 
 const (
@@ -46,7 +46,7 @@ const (
 
 var configName = flag.String("c", "config", "config file name from config directory")
 
-func InitViperConfig() {
+func InitViperConfig() *CommonConfig {
 	logrus.Info("THAT'S HAPPEN'")
 	logrus.Infof("used config file: %s.yaml", *configName)
 	// viper.AddConfigPath("$HOME/config")
@@ -73,6 +73,18 @@ func InitViperConfig() {
 	viper.SetDefault(hydraClientSecret, "")
 
 	viper.SetDefault(cookieDomain, ".hiveon.localhost")
+
+	var conf = new(CommonConfig)
+
+	if err := viper.Unmarshal(conf, YAMLUnmarshalOpt); err != nil {
+		log.Fatalln("Error while unmarshal viper config", err)
+		return nil
+	}
+
+	conf.IDP.DB.Conn = getDBConn(conf.IDP)
+	conf.ServerConfig, _ = initServerConfig(conf.IDP)
+
+	return conf
 }
 
 type DBConfig struct {
@@ -85,42 +97,23 @@ type DBConfig struct {
 	Password string
 }
 
-// GetDBConfig returns db config
-// todo error checking
-func GetDBConfig() (DBConfig, error) {
-	config := DBConfig{
-		Host:     viper.GetString(dbHost),
-		Port:     viper.GetString(dbPort),
-		Name:     viper.GetString(dbName),
-		User:     viper.GetString(dbUser),
-		Password: viper.GetString(dbPassword),
+// getDBConn returns db conn url
+func getDBConn(conf IDP) string {
+	sslMode := "disable"
+	if conf.DB.Sslmode {
+		sslMode = "enable"
 	}
-
-	if viper.GetBool(dbSSLMode) {
-		config.SSLMode = "enable"
-	} else {
-		config.SSLMode = "disable"
-	}
-
-	config.Conn = fmt.Sprintf("host=%s port=%s sslmode=%s user=%s dbname=%s password=%s ",
-		config.Host, config.Port, config.SSLMode, config.User, config.Name, config.Password)
-
-	return config, nil
+	return fmt.Sprintf("host=%s port=%s sslmode=%s user=%s dbname=%s password=%s ",
+		conf.DB.Host, conf.DB.Port, sslMode, conf.DB.User, conf.DB.Name, conf.DB.Password)
 }
 
-type ServerConfig struct {
-	Addr string
-	Host string
-	Port string
-}
-
-func GetServerConfig() (ServerConfig, error) {
+func initServerConfig(conf IDP) (ServerConfig, error) {
 	config := ServerConfig{
-		Port: viper.GetString(serverPort),
-		Host: viper.GetString(serverHost),
+		Port: conf.Port,
+		Host: conf.Host,
 	}
 
-	config.Addr = fmt.Sprintf("%s:%s", config.Host, config.Port)
+	config.Addr = fmt.Sprintf("%s:%d", config.Host, config.Port)
 
 	return config, nil
 }
@@ -158,14 +151,6 @@ func GetHydraConfig() (*HydraConfig, error) {
 	return &config, nil
 }
 
-type MailConfig struct {
-	From     string
-	SMTP     string
-	Port     int
-	User     string
-	Password string
-}
-
 func GetMailConfig() (MailConfig, error) {
 	config := MailConfig{
 		From:     viper.GetString(mailFrom),
@@ -176,14 +161,6 @@ func GetMailConfig() (MailConfig, error) {
 	}
 
 	return config, nil
-}
-
-type PortalConfig struct {
-	Port         int
-	Host         string
-	Callback     string
-	ClientID     string
-	ClientSecret string
 }
 
 func GetPortalConfig() (PortalConfig, error) {
@@ -200,4 +177,8 @@ func GetPortalConfig() (PortalConfig, error) {
 
 func GetCookieDomain() (string, error) {
 	return viper.GetString(cookieDomain), nil
+}
+
+func YAMLUnmarshalOpt(c *mapstructure.DecoderConfig) {
+	c.TagName = "yaml"
 }
