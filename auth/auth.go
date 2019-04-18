@@ -208,10 +208,10 @@ func Init(r *gin.Engine, db *gorm.DB) {
 	mux.Get("/api/userinfo", func(w http.ResponseWriter, r *http.Request) {
 		user, err := ab.LoadCurrentUser(&r)
 		if err != nil {
-			render.JSON(w, 401, err.Error())
+			render.JSON(w, http.StatusUnauthorized, err.Error())
 			return
 		}
-		RefreshToken(w, r, user)
+		render.JSON(w, http.StatusOK, user)
 	})
 
 	mux.Get("/api/login", challengeCode)
