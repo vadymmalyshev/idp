@@ -1,7 +1,6 @@
 package config
 
 import (
-	"errors"
 	"flag"
 	"fmt"
 	"github.com/mitchellh/mapstructure"
@@ -118,38 +117,6 @@ func initServerConfig(conf IDP) (ServerConfig, error) {
 	return config, nil
 }
 
-func GetSignKey() (string, error) {
-	key := viper.GetString(authSignKey)
-
-	if key == "" {
-		return key, errors.New("Token signing key is missing from configuration")
-	}
-	if len(key) < 32 {
-		return key, errors.New("Token signing key must be at least 32 characters")
-	}
-
-	return key, nil
-}
-
-type HydraConfig struct {
-	Admin        string
-	API          string
-	ClientID     string
-	ClientSecret string
-	Introspect   string
-}
-
-func GetHydraConfig() (*HydraConfig, error) {
-	config := HydraConfig{
-		Admin:        viper.GetString(hydraAdmin),
-		API:          viper.GetString(hydraAPI),
-		ClientID:     viper.GetString(hydraClientID),
-		ClientSecret: viper.GetString(hydraClientSecret),
-		Introspect:   viper.GetString(hydraIntrospect),
-	}
-
-	return &config, nil
-}
 
 func GetMailConfig() (MailConfig, error) {
 	config := MailConfig{
@@ -163,17 +130,6 @@ func GetMailConfig() (MailConfig, error) {
 	return config, nil
 }
 
-func GetPortalConfig() (PortalConfig, error) {
-	config := PortalConfig{
-		Port:         viper.GetInt(portalPort),
-		Host:         viper.GetString(portalHost),
-		Callback:     viper.GetString(portalCallback),
-		ClientID:     viper.GetString(portalClientID),
-		ClientSecret: viper.GetString(portalClientSecret),
-	}
-
-	return config, nil
-}
 
 func GetCookieDomain() (string, error) {
 	return viper.GetString(cookieDomain), nil

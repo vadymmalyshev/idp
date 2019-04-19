@@ -1,6 +1,6 @@
 package config
 
-type Hydra struct {
+type HydraConfig struct {
 	Admin        string `yaml:"admin"`
 	API          string `yaml:"api"`
 	Docker       string `yaml:"docker"`
@@ -63,7 +63,7 @@ type RedisConfig struct {
 }
 
 type CommonConfig struct {
-	Hydra  Hydra        `yaml:"hydra"`
+	Hydra  HydraConfig  `yaml:"hydra"`
 	IDP    IDP          `yaml:"idp"`
 	Portal PortalConfig `yaml:"portal"`
 	Admin  AdminConfig  `yaml:"admin"`

@@ -1,21 +1,21 @@
 package main
 
 import (
+	ginutils "git.tor.ph/hiveon/idp/pkg/gin"
+
 	"flag"
 	"fmt"
 	"os"
 	"os/signal"
 	"syscall"
 
-	"github.com/gin-contrib/static"
-	"github.com/gin-gonic/gin"
-	"github.com/gogap/logrus_mate"
-
 	"git.tor.ph/hiveon/idp/auth"
 	"git.tor.ph/hiveon/idp/config"
 	"git.tor.ph/hiveon/idp/models"
-	ginutils "git.tor.ph/hiveon/idp/pkg/gin"
 	"git.tor.ph/hiveon/idp/pkg/log"
+	"github.com/gin-contrib/static"
+	"github.com/gin-gonic/gin"
+	"github.com/gogap/logrus_mate"
 	"github.com/sirupsen/logrus"
 )
 
@@ -34,7 +34,7 @@ func main() {
 
 	r := gin.New()
 
-	db := config.DB()
+	db := config.DB(conf.IDP.DB)
 	defer db.Close()
 
 	models.Migrate(db)
@@ -48,7 +48,8 @@ func main() {
 
 	r.Use(static.Serve("/assets", static.LocalFile("./views/assets", true)))
 
-	auth.Init(r, db)
+	authObj := auth.NewAuth(r, db, conf)
+	authObj.Init()
 
 	errs := make(chan error, 2)
 
