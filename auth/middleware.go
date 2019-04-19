@@ -4,7 +4,10 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
+	"strings"
+
 	"git.tor.ph/hiveon/idp/config"
 	"git.tor.ph/hiveon/idp/internal/hydra"
 	"git.tor.ph/hiveon/idp/models/users"
@@ -15,7 +18,7 @@ import (
 	"net/http"
 
 	"github.com/justinas/nosurf"
-	. "github.com/ory/hydra/sdk/go/hydra/swagger"
+	"github.com/ory/hydra/sdk/go/hydra/swagger"
 	"github.com/sirupsen/logrus"
 	log "github.com/sirupsen/logrus"
 	renderPkg "github.com/unrolled/render"
@@ -27,11 +30,51 @@ import (
 var oauthClient *oauth2.Config
 var render *renderPkg.Render
 
-func ServeHTTP(w http.ResponseWriter, req *http.Request) {
-
-}
 func init() {
 	render = renderPkg.New()
+}
+
+func checkRegistrationCredentials(h http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path == "/api/register" && r.Method == "POST" {
+			var values map[string]string
+
+			b, err := ioutil.ReadAll(r.Body)
+			bodyBytes := b
+
+			if err != nil {
+				fmt.Println(err, "failed to read http body")
+			}
+
+			if err = json.Unmarshal(b, &values); err != nil {
+				fmt.Println(err, "failed to parse json http body")
+			}
+			r.Body = ioutil.NopCloser(bytes.NewBuffer(bodyBytes))
+
+			login := values["login"]
+			pidUser, err := ab.Storage.Server.Load(r.Context(), login)
+			if pidUser != nil {
+				render.JSON(w, http.StatusUnprocessableEntity, &ResponseError{
+					Status:  "error",
+					Success: false,
+					Error:   fmt.Sprintf("Username %s has already taken", login),
+				})
+				return
+			}
+
+			email := values["email"]
+			pidUser, err = ab.Storage.Server.Load(r.Context(), email)
+			if pidUser != nil {
+				render.JSON(w, http.StatusUnprocessableEntity, &ResponseError{
+					Status:  "error",
+					Success: false,
+					Error:   fmt.Sprintf("Email %s has already taken", email),
+				})
+				return
+			}
+		}
+		h.ServeHTTP(w, r)
+	})
 }
 
 func acceptConsent(w http.ResponseWriter, r *http.Request) {
@@ -68,7 +111,8 @@ func acceptConsent(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	res, err := resty.SetCookie(oauth2_consent_csrf).
+	res, err := resty.
+		SetCookie(oauth2_consent_csrf).
 		SetCookie(oauth2_auth_csrf).
 		R().
 		SetHeader("Accept", "application/json").
@@ -83,18 +127,90 @@ func acceptConsent(w http.ResponseWriter, r *http.Request) {
 	}
 
 	accessToken := res.RawResponse.Header.Get("Set-Cookie")
-	if accessToken == "" {
+	splitToken := strings.Split(accessToken, " ")
+	if len(splitToken) < 2 {
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusNoContent)
 		logrus.Error("Can't obtain access token!")
 		return
 	}
 
-	accessToken = formatToken(accessToken)
-	w.Header().Set("Authorization", accessToken)
-	ServeHTTP(w, r)
+	// accessToken = formatToken(accessToken)
+	w.Header().Set("access_token", splitToken[1])
+}
 
-	return
+func getUserFromHydraSession(w http.ResponseWriter, r *http.Request) (authboss.User, error) {
+	hydraConfig, _ := config.GetHydraConfig()
+	reqTokenCookie, err := r.Cookie("Authorization")
+	if err != nil {
+		return nil, errors.New("Authorization token missed")
+	}
+
+	reqToken := reqTokenCookie.Value
+
+	if len(reqToken) == 0 {
+		return nil, errors.New("Authorization token missed")
+	}
+
+	splitToken := strings.Split(reqToken, " ")
+	if len(splitToken) < 1 {
+		return nil, errors.New("Token is wrong")
+	}
+
+	token := strings.TrimSpace(splitToken[1])
+	introspectURL := fmt.Sprintf("%s/oauth2/introspect", hydraConfig.Admin)
+
+	res, err := resty.R().SetFormData(map[string]string{"token": token}).
+		SetHeader("Content-Type", "application/x-www-form-urlencoded").
+		SetHeader("Accept", "application/json").Post(introspectURL)
+
+	if err != nil {
+		return nil, errors.New("Can't check token")
+	}
+	var introToken swagger.OAuth2TokenIntrospection
+
+	err = json.Unmarshal(res.Body(), &introToken)
+	if err != nil {
+		return nil, errors.New("Can't unmarshall token")
+	}
+
+	user, err := getAuthbossUserByEmail(r, introToken.Sub)
+	if err != nil {
+		return nil, errors.New("can't find user")
+	}
+
+	// RefreshToken(w, r, user)
+
+	return user, nil
+}
+
+// RefreshToken refreshing token via hydra for specified user
+func RefreshToken(w http.ResponseWriter, r *http.Request, abUser authboss.User) {
+	user := abUser.(*users.User)
+	refreshToken := user.GetOAuth2RefreshToken()
+	accessToken := user.GetOAuth2AccessToken()
+	expiry := user.GetOAuth2Expiry()
+
+	if refreshToken == "" {
+		http.Error(w, "No refresh token", http.StatusForbidden)
+		return
+	}
+	token := oauth2.Token{RefreshToken: refreshToken, AccessToken: accessToken, Expiry: expiry}
+	updatedToken, _ := oauthClient.TokenSource(context.TODO(), &token).Token()
+
+	if accessToken != updatedToken.AccessToken {
+		user.PutOAuth2AccessToken(updatedToken.AccessToken)
+		user.PutOAuth2RefreshToken(updatedToken.RefreshToken)
+		user.PutOAuth2Expiry(updatedToken.Expiry)
+
+		ab.Config.Storage.Server.Save(r.Context(), user)
+	}
+
+	SetAccessTokenCookie(w, updatedToken.AccessToken)
+
+	render.JSON(w, 200, map[string]string{
+		"access_token": updatedToken.AccessToken,
+	})
 }
 
 func challengeCode(w http.ResponseWriter, r *http.Request) {
@@ -140,7 +256,7 @@ func callbackToken(w http.ResponseWriter, r *http.Request) {
 
 	//user, err := ab.LoadCurrentUser(&r)
 
-	var introToken OAuth2TokenIntrospection
+	var introToken swagger.OAuth2TokenIntrospection
 	hydraConfig, _ := config.GetHydraConfig()
 	introspectUrl := hydraConfig.Introspect
 
@@ -165,22 +281,14 @@ func callbackToken(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	c := http.Cookie{
-		Name:  "Authorization",
-		Value: token.AccessToken,
-		//Domain: "id.hiveon.local",
-		Path: "/",
-	}
-
 	//portalConfig, err := config.GetPortalConfig()
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusNoContent)
 		return
 	}
 
-	http.SetCookie(w, &c)
+	SetAccessTokenCookie(w, token.AccessToken)
 
-	ServeHTTP(w, r)
 	return
 
 	//http.Redirect(w, r, portalConfig.Callback, http.StatusPermanentRedirect)
@@ -194,6 +302,23 @@ func nosurfing(h http.Handler) http.Handler {
 		w.WriteHeader(http.StatusBadRequest)
 	}))
 	return surfing
+}
+
+func handleUserSession(handler http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+
+		user, err := getUserFromHydraSession(w, r)
+		if err != nil || user == nil {
+			authboss.DelAllSession(w, ab.Config.Storage.SessionStateWhitelistKeys)
+			authboss.DelKnownSession(w)
+			authboss.DelKnownCookie(w)
+
+			logrus.Error(err.Error())
+		} else {
+			r = r.WithContext(context.WithValue(r.Context(), authboss.CTXKeyPID, user.(*users.User).Email))
+		}
+		handler.ServeHTTP(w, r)
+	})
 }
 
 func dataInjector(handler http.Handler) http.Handler {
@@ -225,7 +350,7 @@ func layoutData(w http.ResponseWriter, r **http.Request, redirect string) authbo
 	}
 }
 
-func debugMw(h http.Handler) http.Handler {
+func debugMw(handler http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		fmt.Printf("\n%s %s %s\n", r.Method, r.URL.Path, r.Proto)
 
@@ -254,7 +379,7 @@ func debugMw(h http.Handler) http.Handler {
 			fmt.Printf("CTX Values: %s", spew.Sdump(val))
 		}
 
-		h.ServeHTTP(w, r)
+		handler.ServeHTTP(w, r)
 	})
 }
 
@@ -277,7 +402,7 @@ func InitClient(clientId string, secret string) *oauth2.Config {
 	return oauthConfig
 }
 
-func GetClient(clientId string) OAuth2Client {
+func GetClient(clientId string) swagger.OAuth2Client {
 	hydraConfig, _ := config.GetHydraConfig()
 	hydraAdmin := hydraConfig.Admin
 
@@ -286,7 +411,7 @@ func GetClient(clientId string) OAuth2Client {
 	if err != nil {
 		log.Info(err)
 	}
-	var client OAuth2Client
+	var client swagger.OAuth2Client
 	json.Unmarshal(res.Body(), &client)
 	return client
 

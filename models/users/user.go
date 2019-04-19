@@ -12,35 +12,35 @@ type User struct {
 	Login    string `gorm:"not null"`
 	Name     string `gorm:"not null"`
 	Email    string `gorm:"not null;unique_index"`
-	Password string `gorm:"not null"`
+	Password string `gorm:"not null" json:"-"`
 
 	// Confirm
-	ConfirmSelector string
-	ConfirmVerifier string
-	Confirmed       bool
+	ConfirmSelector string `json:"-"`
+	ConfirmVerifier string `json:"-"`
+	Confirmed       bool   `json:"-"`
 
 	// Lock
-	AttemptCount int
-	LastAttempt  time.Time
-	Locked       time.Time
+	AttemptCount int       `json:"-"`
+	LastAttempt  time.Time `json:"-"`
+	Locked       time.Time `json:"-"`
 
 	// Recover
-	RecoverSelector    string
-	RecoverVerifier    string
-	RecoverTokenExpiry time.Time
+	RecoverSelector    string    `json:"-"`
+	RecoverVerifier    string    `json:"-"`
+	RecoverTokenExpiry time.Time `json:"-"`
 
 	// OAuth2
-	OAuth2UID          string    `gorm:"column:oauth_uid"`
-	OAuth2Provider     string    `gorm:"column:oauth_provider"`
-	OAuth2AccessToken  string    `gorm:"column:oauth_access_token"`
-	OAuth2RefreshToken string    `gorm:"column:oauth_refresh_token"`
-	OAuth2Expiry       time.Time `gorm:"column:oauth_expiry"`
+	OAuth2UID          string    `gorm:"column:oauth_uid" json:"-"`
+	OAuth2Provider     string    `gorm:"column:oauth_provider" json:"-"`
+	OAuth2AccessToken  string    `gorm:"column:oauth_access_token" json:"-"`
+	OAuth2RefreshToken string    `gorm:"column:oauth_refresh_token" json:"-"`
+	OAuth2Expiry       time.Time `gorm:"column:oauth_expiry" json:"-"`
 
 	// 2fa
 	TOTPSecretKey      string
 	SMSPhoneNumber     string
 	SMSSeedPhoneNumber string
-	RecoveryCodes      string
+	RecoveryCodes      string `json:"-"`
 
 	// Remember is in another table
 }

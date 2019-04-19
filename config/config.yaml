@@ -60,3 +60,5 @@ redis:
   password: ""
 
 remember_for: 360000
+
+cookie_domain: ".hiveon.localhost"
