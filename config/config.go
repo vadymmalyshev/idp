@@ -3,10 +3,11 @@ package config
 import (
 	"flag"
 	"fmt"
+	"log"
+
 	"github.com/mitchellh/mapstructure"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
-	"log"
 )
 
 const (
@@ -117,7 +118,6 @@ func initServerConfig(conf IDP) (ServerConfig, error) {
 	return config, nil
 }
 
-
 func GetMailConfig() (MailConfig, error) {
 	config := MailConfig{
 		From:     viper.GetString(mailFrom),
@@ -129,7 +129,6 @@ func GetMailConfig() (MailConfig, error) {
 
 	return config, nil
 }
-
 
 func GetCookieDomain() (string, error) {
 	return viper.GetString(cookieDomain), nil
