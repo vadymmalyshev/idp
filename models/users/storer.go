@@ -111,3 +111,22 @@ func (store UserStorer) LoadByRecoverSelector(ctx context.Context, selector stri
 	err := store.db.Where(&User{RecoverSelector: selector}).First(&user).Error
 	return &user, err
 }
+
+// token storage
+func (store UserStorer) AddRememberToken(ctx context.Context, pid, token string) error {
+	tok := RememberToken{ Pid: pid, Token: token}
+	store.db.Save(&tok)
+
+	return nil
+}
+
+func (store UserStorer) DelRememberTokens(ctx context.Context, pid string) error {
+	store.db.Delete(RememberToken{}, "pid = ?", pid)
+	return nil
+}
+
+func (store UserStorer) UseRememberToken(ctx context.Context, pid, token string) error {
+	store.db.Delete(RememberToken{}, "token = ?", token)
+	return nil
+}
+

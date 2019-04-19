@@ -95,7 +95,8 @@ func Init(r *gin.Engine, db *gorm.DB) {
 	// cookieStore.MaxAge = SessionCookieMaxAge
 	// cookieStore.HTTPOnly = SessionCookieHTTPOnly
 	// cookieStore.Secure = SessionCookieSecure
-	cookieStore.Domain = "localhost"
+	domain, _ := config.GetCookieDomain()
+	cookieStore.Domain = domain
 	cookieStore.HTTPOnly = false
 	cookieStore.Secure = false
 
@@ -192,6 +193,11 @@ func Init(r *gin.Engine, db *gorm.DB) {
 	modTotp := &totp2fa.TOTP{Authboss: ab}
 	if err := modTotp.Setup(); err != nil {
 		logrus.Panicf("can't initialize authboss's totp2fa mod", err)
+	}
+
+	modRemember := remember.Remember{}
+	if err := modRemember.Init(ab); err != nil {
+		logrus.Panicf("can't initialize authboss's remember mod", err)
 	}
 
 	schemaDec := schema.NewDecoder()

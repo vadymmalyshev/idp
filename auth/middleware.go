@@ -36,6 +36,7 @@ func init() {
 
 func checkRegistrationCredentials(h http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		fmt.Println("test")
 		if r.URL.Path == "/api/register" && r.Method == "POST" {
 			var values map[string]string
 
@@ -173,8 +174,12 @@ func getUserFromHydraSession(w http.ResponseWriter, r *http.Request) (authboss.U
 	if err != nil {
 		return nil, errors.New("Can't unmarshall token")
 	}
-
 	if introToken.Active == false { //refresh
+		rememberCookie, _ := authboss.GetCookie(r, authboss.CookieRemember);
+		if rememberCookie == "" {
+			return nil, errors.New("Authorization token missed")
+		}
+
 		user, err := ab.LoadCurrentUser(&r)
 		if err != nil {
 			return nil, errors.New("can't find user")
