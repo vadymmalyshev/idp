@@ -239,14 +239,13 @@ func Init(r *gin.Engine, db *gorm.DB) {
 		render.JSON(w, 200, map[string]string{"redirectURL": redirectURL})
 	})
 
-	mux.Get("/api/token/refresh/{email}", func(w http.ResponseWriter, r *http.Request) {
-		email := chi.URLParam(r, "email")
-		user, err := ab.Config.Storage.Server.Load(r.Context(), email)
+	mux.Get("/api/token/refresh/{param}", func(w http.ResponseWriter, r *http.Request) {
+		param := chi.URLParam(r, "param") // email or access token
+		user, err := ab.Config.Storage.Server.Load(r.Context(), param)
 		if err != nil {
-			render.JSON(w, 500, map[string]string{"error": "user not found"})
+			render.JSON(w, http.StatusUnauthorized, map[string]string{"error": "user not found"})
 			return
 		}
-
 		RefreshToken(w, r, user)
 	})
 
@@ -256,17 +255,6 @@ func Init(r *gin.Engine, db *gorm.DB) {
 	})
 
 	r.Any("/*resources", gin.WrapH(mux))
-
-	// ab.Events.Before(authboss.EventGetUserSession, func(w http.ResponseWriter, r *http.Request, handled bool) (bool, error) {
-	// 	user, err := getUserFromHydraSession(w, r)
-	// 	if err != nil {
-	// 		return true, err
-	// 	}
-
-	// 	ab.Config.Storage.Server.Save(r.Context(), user)
-
-	// 	return true, nil
-	// })
 
 	ab.Events.After(authboss.EventRegister, func(w http.ResponseWriter, r *http.Request, handled bool) (bool, error) {
 		challenge := r.Header.Get("Challenge")

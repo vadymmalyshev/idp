@@ -174,12 +174,19 @@ func getUserFromHydraSession(w http.ResponseWriter, r *http.Request) (authboss.U
 		return nil, errors.New("Can't unmarshall token")
 	}
 
+	if introToken.Active == false { //refresh
+		user, err := ab.LoadCurrentUser(&r)
+		if err != nil {
+			return nil, errors.New("can't find user")
+		}
+		RefreshToken(w, r, user)
+		return user, nil
+	}
+
 	user, err := getAuthbossUserByEmail(r, introToken.Sub)
 	if err != nil {
 		return nil, errors.New("can't find user")
 	}
-
-	// RefreshToken(w, r, user)
 
 	return user, nil
 }
@@ -195,7 +202,9 @@ func RefreshToken(w http.ResponseWriter, r *http.Request, abUser authboss.User) 
 		http.Error(w, "No refresh token", http.StatusForbidden)
 		return
 	}
-	token := oauth2.Token{RefreshToken: refreshToken, AccessToken: accessToken, Expiry: expiry}
+	token := oauth2.Token{RefreshToken: refreshToken, AccessToken: accessToken, Expiry: expiry, TokenType: "Bearer"}
+	hydraConfig, _ := config.GetHydraConfig()
+	oauthClient = InitClient(hydraConfig.ClientID, hydraConfig.ClientSecret)
 	updatedToken, _ := oauthClient.TokenSource(context.TODO(), &token).Token()
 
 	if accessToken != updatedToken.AccessToken {
@@ -207,16 +216,11 @@ func RefreshToken(w http.ResponseWriter, r *http.Request, abUser authboss.User) 
 	}
 
 	SetAccessTokenCookie(w, updatedToken.AccessToken)
-
-	render.JSON(w, 200, map[string]string{
-		"access_token": updatedToken.AccessToken,
-	})
+	return
 }
 
 func challengeCode(w http.ResponseWriter, r *http.Request) {
 	challenge := r.URL.Query().Get("login_challenge")
-	k := r.Cookies()
-	fmt.Println(k)
 	if len(challenge) == 0 { // obtain login challenge
 		// move to auth
 		hydraConfig, _ := config.GetHydraConfig()
@@ -244,7 +248,7 @@ func challengeCode(w http.ResponseWriter, r *http.Request) {
 
 func callbackToken(w http.ResponseWriter, r *http.Request) {
 	code := r.URL.Query().Get("code")
-	fmt.Println("Code: ", code)
+	//fmt.Println("Code: ", code)
 	token, err := oauthClient.Exchange(oauth2.NoContext, code)
 
 	if err != nil {
@@ -253,8 +257,6 @@ func callbackToken(w http.ResponseWriter, r *http.Request) {
 		logrus.Debugf("Can't obtain authorization token")
 		return
 	}
-
-	//user, err := ab.LoadCurrentUser(&r)
 
 	var introToken swagger.OAuth2TokenIntrospection
 	hydraConfig, _ := config.GetHydraConfig()
@@ -281,7 +283,6 @@ func callbackToken(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	//portalConfig, err := config.GetPortalConfig()
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusNoContent)
 		return
@@ -290,8 +291,6 @@ func callbackToken(w http.ResponseWriter, r *http.Request) {
 	SetAccessTokenCookie(w, token.AccessToken)
 
 	return
-
-	//http.Redirect(w, r, portalConfig.Callback, http.StatusPermanentRedirect)
 }
 
 //nosurfing is a more verbose wrapper around csrf handling
