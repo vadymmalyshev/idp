@@ -177,7 +177,7 @@ func getUserFromHydraSession(w http.ResponseWriter, r *http.Request) (authboss.U
 	if introToken.Active == false { //refresh
 		rememberCookie, _ := authboss.GetCookie(r, authboss.CookieRemember);
 		if rememberCookie == "" {
-			return nil, errors.New("Authorization token missed")
+			return nil, errors.New("Authorization token is not active")
 		}
 
 		user, err := ab.LoadCurrentUser(&r)
