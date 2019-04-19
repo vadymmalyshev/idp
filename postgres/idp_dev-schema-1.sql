@@ -32,6 +32,36 @@ SET default_with_oids = false;
 -- Name: ab_users; Type: TABLE; Schema: public; Owner: idp
 --
 
+CREATE TABLE public.ab_remember_tokens (
+    id integer NOT NULL,
+    created_at timestamp with time zone,
+    updated_at timestamp with time zone,
+    deleted_at timestamp with time zone,
+    pid         text,
+    token       text
+);
+ALTER TABLE public.ab_remember_tokens OWNER TO idp;
+
+CREATE SEQUENCE public.ab_remember_tokens_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER TABLE public.ab_remember_tokens_id_seq OWNER TO idp;
+
+ALTER SEQUENCE public.ab_remember_tokens_id_seq OWNED BY public.ab_remember_tokens.id;
+
+ALTER TABLE ONLY public.ab_remember_tokens ALTER COLUMN id SET DEFAULT nextval('public.ab_remember_tokens_id_seq'::regclass);
+
+ALTER TABLE ONLY public.ab_remember_tokens
+    ADD CONSTRAINT ab_remember_tokens_pkey PRIMARY KEY (id);
+
+CREATE INDEX idx_ab_remember_tokens_deleted_at ON public.ab_remember_tokens USING btree (deleted_at);
+
 CREATE TABLE public.ab_users (
     id integer NOT NULL,
     created_at timestamp with time zone,
