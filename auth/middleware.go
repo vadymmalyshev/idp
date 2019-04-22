@@ -221,7 +221,25 @@ func challengeCode(w http.ResponseWriter, r *http.Request) {
 		// move to auth
 		hydraConfig, _ := config.GetHydraConfig()
 		oauthClient = InitClient(hydraConfig.ClientID, hydraConfig.ClientSecret)
-		redirectUrl := oauthClient.AuthCodeURL("state123")
+
+		state, err := stateTokenGenerator()
+		if err != nil {
+			logrus.Error("login token failed generation")
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusInternalServerError)
+			logrus.Debugf("server err, can't generate auth token")
+			return
+		}
+
+		c := http.Cookie{
+			Name:     cookieLoginState,
+			Value:    state,
+			Path:     "/",
+			HttpOnly: true,
+		}
+
+		http.SetCookie(w, &c)
+		redirectUrl := oauthClient.AuthCodeURL(state)
 
 		render.JSON(w, 200, map[string]string{"redirectURL": redirectUrl})
 		return
@@ -244,7 +262,26 @@ func challengeCode(w http.ResponseWriter, r *http.Request) {
 
 func callbackToken(w http.ResponseWriter, r *http.Request) {
 	code := r.URL.Query().Get("code")
+	state := r.URL.Query().Get("state")
 	fmt.Println("Code: ", code)
+
+	stateToken, err := r.Cookie(cookieLoginState)
+	if err != nil {
+		logrus.Infoln("state token absent")
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusUnprocessableEntity)
+		logrus.Debugf("Can't obtain authorization token\n")
+		return
+	}
+
+	if stateToken.Value != state {
+		logrus.Infof("invalid oauth state, cookie: '%s', URL: '%s'\n", stateToken.Value, state)
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusUnprocessableEntity)
+		logrus.Debugf("Can't obtain authorization token\n")
+		return
+	}
+
 	token, err := oauthClient.Exchange(oauth2.NoContext, code)
 
 	if err != nil {
