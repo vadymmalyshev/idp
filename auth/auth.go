@@ -1,6 +1,7 @@
 package auth
 
 import (
+	"crypto/rand"
 	"encoding/base32"
 	"encoding/base64"
 	"flag"
@@ -58,6 +59,8 @@ var (
 
 	cookieAuthenticationCSRFName = "oauth2_authentication_csrf"
 	cookieConsentCSRFName        = "oauth2_consent_csrf"
+
+	cookieLoginState = "login_csrftoken"
 )
 
 var (
@@ -218,7 +221,7 @@ func Init(r *gin.Engine, db *gorm.DB) {
 			render.JSON(w, http.StatusUnauthorized, err.Error())
 			return
 		}
-		OutUser,_ := ToMap(user, "json")
+		OutUser, _ := ToMap(user, "json")
 		render.JSON(w, http.StatusOK, OutUser)
 	})
 
@@ -302,11 +305,30 @@ func handleLogin(challenge string, w http.ResponseWriter, r *http.Request) (bool
 			return true, nil
 		}
 
-		oauth2_auth_csrf, _ := r.Cookie(cookieAuthenticationCSRFName)
+		oauth2_auth_csrf, oauth2Err := r.Cookie(cookieAuthenticationCSRFName)
+		login_state_token, stateErr := r.Cookie(cookieLoginState)
+
+		if oauth2Err != nil || stateErr != nil {
+			if oauth2Err != nil {
+				logrus.Infof("%s token absent! login rejected\n", cookieAuthenticationCSRFName)
+			}
+			if stateErr != nil {
+				logrus.Infof("%s token absent! login rejected\n", cookieLoginState)
+			}
+			render.JSON(w, 422, &ResponseError{
+				Status:  "error",
+				Success: false,
+				Error:   "auth token absent",
+			})
+			return true, nil
+		}
+
 		cookieArray := []*http.Cookie{}
 		resty.DefaultClient.Cookies = cookieArray
 
-		res, err := resty.SetCookie(oauth2_auth_csrf).
+		res, err := resty.
+			SetCookie(oauth2_auth_csrf).
+			SetCookie(login_state_token).
 			R().
 			SetHeader("Accept", "application/json").
 			Get(resp.RedirectTo)
@@ -355,4 +377,14 @@ func formatToken(token string) string {
 	token = strings.Replace(token, "Authorization=", "", 1)
 	token = strings.Replace(token, "; Path=/", "", 1)
 	return fmt.Sprintf("Bearer %s", token)
+}
+
+func stateTokenGenerator() (string, error) {
+	b := make([]byte, 8)
+	_, err := rand.Read(b)
+	if err != nil {
+		logrus.Errorf("crypto/rand failed: %v", err)
+		return "", err
+	}
+	return fmt.Sprintf("%x", b), nil
 }
