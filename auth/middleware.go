@@ -36,7 +36,6 @@ func init() {
 
 func checkRegistrationCredentials(h http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		fmt.Println("test")
 		if r.URL.Path == "/api/register" && r.Method == "POST" {
 			var values map[string]string
 
@@ -211,6 +210,10 @@ func RefreshToken(w http.ResponseWriter, r *http.Request, abUser authboss.User) 
 	hydraConfig, _ := config.GetHydraConfig()
 	oauthClient = InitClient(hydraConfig.ClientID, hydraConfig.ClientSecret)
 	updatedToken, _ := oauthClient.TokenSource(context.TODO(), &token).Token()
+
+	if updatedToken == nil {
+		return
+	}
 
 	if accessToken != updatedToken.AccessToken {
 		user.PutOAuth2AccessToken(updatedToken.AccessToken)
