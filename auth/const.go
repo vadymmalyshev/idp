@@ -3,7 +3,9 @@ package auth
 const (
 	cookieAuthenticationCSRFName = "oauth2_authentication_csrf"
 	cookieConsentCSRFName        = "oauth2_consent_csrf"
-	IDPSessionName               = "idp_session"
+	cookieLoginState             = "login_csrftoken"
+
+	IDPSessionName = "idp_session"
 
 	recoverSentURL = "/recover/sent"
 	recoverSentTPL = "recover_sent"

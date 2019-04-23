@@ -61,6 +61,8 @@ func (a *Auth) Init() {
 	mux.Get("/api/loginchallenge", a.loginChallenge)
 	mux.Get("/api/token/refresh/{email}", a.refreshTokenByEmail)
 
+	mux.Post("/api/register", a.checkRegistrationCredentials)
+
 	mux.Group(func(mux chi.Router) {
 		mux.Use(authboss.ModuleListMiddleware(a.authBoss))
 		mux.Mount("/api", http.StripPrefix("/api", a.authBoss.Config.Core.Router))

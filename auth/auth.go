@@ -77,12 +77,25 @@ func (a Auth) getUserFromHydraSession(w http.ResponseWriter, r *http.Request) (a
 		return nil, errors.New("can't unmarshall token")
 	}
 
+	if introToken.Active == false { //refresh
+		rememberCookie, _ := authboss.GetCookie(r, authboss.CookieRemember)
+		if rememberCookie == "" {
+			return nil, errors.New("Authorization token is not active")
+		}
+
+		user, err := a.authBoss.LoadCurrentUser(&r)
+		if err != nil {
+			return nil, errors.New("can't find user")
+		}
+
+		a.RefreshToken(w, r, user)
+		return user, nil
+	}
+
 	user, err := a.getAuthbossUserByEmail(r, introToken.Sub)
 	if err != nil {
 		return nil, errors.New("can't find user")
 	}
-
-	// RefreshToken(w, r, user)
 
 	return user, nil
 }
@@ -102,6 +115,10 @@ func (a Auth) RefreshToken(w http.ResponseWriter, r *http.Request, abUser authbo
 
 	token := oauth2.Token{RefreshToken: refreshToken, AccessToken: accessToken, Expiry: expiry}
 	updatedToken, _ := oauthClient.TokenSource(context.TODO(), &token).Token()
+
+	if updatedToken == nil {
+		return
+	}
 
 	if accessToken != updatedToken.AccessToken {
 		user.PutOAuth2AccessToken(updatedToken.AccessToken)

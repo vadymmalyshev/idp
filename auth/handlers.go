@@ -1,9 +1,11 @@
 package auth
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
+	"io/ioutil"
 	"net/http"
 	"strings"
 
@@ -19,11 +21,27 @@ import (
 
 func (a Auth) challengeCode(w http.ResponseWriter, r *http.Request) {
 	challenge := r.URL.Query().Get("login_challenge")
-	k := r.Cookies()
-	fmt.Println(k)
 	if len(challenge) == 0 { // obtain login challenge
 		oauthClient := initOauthClient(a.conf.Hydra)
-		redirectUrl := oauthClient.AuthCodeURL("state123")
+
+		state, err := stateTokenGenerator()
+		if err != nil {
+			logrus.Error("login token failed generation")
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusInternalServerError)
+			logrus.Debugf("server err, can't generate auth token")
+			return
+		}
+
+		c := http.Cookie{
+			Name:     cookieLoginState,
+			Value:    state,
+			Path:     "/",
+			HttpOnly: true,
+		}
+
+		http.SetCookie(w, &c)
+		redirectUrl := oauthClient.AuthCodeURL(state)
 
 		a.render.JSON(w, 200, map[string]string{"redirectURL": redirectUrl})
 		return
@@ -46,11 +64,29 @@ func (a Auth) challengeCode(w http.ResponseWriter, r *http.Request) {
 
 func (a Auth) callbackToken(w http.ResponseWriter, r *http.Request) {
 	code := r.URL.Query().Get("code")
+	state := r.URL.Query().Get("state")
 	fmt.Println("Code: ", code)
 
 	oauthClient := initOauthClient(a.conf.Hydra)
-	token, err := oauthClient.Exchange(oauth2.NoContext, code)
 
+	stateToken, err := r.Cookie(cookieLoginState)
+	if err != nil {
+		logrus.Infoln("state token absent")
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusUnprocessableEntity)
+		logrus.Debugf("Can't obtain authorization token\n")
+		return
+	}
+
+	if stateToken.Value != state {
+		logrus.Infof("invalid oauth state, cookie: '%s', URL: '%s'\n", stateToken.Value, state)
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusUnprocessableEntity)
+		logrus.Debugf("Can't obtain authorization token\n")
+		return
+	}
+
+	token, err := oauthClient.Exchange(oauth2.NoContext, code)
 	if err != nil {
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusUnprocessableEntity)
@@ -174,8 +210,27 @@ func (a Auth) handleLogin(challenge string, w http.ResponseWriter, r *http.Reque
 			return true, nil
 		}
 
-		oauth2AuthCSRF, _ := r.Cookie(cookieAuthenticationCSRFName)
-		res, err := resty.SetCookie(oauth2AuthCSRF).
+		oauth2AuthCSRF, oauth2Err := r.Cookie(cookieAuthenticationCSRFName)
+		loginStateToken, loginStateErr := r.Cookie(cookieLoginState)
+
+		if oauth2Err != nil || loginStateErr != nil {
+			if oauth2Err != nil {
+				logrus.Infof("%s token absent! login rejected\n", cookieAuthenticationCSRFName)
+			}
+			if loginStateErr != nil {
+				logrus.Infof("%s token absent! login rejected\n", cookieLoginState)
+			}
+			a.render.JSON(w, 422, &ResponseError{
+				Status:  "error",
+				Success: false,
+				Error:   "auth token absent",
+			})
+			return true, nil
+		}
+
+		res, err := resty.
+			SetCookie(oauth2AuthCSRF).
+			SetCookie(loginStateToken).
 			R().
 			SetHeader("Accept", "application/json").
 			Get(resp.RedirectTo)
@@ -207,6 +262,44 @@ func (a Auth) handleLogin(challenge string, w http.ResponseWriter, r *http.Reque
 		})
 	}
 	return true, nil
+}
+
+func (a Auth) checkRegistrationCredentials(w http.ResponseWriter, r *http.Request) {
+	var values map[string]string
+
+	b, err := ioutil.ReadAll(r.Body)
+	bodyBytes := b
+
+	if err != nil {
+		fmt.Println(err, "failed to read http body")
+	}
+
+	if err = json.Unmarshal(b, &values); err != nil {
+		fmt.Println(err, "failed to parse json http body")
+	}
+	r.Body = ioutil.NopCloser(bytes.NewBuffer(bodyBytes))
+
+	login := values["login"]
+	pidUser, err := a.authBoss.Storage.Server.Load(r.Context(), login)
+	if pidUser != nil {
+		a.render.JSON(w, http.StatusUnprocessableEntity, &ResponseError{
+			Status:  "error",
+			Success: false,
+			Error:   fmt.Sprintf("Username %s has already taken", login),
+		})
+		return
+	}
+
+	email := values["email"]
+	pidUser, err = a.authBoss.Storage.Server.Load(r.Context(), email)
+	if pidUser != nil {
+		a.render.JSON(w, http.StatusUnprocessableEntity, &ResponseError{
+			Status:  "error",
+			Success: false,
+			Error:   fmt.Sprintf("Email %s has already taken", email),
+		})
+		return
+	}
 }
 
 func (a Auth) getUserByEmail(w http.ResponseWriter, r *http.Request) {

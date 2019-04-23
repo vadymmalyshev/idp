@@ -47,13 +47,16 @@ func (store UserStorer) Load(ctx context.Context, key string) (authboss.User, er
 	if notFoundByEmail {
 		notFoundByName := store.db.First(&user, "login = ?", key).RecordNotFound()
 		if notFoundByName {
-			if _, err := strconv.Atoi(key); err == nil {
-				notFoundByID := store.db.First(&user, "id = ?", key).RecordNotFound()
-				if notFoundByID {
+			notFoundByToken := store.db.First(&user, "oauth_access_token = ?", key).RecordNotFound()
+			if notFoundByToken {
+				if _, err := strconv.Atoi(key); err == nil {
+					notFoundByID := store.db.First(&user, "id = ?", key).RecordNotFound()
+					if notFoundByID {
+						return nil, authboss.ErrUserNotFound
+					}
+				} else {
 					return nil, authboss.ErrUserNotFound
 				}
-			} else {
-				return nil, authboss.ErrUserNotFound
 			}
 		}
 	}
@@ -108,3 +111,22 @@ func (store UserStorer) LoadByRecoverSelector(ctx context.Context, selector stri
 	err := store.db.Where(&User{RecoverSelector: selector}).First(&user).Error
 	return &user, err
 }
+
+// token storage
+func (store UserStorer) AddRememberToken(ctx context.Context, pid, token string) error {
+	tok := RememberToken{ Pid: pid, Token: token}
+	store.db.Save(&tok)
+
+	return nil
+}
+
+func (store UserStorer) DelRememberTokens(ctx context.Context, pid string) error {
+	store.db.Delete(RememberToken{}, "pid = ?", pid)
+	return nil
+}
+
+func (store UserStorer) UseRememberToken(ctx context.Context, pid, token string) error {
+	store.db.Delete(RememberToken{}, "token = ?", token)
+	return nil
+}
+
