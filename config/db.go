@@ -12,14 +12,13 @@ var dbOnce sync.Once
 var db *gorm.DB
 
 func initDatabase(dbConf DBConf) {
-	db, err := gorm.Open("postgres", dbConf.Conn)
-
-	db.LogMode(true)
-
+	var err error
+	db, err = gorm.Open("postgres", dbConf.Conn)
 	if err != nil {
 		logrus.Panic("failed to init db:", err.Error())
 	}
 
+	db.LogMode(true)
 }
 
 func DB(dbConf DBConf) *gorm.DB {
