@@ -1,12 +1,14 @@
 package auth
 
 import (
+	"crypto/rand"
 	"fmt"
 	"net/http"
 	"reflect"
 	"strings"
 
 	"git.tor.ph/hiveon/idp/config"
+	"github.com/sirupsen/logrus"
 )
 
 func SetAccessTokenCookie(w http.ResponseWriter, token string) {
@@ -33,7 +35,7 @@ func SetAccessTokenCookie(w http.ResponseWriter, token string) {
 	http.SetCookie(w, &cookie)
 }
 
-func ToMap(in interface{}, tag string) (map[string]interface{}, error){
+func ToMap(in interface{}, tag string) (map[string]interface{}, error) {
 	out := make(map[string]interface{})
 
 	v := reflect.ValueOf(in)
@@ -63,4 +65,15 @@ func ToMap(in interface{}, tag string) (map[string]interface{}, error){
 		}
 	}
 	return out, nil
+}
+
+func stateTokenGenerator() (string, error) {
+	b := make([]byte, 8)
+	_, err := rand.Read(b)
+	if err != nil {
+		logrus.Errorf("crypto/rand failed: %v", err)
+		return "", err
+	}
+
+	return fmt.Sprintf("%x", b), nil
 }

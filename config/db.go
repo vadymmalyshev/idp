@@ -11,15 +11,8 @@ import (
 var dbOnce sync.Once
 var db *gorm.DB
 
-func initDatabase() {
-	var err error
-	dbconfig, err := GetDBConfig()
-
-	if err != nil {
-		logrus.Panic("failed to find db config:", err.Error())
-	}
-
-	db, err = gorm.Open("postgres", dbconfig.Conn)
+func initDatabase(dbConf DBConf) {
+	db, err := gorm.Open("postgres", dbConf.Conn)
 
 	db.LogMode(true)
 
@@ -29,8 +22,10 @@ func initDatabase() {
 
 }
 
-func DB() *gorm.DB {
-	dbOnce.Do(initDatabase)
+func DB(dbConf DBConf) *gorm.DB {
+	dbOnce.Do(func() {
+		initDatabase(dbConf)
+	})
 
 	return db
 }
