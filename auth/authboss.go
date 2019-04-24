@@ -2,6 +2,7 @@ package auth
 
 import (
 	clientState "github.com/volatiletech/authboss-clientstate"
+	"github.com/volatiletech/authboss/remember"
 
 	"encoding/base64"
 	"net/http"
@@ -125,6 +126,11 @@ func initAuthBoss(serviceAddr string, db *gorm.DB, sessionStorer clientState.Ses
 	modTotp := &totp2fa.TOTP{Authboss: ab}
 	if err := modTotp.Setup(); err != nil {
 		logrus.Panicf("can't initialize authboss's totp2fa mod", err)
+	}
+
+	modRemember := remember.Remember{}
+	if err := modRemember.Init(ab); err != nil {
+		logrus.Panicf("can't initialize authboss's remember mod", err)
 	}
 
 	return ab
