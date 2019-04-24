@@ -35,7 +35,7 @@ func NewAuth(r *gin.Engine, db *gorm.DB, conf *config.CommonConfig) *Auth {
 func (a *Auth) Init() {
 	sessionStore := initSessionStorer()
 	cookieStore := initCookieStorer()
-	a.authBoss = initAuthBoss(a.conf.ServerConfig.Addr, a.db, sessionStore, cookieStore)
+	a.authBoss = initAuthBoss(a.conf.Portal.Callback, a.db, sessionStore, cookieStore)
 
 	a.authBoss.Events.After(authboss.EventRegister, func(w http.ResponseWriter, r *http.Request, handled bool) (bool, error) {
 		challenge := r.Header.Get("Challenge")
