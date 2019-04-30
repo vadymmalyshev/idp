@@ -8,6 +8,8 @@
   <!--<![endif]-->
   <meta name="format-detection" content="telephone=no">
   <meta name="x-apple-disable-message-reformatting">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width; initial=-scale=1">
   <title></title>
   <style type="text/css">
     @media screen {
@@ -48,6 +50,30 @@
     .ExternalClass font {
       line-height: 100%;
     }
+
+    a[x-apple-data-detectors] {
+        color: inherit !important;
+        text-decoration: none !important;
+        font-size: inherit !important;
+        font-family: inherit !important;
+        font-weight: inherit !important;
+        line-height: inherit !important;
+    }
+
+    body {
+      /* -apple-color-filter: invert(0.8235) hue-rotate(180deg) saturate(300%); 
+      -apple-color-filter: apple-invert-lightness();  */
+      background-color: #1d1f23;
+      background-color: rgb(40, 43, 52);
+    }
+  
+    /* @media (prefers-dark-interface) { 
+      body { 
+        background:linear-gradient(45deg, #8e36e0 0%, #164b92 100%);
+        background-color: #1d1f23 !important; 
+        -apple-color-filter: none;
+      } 
+    } */
 
     div[style*="margin: 14px 0"],
     div[style*="margin: 16px 0"] {
@@ -180,9 +206,7 @@
   <!--[if gte mso 9]><xml><o:OfficeDocumentSettings><o:AllowPNG/><o:PixelsPerInch>96</o:PixelsPerInch></o:OfficeDocumentSettings></xml><![endif]-->
 </head>
 <body style="width: 100% !important; margin: 0; padding: 0; mso-line-height-rule: exactly; -webkit-font-smoothing: antialiased; -webkit-text-size-adjust: 100%; -ms-text-size-adjust: 100%;" marginheight="0" marginwidth="0" leftmargin="0" topmargin="0" class="">
-  <span class="preheader" style="color: transparent; display: none; height: 0; max-height: 0; max-width: 0; opacity: 0; overflow: hidden; mso-hide: all; visibility: hidden; width: 0;">
-</span>
-  <table class="pc-email-body" width="100%" bgcolor="#1f2228" style="background-color: #1f2228; table-layout: fixed" border="0" cellpadding="0" cellspacing="0" role="presentation">
+  <table class="pc-email-body" width="100%" style="background: linear-gradient(175deg, rgb(64, 49, 50) 0%, rgb(40, 43, 52) 90%); table-layout: fixed" border="0" cellpadding="0" cellspacing="0" role="presentation">
     <tbody>
       <tr>
         <td align="center" valign="top">
@@ -213,13 +237,13 @@
                                       <tbody>
                                         <tr>
                                           <td style="padding: 13px 0 10px; text-align: center; font-family: sans-serif; font-size: 10px; -webkit-text-size-adjust: 100%; -ms-text-size-adjust: 100%;" valign="top">
-                                            <a href="http://example.com" style="text-decoration: none;"><img src="images/facebook-white.png" width="15" height="15" alt="" style="border: 0; line-height: 100%; outline: 0; -ms-interpolation-mode: bicubic; color: #ffffff;"></a>
+                                            <!-- <a href="http://example.com" style="text-decoration: none;"><img src="assets/email/facebook-white.png" width="15" height="15" alt="" style="border: 0; line-height: 100%; outline: 0; -ms-interpolation-mode: bicubic; color: #ffffff;"></a>
                                             <span>&nbsp;&nbsp;</span>
-                                            <a href="http://example.com" style="text-decoration: none;"><img src="images/twitter-white.png" width="16" height="14" alt="" style="border: 0; line-height: 100%; outline: 0; -ms-interpolation-mode: bicubic; color: #ffffff;"></a>
+                                            <a href="http://example.com" style="text-decoration: none;"><img src="assets/email/twitter-white.png" width="16" height="14" alt="" style="border: 0; line-height: 100%; outline: 0; -ms-interpolation-mode: bicubic; color: #ffffff;"></a>
                                             <span>&nbsp;&nbsp;</span>
-                                            <a href="http://example.com" style="text-decoration: none;"><img src="images/google-plus-white.png" width="22" height="15" alt="" style="border: 0; line-height: 100%; outline: 0; -ms-interpolation-mode: bicubic; color: #ffffff;"></a>
+                                            <a href="http://example.com" style="text-decoration: none;"><img src="assets/email/google-plus-white.png" width="22" height="15" alt="" style="border: 0; line-height: 100%; outline: 0; -ms-interpolation-mode: bicubic; color: #ffffff;"></a>
                                             <span>&nbsp;&nbsp;</span>
-                                            <a href="http://example.com" style="text-decoration: none;"><img src="images/instagram-white.png" width="16" height="15" alt="" style="border: 0; line-height: 100%; outline: 0; -ms-interpolation-mode: bicubic; color: #ffffff;"></a>
+                                            <a href="http://example.com" style="text-decoration: none;"><img src="assets/email/instagram-white.png" width="16" height="15" alt="" style="border: 0; line-height: 100%; outline: 0; -ms-interpolation-mode: bicubic; color: #ffffff;"></a> -->
                                           </td>
                                         </tr>
                                       </tbody>
@@ -231,7 +255,7 @@
                                       <tbody>
                                         <tr>
                                           <td style="padding: 10px 0;" valign="top" align="center">
-                                            <a href="http://example.com" style="text-decoration: none;"><img src="images/hiveon-asic-5lw.png" width="130" height="" alt="" style="height: auto; max-width: 100%; border: 0; line-height: 100%; outline: 0; -ms-interpolation-mode: bicubic; color: #ffffff; font-size: 14px;"></a>
+                                            <a href="https://hiveon.net" style="text-decoration: none;"><img src="https://res.cloudinary.com/hiveos/image/upload/v1556662864/hiveonid_lighxp.png" width="130" height="" alt="hiveonid" style="height: auto; max-width: 100%; border: 0; line-height: 100%; outline: 0; -ms-interpolation-mode: bicubic; color: #ffffff; font-size: 14px;"></a>
                                           </td>
                                         </tr>
                                       </tbody>
@@ -253,18 +277,23 @@
                                       <table border="0" cellpadding="0" cellspacing="0" style="width: 100%;" width="100%" role="presentation">
                                           <tbody>
                                           <tr>
-                                              <td class="pc-fb-font" style="vertical-align: top; font-family: 'Open Sans', Helvetica, Arial, sans-serif; font-size: 24px; font-weight: 700; line-height: 1.42; letter-spacing: -0.4px; color: #f1f1f1; padding: 0 20px" valign="top">Hello!</td>
+                                              <td class="pc-fb-font" style="vertical-align: top; font-family: 'Open Sans', Helvetica, Arial, sans-serif; font-size: 24px; font-weight: 700; line-height: 1.42; letter-spacing: -0.4px; color: #f1f1f1; padding: 0 20px; text-align: ceZZ" valign="top">Hello!</td>
                                           </tr>
                                           <tr>
                                               <td height="12" style="height: 12px; font-size: 1px; line-height: 1px">&nbsp;</td>
                                           </tr>
                                           <tr>
                                               <td class="pc-fb-font pc-xs-br-disabled" style="vertical-align: top; font-family: 'Open Sans', Helvetica, Arial, sans-serif; font-size: 18px; font-weight: 300; line-height: 1.56; letter-spacing: -0.2px; color: #c6ced4; padding: 0 20px" valign="top">
-                                                      Someone, hopefully you, has requested to reset the password for your Hiveon ID account on https://hiveon.net. <br/>
-                                                      If you did not perform this request, you can safely ignore this email. <br/>
+                                                      Someone, hopefully you, has requested to reset the password for your Hiveon ID account on https:<span>//hiveon</span>.net
+                                                      <br/>
+                                                      If you did not perform this request, you can safely ignore this email. <br/><br />
                                                       Otherwise, click the link below to complete the process. <br>
-                                  
-                                                      <a href="{{.recover_url}}">Restore Password Link</a>
+                                                      <br />
+                                              </td>
+                                          </tr>
+                                          <tr>
+                                              <td class="pc-fb-font pc-xs-br-disabled" align="center" style="vertical-align: top; font-family: 'Open Sans', Helvetica, Arial, sans-serif; font-size: 18px; font-weight: 300; line-height: 1.56; text-align:center; letter-spacing: -0.2px; color: #c6ced4; padding: 0 20px" valign="top">
+                                                <a style="display:inline-block; border-radius: 3px; border-radius: 3px; background-color: #fff; padding: 8px 18px; color:#1d1f23; text-decoration: none; font-weight: 600;" href="{{.recover_url}}">Restore Password Link</a>
                                               </td>
                                           </tr>
                                           <tr>
@@ -301,7 +330,7 @@
                                                         </tr>
                                                         <tr>
                                                           <td class="pc-fb-font" style="padding: 11px 0 0; font-family: 'Open Sans', Helvetica, Arial, sans-serif; font-size: 14px; line-height: 20px; letter-spacing: -0.2px; color: #c6ced4" valign="top">
-                                                            We are always looking for new exciting projects and collaborations. Feel free to contact us.
+                                                            Stay updated with our news, releases changelog and urgent announcements
                                                           </td>
                                                         </tr>
                                                         <tr>
@@ -309,9 +338,9 @@
                                                         </tr>
                                                         <tr>
                                                           <td style="font-family: sans-serif; font-size: 19px;" valign="top">
-                                                            <a href="http://example.com" style="text-decoration: none;"><img src="images/facebook-dark-gray.png" width="20" height="20" alt="" style="border: 0; line-height: 100%; outline: 0; -ms-interpolation-mode: bicubic; color: #ffffff;"></a>
+                                                            <a href="https://www.facebook.com/hiveos/" style="text-decoration: none;"><img src="https://res.cloudinary.com/hiveos/image/upload/v1556656774/fb_n7tj6j.png" width="20" height="20" alt="" style="border: 0; line-height: 100%; outline: 0; -ms-interpolation-mode: bicubic; color: #ffffff;"></a>
                                                             <span>&nbsp;&nbsp;</span>
-                                                            <a href="http://example.com" style="text-decoration: none;"><img src="images/twitter-dark-gray.png" width="21" height="18" alt="" style="border: 0; line-height: 100%; outline: 0; -ms-interpolation-mode: bicubic; color: #ffffff;"></a>
+                                                            <a href="https://twitter.com/hiveonofficial" style="text-decoration: none;"><img src="https://res.cloudinary.com/hiveos/image/upload/v1556656774/twitter_iysxmj.png" width="21" height="18" alt="" style="border: 0; line-height: 100%; outline: 0; -ms-interpolation-mode: bicubic; color: #ffffff;"></a>
                                                           </td>
                                                         </tr>
                                                       </tbody>
@@ -331,27 +360,21 @@
                                                       <tbody>
                                                         <tr>
                                                           <td class="pc-fb-font" style="font-family: 'Open Sans', Helvetica, Arial, sans-serif; font-size: 18px; font-weight: 500; line-height: 24px; letter-spacing: -0.2px; color: #f1f1f1" valign="top">
-                                                            Contact us.
-                                                          </td>
-                                                        </tr>
-                                                        <tr>
-                                                          <td class="pc-fb-font" style="padding: 11px 0 0; font-family: 'Open Sans', Helvetica, Arial, sans-serif; font-size: 14px; line-height: 20px; letter-spacing: -0.2px; color: #c6ced4" valign="top">
-                                                            <a style="text-decoration: none; color: #D8D8D8;">King street, 2901 Marmara road, Newyork, WA 98122-1090</a>
-                                                          </td>
-                                                        </tr>
-                                                        <tr>
-                                                          <td class="pc-sm-h-20" height="45" style="height: 45px; line-height: 1px; font-size: 1px;">&nbsp;</td>
-                                                        </tr>
-                                                        <tr>
-                                                          <td class="pc-fb-font" style="font-family: 'Open Sans', Helvetica, Arial, sans-serif; font-size: 18px; font-weight: 500; line-height: 24px; letter-spacing: -0.2px" valign="top">
-                                                            <a href="tel:749-977-3440" style="text-decoration: none; color: #f1f1f1">749-977-3440</a>
+                                                            Official support
                                                           </td>
                                                         </tr>
                                                         <tr>
                                                           <td class="pc-fb-font" style="padding: 9px 0 0; font-family: 'Open Sans', Helvetica, Arial, sans-serif; font-size: 14px; font-weight: 500; line-height: 24px" valign="top">
-                                                            <a href="mailto:bo.grady@nathen.biz" style="text-decoration: none; color: #468ee6">bo.grady@nathen.biz</a>
+                                                            <a href="mailto:bee@hiveos.farm" style="text-decoration: none; color: #ff7e33">bee@hiveos.farm</a>
                                                           </td>
                                                         </tr>
+                                                        <tr>
+                                                          <td class="pc-fb-font" style="padding: 9px 0 0; font-family: 'Open Sans', Helvetica, Arial, sans-serif; font-size: 14px; font-weight: 500; line-height: 24px; color: #a0a0a0" valign="top">
+                                                              If you no longer wish to receive Hiveon Insights emails, you may change your preferences by clicking the link above.
+                                                              <br/>
+                                                              <a style="color: #a0a0a0" href="javascript:;">Unsubscibe</a>
+                                                            </td>
+                                                          </tr>
                                                       </tbody>
                                                     </table>
                                                   </td>
@@ -364,6 +387,11 @@
                                       </tr>
                                     </tbody>
                                   </table>
+                                </td>
+                              </tr>
+                              <tr>
+                                  <td class="pc-fb-font" style="padding: 9px 0 0; font-family: 'Open Sans', Helvetica, Arial, sans-serif; font-size: 14px; font-weight: 500; line-height: 24px; color: #aaa; text-align: center;" valign="top">
+                                    © 2019 Hiveon, Inc
                                 </td>
                               </tr>
                             </tbody>
