@@ -277,7 +277,25 @@ func (a Auth) getUserByEmail(w http.ResponseWriter, r *http.Request) {
 
 func (a Auth) loginChallenge(w http.ResponseWriter, r *http.Request) {
 	oauthClient := initOauthClient(a.conf.Hydra)
-	redirectURL := oauthClient.AuthCodeURL("state123")
+
+	state, err := stateTokenGenerator()
+	if err != nil {
+		logrus.Error("login token failed generation")
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusInternalServerError)
+		logrus.Debugf("server err, can't generate auth token")
+		return
+	}
+
+	c := http.Cookie{
+		Name:     cookieLoginState,
+		Value:    state,
+		Path:     "/",
+		HttpOnly: true,
+	}
+
+	http.SetCookie(w, &c)
+	redirectURL := oauthClient.AuthCodeURL(state)
 
 	a.render.JSON(w, 200, map[string]string{"redirectURL": redirectURL})
 }
