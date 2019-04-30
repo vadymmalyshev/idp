@@ -9,10 +9,11 @@ import (
 // User using by IDP to store users and their credentials
 type User struct {
 	gorm.Model
-	Login    string `gorm:"not null"`
-	Name     string `gorm:"not null"`
-	Email    string `gorm:"not null;unique_index"`
-	Password string `gorm:"not null" json:"-"`
+	Login     string `gorm:"not null"`
+	Name      string `gorm:"not null"`
+	Email     string `gorm:"not null;unique_index"`
+	Password  string `gorm:"not null" json:"-"`
+	ReferalID string `json:"-"`
 
 	// Confirm
 	ConfirmSelector string `json:"-"`
@@ -120,6 +121,9 @@ func (u *User) PutArbitrary(values map[string]string) {
 	}
 }
 
+// Put refID into user
+func (u *User) PutReferaL(ref string) { u.ReferalID = ref }
+
 // GetPID from user
 func (u User) GetPID() string { return u.Email }
 
@@ -192,3 +196,6 @@ func (u User) GetArbitrary() map[string]string {
 		"login": u.Login, "name": u.Name,
 	}
 }
+
+// Get refID from user
+func (u User) GetReferal() string { return u.ReferalID }

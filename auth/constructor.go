@@ -1,6 +1,7 @@
 package auth
 
 import (
+	"git.tor.ph/hiveon/idp/models/users"
 	renderPkg "github.com/unrolled/render"
 
 	"net/http"
@@ -38,6 +39,16 @@ func (a *Auth) Init() {
 	a.authBoss = initAuthBoss(a.conf.Portal.Callback, a.db, sessionStore, cookieStore)
 
 	a.authBoss.Events.After(authboss.EventRegister, func(w http.ResponseWriter, r *http.Request, handled bool) (bool, error) {
+		referalID, err := r.Cookie("refId")
+
+		if err == nil && referalID != nil {
+			abUser, err := a.authBoss.LoadCurrentUser(&r)
+			if abUser != nil && err == nil {
+				user := abUser.(*users.User)
+				user.PutReferaL(referalID.Value)
+			}
+		}
+
 		challenge := r.Header.Get("Challenge")
 		return a.handleLogin(challenge, w, r)
 	})
