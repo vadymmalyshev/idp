@@ -41,7 +41,7 @@ func (a *Auth) Init() {
 	a.authBoss.Events.After(authboss.EventRegister, func(w http.ResponseWriter, r *http.Request, handled bool) (bool, error) {
 		referalID, err := r.Cookie("refId")
 
-		if err == nil {
+		if err == nil && referalID != nil {
 			abUser, err := a.authBoss.LoadCurrentUser(&r)
 			if abUser != nil && err == nil {
 				user := abUser.(*users.User)
