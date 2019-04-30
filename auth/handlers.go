@@ -211,6 +211,9 @@ func (a Auth) handleLogin(challenge string, w http.ResponseWriter, r *http.Reque
 		oauth2AuthCSRF, oauth2Err := r.Cookie(cookieAuthenticationCSRFName)
 		loginStateToken, loginStateErr := r.Cookie(cookieLoginState)
 
+		cookieArray := []*http.Cookie{}
+		resty.DefaultClient.Cookies = cookieArray
+
 		if oauth2Err != nil || loginStateErr != nil {
 			if oauth2Err != nil {
 				logrus.Infof("%s token absent! login rejected\n", cookieAuthenticationCSRFName)
