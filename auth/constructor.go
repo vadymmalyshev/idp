@@ -51,6 +51,7 @@ func (a *Auth) Init() {
 
 	mux.Use(a.authBoss.LoadClientStateMiddleware, remember.Middleware(a.authBoss))
 	mux.Use(a.handleUserSession)
+	mux.Use(a.checkRegistrationCredentials)
 	mux.Use(a.dataInjector)
 
 	mux.Get("/api/userinfo", a.getUserInfo)
@@ -60,8 +61,6 @@ func (a *Auth) Init() {
 	mux.Get("/api/users/email/{email}", a.getUserByEmail)
 	mux.Get("/api/loginchallenge", a.loginChallenge)
 	mux.Get("/api/token/refresh/{email}", a.refreshTokenByEmail)
-
-	mux.Post("/api/register", a.checkRegistrationCredentials)
 
 	mux.Group(func(mux chi.Router) {
 		mux.Use(authboss.ModuleListMiddleware(a.authBoss))

@@ -1,11 +1,9 @@
 package auth
 
 import (
-	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"net/http"
 	"strings"
 
@@ -262,44 +260,6 @@ func (a Auth) handleLogin(challenge string, w http.ResponseWriter, r *http.Reque
 		})
 	}
 	return true, nil
-}
-
-func (a Auth) checkRegistrationCredentials(w http.ResponseWriter, r *http.Request) {
-	var values map[string]string
-
-	b, err := ioutil.ReadAll(r.Body)
-	bodyBytes := b
-
-	if err != nil {
-		fmt.Println(err, "failed to read http body")
-	}
-
-	if err = json.Unmarshal(b, &values); err != nil {
-		fmt.Println(err, "failed to parse json http body")
-	}
-	r.Body = ioutil.NopCloser(bytes.NewBuffer(bodyBytes))
-
-	login := values["login"]
-	pidUser, err := a.authBoss.Storage.Server.Load(r.Context(), login)
-	if pidUser != nil {
-		a.render.JSON(w, http.StatusUnprocessableEntity, &ResponseError{
-			Status:  "error",
-			Success: false,
-			Error:   fmt.Sprintf("Username %s has already taken", login),
-		})
-		return
-	}
-
-	email := values["email"]
-	pidUser, err = a.authBoss.Storage.Server.Load(r.Context(), email)
-	if pidUser != nil {
-		a.render.JSON(w, http.StatusUnprocessableEntity, &ResponseError{
-			Status:  "error",
-			Success: false,
-			Error:   fmt.Sprintf("Email %s has already taken", email),
-		})
-		return
-	}
 }
 
 func (a Auth) getUserByEmail(w http.ResponseWriter, r *http.Request) {

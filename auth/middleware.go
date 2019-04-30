@@ -157,3 +157,46 @@ func setRedirectURL(redirectURL string, w http.ResponseWriter) {
 	fmt.Fprintf(w, `{"redirectURL": %q}`, redirectURL)
 	w.WriteHeader(http.StatusOK)
 }
+
+func (a Auth) checkRegistrationCredentials(h http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path == "/api/register" && r.Method == "POST" {
+			var values map[string]string
+
+			b, err := ioutil.ReadAll(r.Body)
+			bodyBytes :=b
+
+			if err != nil {
+				fmt.Println(err, "failed to read http body")
+			}
+
+			if err = json.Unmarshal(b, &values); err != nil {
+				fmt.Println(err, "failed to parse json http body")
+			}
+			r.Body = ioutil.NopCloser(bytes.NewBuffer(bodyBytes))
+
+			login := values["login"]
+			pidUser, err := a.authBoss.Storage.Server.Load(r.Context(), login)
+			if pidUser != nil {
+				a.render.JSON(w, http.StatusUnprocessableEntity, &ResponseError{
+					Status:  "error",
+					Success: false,
+					Error:   fmt.Sprintf("Username %s has already taken", login),
+				})
+				return
+			}
+
+			email := values["email"]
+			pidUser, err = a.authBoss.Storage.Server.Load(r.Context(), email)
+			if pidUser != nil {
+				a.render.JSON(w, http.StatusUnprocessableEntity, &ResponseError{
+					Status:  "error",
+					Success: false,
+					Error:   fmt.Sprintf("Email %s has already taken", email),
+				})
+				return
+			}
+		}
+		h.ServeHTTP(w, r)
+	})
+}
