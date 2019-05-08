@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"git.tor.ph/hiveon/idp/config"
 	"git.tor.ph/hiveon/idp/models/users"
+
 	//"github.com/gorilla/csrf"
 	"io/ioutil"
 	"net/http"
@@ -115,13 +116,14 @@ func initOauthClient(hydraConf config.HydraConfig) *oauth2.Config {
 }
 
 func GetClient(hydraConf config.HydraConfig) swagger.OAuth2Client {
-
+	var client swagger.OAuth2Client
 	clientUrl := hydraConf.Admin + "/clients/" + hydraConf.ClientID
 	res, err := resty.R().Get(clientUrl)
 	if err != nil {
 		log.Info(err)
+		return client
 	}
-	var client swagger.OAuth2Client
+
 	json.Unmarshal(res.Body(), &client)
 	return client
 
@@ -164,7 +166,7 @@ func (a Auth) checkRegistrationCredentials(h http.Handler) http.Handler {
 			var values map[string]string
 
 			b, err := ioutil.ReadAll(r.Body)
-			bodyBytes :=b
+			bodyBytes := b
 
 			if err != nil {
 				fmt.Println(err, "failed to read http body")

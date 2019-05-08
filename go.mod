@@ -23,7 +23,7 @@ require (
 	github.com/mitchellh/mapstructure v1.1.2
 	github.com/ory/fosite v0.29.0 // indirect
 	github.com/ory/hydra v0.0.0-20181203105159-55654c084cc2
-	github.com/pkg/errors v0.8.1 // indirect
+	github.com/pkg/errors v0.8.1
 	github.com/pquerna/otp v1.1.0 // indirect
 	github.com/sirupsen/logrus v1.3.0
 	github.com/spf13/afero v1.2.1 // indirect

@@ -1,15 +1,17 @@
 package auth
 
 import (
-	"git.tor.ph/hiveon/idp/models/users"
 	renderPkg "github.com/unrolled/render"
 
+	"fmt"
 	"net/http"
 
 	"git.tor.ph/hiveon/idp/config"
+	"git.tor.ph/hiveon/idp/models/users"
 	"github.com/gin-gonic/gin"
 	"github.com/go-chi/chi"
 	"github.com/jinzhu/gorm"
+	"github.com/sirupsen/logrus"
 	"github.com/volatiletech/authboss"
 	"github.com/volatiletech/authboss/remember"
 )
@@ -38,6 +40,9 @@ func (a *Auth) Init() {
 	cookieStore := initCookieStorer()
 	a.authBoss = initAuthBoss(a.conf.Portal.Callback, a.db, sessionStore, cookieStore)
 
+	//Register authBoss recover post request
+	a.authBoss.Core.Router.Post(recoverSentURL, http.HandlerFunc(a.loginChallenge))
+
 	a.authBoss.Events.After(authboss.EventRegister, func(w http.ResponseWriter, r *http.Request, handled bool) (bool, error) {
 		referalID, err := r.Cookie("refId")
 
@@ -49,12 +54,25 @@ func (a *Auth) Init() {
 			}
 		}
 
-		challenge := r.Header.Get("Challenge")
+		challenge, err := a.getChallengeCodeFromHydra(r)
+		if err != nil {
+			logrus.Error("can't get challenge code after register", err)
+			return true, err
+		}
+
 		return a.handleLogin(challenge, w, r)
 	})
 
 	a.authBoss.Events.After(authboss.EventAuth, func(w http.ResponseWriter, r *http.Request, handled bool) (bool, error) {
+		//TODO move challenge to back after front fix
+		/*challenge, err := a.getChallengeCodeFromHydra(r)
+		if err != nil {
+			logrus.Error("can't get challenge code after register", err)
+			return true, err
+		}*/
+
 		challenge := r.Header.Get("Challenge")
+
 		return a.handleLogin(challenge, w, r)
 	})
 
@@ -66,6 +84,7 @@ func (a *Auth) Init() {
 	mux.Use(a.dataInjector)
 
 	mux.Get("/api/userinfo", a.getUserInfo)
+	//TODO remove after line will :68 fixed
 	mux.Get("/api/login", a.challengeCode)
 	mux.Get("/api/callback", a.callbackToken)
 	mux.Get("/api/consent", a.acceptConsent)
