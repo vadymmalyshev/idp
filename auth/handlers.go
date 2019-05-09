@@ -18,14 +18,14 @@ import (
 	"gopkg.in/resty.v1"
 )
 
-func (a Auth) getChallengeCodeFromHydra(request *http.Request) (string, error) {
+func (a Auth) getChallengeCodeFromHydra(request *http.Request) (string, *http.Cookie, error) {
 	oauthClient := initOauthClient(a.conf.Hydra)
 
 	state, err := stateTokenGenerator()
 	if err != nil {
 		logrus.Error("login token failed generation")
 		logrus.Debugf("server err, can't generate auth token")
-		return "", err
+		return "", nil, err
 	}
 
 	c := http.Cookie{
@@ -44,7 +44,7 @@ func (a Auth) getChallengeCodeFromHydra(request *http.Request) (string, error) {
 	resp, err := resty.New().SetCookie(&c).R().Get(redirectUrl)
 	if err != nil && !strings.Contains(err.Error(), "auto redirect is disabled") {
 		fmt.Println("Go to redirect error", err)
-		return "", err
+		return "", nil, err
 	}
 
 	locationWithCode := resp.Header().Get("Location")
@@ -56,10 +56,10 @@ func (a Auth) getChallengeCodeFromHydra(request *http.Request) (string, error) {
 			request.AddCookie(v)
 		}
 
-		return code[1], nil
+		return code[1], &c, nil
 	}
 
-	return "", errors.New("no challenge code")
+	return "", nil, errors.New("no challenge code")
 }
 
 func (a Auth) challengeCode(w http.ResponseWriter, r *http.Request) {
@@ -75,7 +75,7 @@ func (a Auth) challengeCode(w http.ResponseWriter, r *http.Request) {
 			logrus.Debugf("server err, can't generate auth token")
 			return
 		}
-
+/*
 		c := http.Cookie{
 			Name:     cookieLoginState,
 			Value:    state,
@@ -83,7 +83,7 @@ func (a Auth) challengeCode(w http.ResponseWriter, r *http.Request) {
 			HttpOnly: true,
 		}
 
-		http.SetCookie(w, &c)
+		http.SetCookie(w, &c)*/
 		redirectUrl := oauthClient.AuthCodeURL(state)
 
 		a.render.JSON(w, 200, map[string]string{"redirectURL": redirectUrl})
@@ -258,6 +258,9 @@ func (a Auth) handleLogin(challenge string, w http.ResponseWriter, r *http.Reque
 			if v.Name == cookieAuthenticationCSRFName {
 				oauth2AuthCSRF = k[i]
 			}
+			if v.Name == cookieLoginState {
+				loginStateToken = k[i]
+			}
 		}
 
 		cookieArray := []*http.Cookie{}
@@ -335,7 +338,7 @@ func (a Auth) loginChallenge(w http.ResponseWriter, r *http.Request) {
 		logrus.Debugf("server err, can't generate auth token")
 		return
 	}
-
+/*
 	c := http.Cookie{
 		Name:     cookieLoginState,
 		Value:    state,
@@ -343,7 +346,7 @@ func (a Auth) loginChallenge(w http.ResponseWriter, r *http.Request) {
 		HttpOnly: true,
 	}
 
-	http.SetCookie(w, &c)
+	http.SetCookie(w, &c)*/
 	redirectURL := oauthClient.AuthCodeURL(state)
 
 	a.render.JSON(w, 200, map[string]string{"redirectURL": redirectURL})
