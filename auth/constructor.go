@@ -3,7 +3,6 @@ package auth
 import (
 	renderPkg "github.com/unrolled/render"
 
-	"fmt"
 	"net/http"
 
 	"git.tor.ph/hiveon/idp/config"
