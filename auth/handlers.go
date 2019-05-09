@@ -239,8 +239,6 @@ func (a Auth) handleLogin(challenge string, w http.ResponseWriter, r *http.Reque
 	if user != nil && err == nil {
 
 		user := user.(*users.User)
-		val := user.GetArbitrary()
-		fmt.Println(val)
 		resp, errConfirm := hydra.ConfirmLogin(user.ID, false, challenge, a.conf.Hydra)
 		if errConfirm != nil || resp.RedirectTo == "" {
 			logrus.Debugf("probably challenge has been expired")
@@ -254,6 +252,13 @@ func (a Auth) handleLogin(challenge string, w http.ResponseWriter, r *http.Reque
 
 		oauth2AuthCSRF, oauth2Err := r.Cookie(cookieAuthenticationCSRFName)
 		loginStateToken, loginStateErr := r.Cookie(cookieLoginState)
+
+		k := r.Cookies() // last
+		for i, v := range k {
+			if v.Name == cookieAuthenticationCSRFName {
+				oauth2AuthCSRF = k[i]
+			}
+		}
 
 		cookieArray := []*http.Cookie{}
 		resty.DefaultClient.Cookies = cookieArray

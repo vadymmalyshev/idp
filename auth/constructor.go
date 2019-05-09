@@ -40,7 +40,21 @@ func (a *Auth) Init() {
 	a.authBoss = initAuthBoss(a.conf.Portal.Callback, a.db, sessionStore, cookieStore)
 
 	//Register authBoss recover post request
-	a.authBoss.Core.Router.Post(recoverSentURL, http.HandlerFunc(a.loginChallenge))
+	//a.authBoss.Core.Router.Post(recoverSentURL, http.HandlerFunc(a.loginChallenge))
+	a.authBoss.Config.Core.Router.Get(recoverSentURL, a.authBoss.Core.ErrorHandler.Wrap(func(w http.ResponseWriter, req *http.Request) error {
+		challenge, err := a.getChallengeCodeFromHydra(req)
+		if err != nil {
+			logrus.Error("can't get challenge code after register", err)
+			return err
+		}
+		_ ,err = a.handleLogin(challenge, w, req)
+
+		if err != nil {
+			logrus.Error("can't login", err)
+			return err
+		}
+		return nil
+	}))
 
 	a.authBoss.Events.After(authboss.EventRegister, func(w http.ResponseWriter, r *http.Request, handled bool) (bool, error) {
 		referalID, err := r.Cookie("refId")
