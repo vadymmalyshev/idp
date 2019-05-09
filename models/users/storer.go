@@ -73,8 +73,8 @@ func (store UserStorer) Load(ctx context.Context, key string) (authboss.User, er
 // does not exist.
 func (store UserStorer) Save(ctx context.Context, user authboss.User) error {
 	u := user.(*User)
-	store.db.Save(&u)
-	return nil
+
+	return store.db.Save(&u).Error
 }
 
 func (store UserStorer) New(ctx context.Context) authboss.User {
@@ -83,8 +83,8 @@ func (store UserStorer) New(ctx context.Context) authboss.User {
 
 func (store UserStorer) Create(ctx context.Context, user authboss.User) error {
 	u := user.(*User)
-	err := store.db.Create(u).Error
 
+	err := store.db.Create(u).Error
 	if err != nil {
 		return authboss.ErrUserFound
 	}
@@ -114,7 +114,7 @@ func (store UserStorer) LoadByRecoverSelector(ctx context.Context, selector stri
 
 // token storage
 func (store UserStorer) AddRememberToken(ctx context.Context, pid, token string) error {
-	tok := RememberToken{ Pid: pid, Token: token}
+	tok := RememberToken{Pid: pid, Token: token}
 	store.db.Save(&tok)
 
 	return nil
@@ -129,4 +129,3 @@ func (store UserStorer) UseRememberToken(ctx context.Context, pid, token string)
 	store.db.Delete(RememberToken{}, "token = ?", token)
 	return nil
 }
-

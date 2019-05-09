@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/pkg/errors"
 	"net/http"
 	"strings"
 
@@ -16,6 +17,50 @@ import (
 	"golang.org/x/oauth2"
 	"gopkg.in/resty.v1"
 )
+
+func (a Auth) getChallengeCodeFromHydra(request *http.Request) (string, error) {
+	oauthClient := initOauthClient(a.conf.Hydra)
+
+	state, err := stateTokenGenerator()
+	if err != nil {
+		logrus.Error("login token failed generation")
+		logrus.Debugf("server err, can't generate auth token")
+		return "", err
+	}
+
+	c := http.Cookie{
+		Name:     cookieLoginState,
+		Value:    state,
+		Path:     "/",
+		HttpOnly: true,
+	}
+
+	request.AddCookie(&c)
+
+	redirectUrl := oauthClient.AuthCodeURL(state)
+
+	fmt.Println("redirectURL", redirectUrl)
+
+	resp, err := resty.New().SetCookie(&c).R().Get(redirectUrl)
+	if err != nil && !strings.Contains(err.Error(), "auto redirect is disabled") {
+		fmt.Println("Go to redirect error", err)
+		return "", err
+	}
+
+	locationWithCode := resp.Header().Get("Location")
+
+	code := regexpForChalangeCode.FindStringSubmatch(locationWithCode)
+
+	if len(code) > 1 {
+		for _, v := range resp.Cookies() {
+			request.AddCookie(v)
+		}
+
+		return code[1], nil
+	}
+
+	return "", errors.New("no challenge code")
+}
 
 func (a Auth) challengeCode(w http.ResponseWriter, r *http.Request) {
 	challenge := r.URL.Query().Get("login_challenge")
@@ -46,7 +91,6 @@ func (a Auth) challengeCode(w http.ResponseWriter, r *http.Request) {
 	}
 
 	challengeResp, err := hydra.CheckChallengeCode(challenge, a.conf.Hydra)
-
 	if err != nil {
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusNoContent)
@@ -133,7 +177,6 @@ func (a Auth) acceptConsent(w http.ResponseWriter, r *http.Request) {
 	}
 
 	url, err := hydra.AcceptConsentChallengeCode(challenge, a.conf.Hydra)
-
 	if err != nil {
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusNoContent)
@@ -166,6 +209,7 @@ func (a Auth) acceptConsent(w http.ResponseWriter, r *http.Request) {
 			Success: false,
 			Error:   "no consent csrf token has been provided",
 		})
+		return
 	}
 
 	accessToken := res.RawResponse.Header.Get("Set-Cookie")

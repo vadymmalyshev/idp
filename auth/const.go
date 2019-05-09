@@ -1,5 +1,7 @@
 package auth
 
+import "regexp"
+
 const (
 	cookieAuthenticationCSRFName = "oauth2_authentication_csrf"
 	cookieConsentCSRFName        = "oauth2_consent_csrf"
@@ -17,4 +19,9 @@ const (
 	SessionCookieHTTPOnly = false
 	// SessionCookieMaxAge holds long an authenticated session should be valid in seconds
 	SessionCookieMaxAge = 30 * 24 * 60 * 60
+)
+
+
+var (
+	regexpForChalangeCode = regexp.MustCompile("login_challenge=(\\w+)")
 )
