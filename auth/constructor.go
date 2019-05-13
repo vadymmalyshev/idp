@@ -66,7 +66,7 @@ func (a *Auth) Init() {
 			abUser, err := a.authBoss.LoadCurrentUser(&r)
 			if abUser != nil && err == nil {
 				user := abUser.(*users.User)
-				user.PutReferaL(referalID.Value)
+				user.PutReferal(referalID.Value)
 			}
 		}
 
