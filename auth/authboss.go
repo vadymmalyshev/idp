@@ -5,7 +5,6 @@ import (
 	"github.com/volatiletech/authboss/remember"
 
 	"encoding/base64"
-	"net/http"
 	"regexp"
 
 	"git.tor.ph/hiveon/idp/models/users"
@@ -56,6 +55,8 @@ func initAuthBoss(serviceAddr string, db *gorm.DB, sessionStorer clientState.Ses
 
 	ab.Config.Core.ViewRenderer = defaults.JSONRenderer{}
 
+	ab.Config.Modules.RecoverLoginAfterRecovery = true
+
 	ab.Config.Modules.RegisterPreserveFields = []string{"email", "login", "name"}
 
 	ab.Config.Modules.TOTP2FAIssuer = "HiveonID"
@@ -104,9 +105,9 @@ func initAuthBoss(serviceAddr string, db *gorm.DB, sessionStorer clientState.Ses
 	// Load our template of recover sent message to AB renderer
 	ab.Config.Core.ViewRenderer.Load(recoverSentTPL)
 	// Handle recover sent
-	ab.Config.Core.Router.Get(recoverSentURL, ab.Core.ErrorHandler.Wrap(func(w http.ResponseWriter, req *http.Request) error {
-		return ab.Config.Core.Responder.Respond(w, req, http.StatusOK, recoverSentTPL, nil)
-	}))
+	//ab.Config.Core.Router.Get(recoverSentURL, ab.Core.ErrorHandler.Wrap(func(w http.ResponseWriter, req *http.Request) error {
+	//	return ab.Config.Core.Responder.Respond(w, req, http.StatusOK, recoverSentTPL, nil)
+	//}))
 
 	modAuth := auth.Auth{}
 	if err := modAuth.Init(ab); err != nil {

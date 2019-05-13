@@ -122,7 +122,7 @@ func (u *User) PutArbitrary(values map[string]string) {
 }
 
 // Put refID into user
-func (u *User) PutReferaL(ref string) { u.ReferalID = ref }
+func (u *User) PutReferal(ref string) { u.ReferalID = ref }
 
 // GetPID from user
 func (u User) GetPID() string { return u.Email }
