@@ -100,12 +100,9 @@ func (a *Auth) Init() {
 	mux.Use(a.dataInjector)
 
 	mux.Get("/api/userinfo", a.getUserInfo)
-	//TODO remove after line will :68 fixed
-	mux.Get("/api/login", a.challengeCode)
 	mux.Get("/api/callback", a.callbackToken)
 	mux.Get("/api/consent", a.acceptConsent)
 	mux.Get("/api/users/email/{email}", a.getUserByEmail)
-	mux.Get("/api/loginchallenge", a.loginChallenge)
 	mux.Get("/api/token/refresh/{email}", a.refreshTokenByEmail)
 
 	mux.Group(func(mux chi.Router) {

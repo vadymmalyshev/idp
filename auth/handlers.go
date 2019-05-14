@@ -62,48 +62,6 @@ func (a Auth) getChallengeCodeFromHydra(request *http.Request) (string, *http.Co
 	return "", nil, errors.New("no challenge code")
 }
 
-func (a Auth) challengeCode(w http.ResponseWriter, r *http.Request) {
-	challenge := r.URL.Query().Get("login_challenge")
-	if len(challenge) == 0 { // obtain login challenge
-		oauthClient := initOauthClient(a.conf.Hydra)
-
-		state, err := stateTokenGenerator()
-		if err != nil {
-			logrus.Error("login token failed generation")
-			w.Header().Set("Content-Type", "application/json")
-			w.WriteHeader(http.StatusInternalServerError)
-			logrus.Debugf("server err, can't generate auth token")
-			return
-		}
-/*
-		c := http.Cookie{
-			Name:     cookieLoginState,
-			Value:    state,
-			Path:     "/",
-			HttpOnly: true,
-		}
-
-		http.SetCookie(w, &c)*/
-		redirectUrl := oauthClient.AuthCodeURL(state)
-
-		a.render.JSON(w, 200, map[string]string{"redirectURL": redirectUrl})
-		return
-	}
-
-	challengeResp, err := hydra.CheckChallengeCode(challenge, a.conf.Hydra)
-	if err != nil {
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusNoContent)
-		logrus.Debugf("wrong login challenge")
-		return
-	}
-	challengeCode := challengeResp.Challenge
-	authboss.PutSession(w, "Challenge", challengeCode)
-
-	a.render.JSON(w, 200, map[string]string{"challenge": challengeCode})
-	return
-}
-
 func (a Auth) callbackToken(w http.ResponseWriter, r *http.Request) {
 	code := r.URL.Query().Get("code")
 	state := r.URL.Query().Get("state")
@@ -325,31 +283,6 @@ func (a Auth) getUserByEmail(w http.ResponseWriter, r *http.Request) {
 	}
 
 	a.render.JSON(w, 200, user)
-}
-
-func (a Auth) loginChallenge(w http.ResponseWriter, r *http.Request) {
-	oauthClient := initOauthClient(a.conf.Hydra)
-
-	state, err := stateTokenGenerator()
-	if err != nil {
-		logrus.Error("login token failed generation")
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusInternalServerError)
-		logrus.Debugf("server err, can't generate auth token")
-		return
-	}
-/*
-	c := http.Cookie{
-		Name:     cookieLoginState,
-		Value:    state,
-		Path:     "/",
-		HttpOnly: true,
-	}
-
-	http.SetCookie(w, &c)*/
-	redirectURL := oauthClient.AuthCodeURL(state)
-
-	a.render.JSON(w, 200, map[string]string{"redirectURL": redirectURL})
 }
 
 func (a Auth) refreshTokenByEmail(w http.ResponseWriter, r *http.Request) {
