@@ -39,8 +39,8 @@ func (a *Auth) Init() {
 	cookieStore := initCookieStorer()
 	a.authBoss = initAuthBoss(a.conf.Portal.Callback, a.db, sessionStore, cookieStore)
 
-	a.authBoss.Config.Core.Router.Get(recoverSentURL, a.authBoss.Core.ErrorHandler.Wrap(func(w http.ResponseWriter, req *http.Request) error {
-		challenge, cookie,  err := a.getChallengeCodeFromHydra(req)
+	a.authBoss.Config.Core.Router.Get(recoverSentURL, a.authBoss.Core.ErrorHandler.Wrap(func(w http.ResponseWriter, r *http.Request) error {
+		challenge, cookie,  err := a.getChallengeCodeFromHydra(r)
 
 		if err != nil {
 			logrus.Error("can't get challenge code after register", err)
@@ -48,7 +48,7 @@ func (a *Auth) Init() {
 		}
 		http.SetCookie(w, cookie)
 
-		_ ,err = a.handleLogin(challenge, w, req)
+		_ ,err = a.handleLogin(challenge, w, r)
 
 		if err != nil {
 			logrus.Error("can't login", err)
