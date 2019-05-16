@@ -39,10 +39,8 @@ func (a *Auth) Init() {
 	cookieStore := initCookieStorer()
 	a.authBoss = initAuthBoss(a.conf.Portal.Callback, a.db, sessionStore, cookieStore)
 
-	//Register authBoss recover post request
-	//a.authBoss.Core.Router.Post(recoverSentURL, http.HandlerFunc(a.loginChallenge))
-	a.authBoss.Config.Core.Router.Get(recoverSentURL, a.authBoss.Core.ErrorHandler.Wrap(func(w http.ResponseWriter, req *http.Request) error {
-		challenge, cookie,  err := a.getChallengeCodeFromHydra(req)
+	a.authBoss.Config.Core.Router.Get(recoverSentURL, a.authBoss.Core.ErrorHandler.Wrap(func(w http.ResponseWriter, r *http.Request) error {
+		challenge, cookie,  err := a.getChallengeCodeFromHydra(r)
 
 		if err != nil {
 			logrus.Error("can't get challenge code after register", err)
@@ -50,12 +48,13 @@ func (a *Auth) Init() {
 		}
 		http.SetCookie(w, cookie)
 
-		_ ,err = a.handleLogin(challenge, w, req)
+		_ ,err = a.handleLogin(challenge, w, r)
 
 		if err != nil {
 			logrus.Error("can't login", err)
 			return err
 		}
+
 		return nil
 	}))
 
@@ -69,25 +68,25 @@ func (a *Auth) Init() {
 				user.PutReferal(referalID.Value)
 			}
 		}
-
 		challenge, cookie, err := a.getChallengeCodeFromHydra(r)
+
 		if err != nil {
 			logrus.Error("can't get challenge code after register", err)
 			return true, err
 		}
 		http.SetCookie(w, cookie)
+
 		return a.handleLogin(challenge, w, r)
 	})
 
 	a.authBoss.Events.After(authboss.EventAuth, func(w http.ResponseWriter, r *http.Request, handled bool) (bool, error) {
-		//TODO move challenge to back after front fix
 		challenge, cookie, err := a.getChallengeCodeFromHydra(r)
+
 		if err != nil {
 			logrus.Error("can't get challenge code after register", err)
 			return true, err
 		}
 		http.SetCookie(w, cookie)
-		//challenge := r.Header.Get("Challenge")
 
 		return a.handleLogin(challenge, w, r)
 	})
@@ -100,12 +99,9 @@ func (a *Auth) Init() {
 	mux.Use(a.dataInjector)
 
 	mux.Get("/api/userinfo", a.getUserInfo)
-	//TODO remove after line will :68 fixed
-	mux.Get("/api/login", a.challengeCode)
 	mux.Get("/api/callback", a.callbackToken)
 	mux.Get("/api/consent", a.acceptConsent)
 	mux.Get("/api/users/email/{email}", a.getUserByEmail)
-	mux.Get("/api/loginchallenge", a.loginChallenge)
 	mux.Get("/api/token/refresh/{email}", a.refreshTokenByEmail)
 
 	mux.Group(func(mux chi.Router) {

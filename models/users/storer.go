@@ -109,6 +109,9 @@ func (store UserStorer) LoadByRecoverSelector(ctx context.Context, selector stri
 	var user User
 
 	err := store.db.Where(&User{RecoverSelector: selector}).First(&user).Error
+	if err != nil {
+		err = authboss.ErrUserNotFound
+	}
 	return &user, err
 }
 
