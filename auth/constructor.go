@@ -96,6 +96,7 @@ func (a *Auth) Init() {
 	mux.Use(a.authBoss.LoadClientStateMiddleware, remember.Middleware(a.authBoss))
 	mux.Use(a.handleUserSession)
 	mux.Use(a.checkRegistrationCredentials)
+	mux.Use(a.check2FaSetupRequest)
 	mux.Use(a.dataInjector)
 
 	mux.Get("/api/userinfo", a.getUserInfo)

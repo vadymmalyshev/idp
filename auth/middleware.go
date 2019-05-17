@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"git.tor.ph/hiveon/idp/config"
 	"git.tor.ph/hiveon/idp/models/users"
-
 	//"github.com/gorilla/csrf"
 	"io/ioutil"
 	"net/http"
@@ -195,6 +194,33 @@ func (a Auth) checkRegistrationCredentials(h http.Handler) http.Handler {
 					Status:  "error",
 					Success: false,
 					Error:   fmt.Sprintf("Email %s has already taken", email),
+				})
+				return
+			}
+		}
+		h.ServeHTTP(w, r)
+	})
+}
+
+func (a Auth) check2FaSetupRequest(h http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path == "/api/2fa/totp/setup" && r.Method == "POST" {
+			reqTokenCookie, err := r.Cookie("Authorization")
+			if err != nil {
+				a.render.JSON(w, http.StatusUnprocessableEntity, &ResponseError{
+					Status:  "error",
+					Success: false,
+					Error:   fmt.Sprintf("Authorization token missed"),
+				})
+				return
+			}
+			reqToken := reqTokenCookie.Value
+
+			if len(reqToken) == 0 {
+				a.render.JSON(w, http.StatusUnprocessableEntity, &ResponseError{
+					Status:  "error",
+					Success: false,
+					Error:   fmt.Sprintf("Authorization token missed"),
 				})
 				return
 			}
