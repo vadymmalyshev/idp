@@ -51,19 +51,19 @@ func (a *Auth) Init() {
 	mux.Use(a.deleteAuthorizationCookieAfterLogout)
 
 	//IDP handlers
-	mux.Get("/api/userinfo", a.getUserInfo)
-	mux.Get("/api/callback", a.callbackToken)
-	mux.Get("/api/consent", a.acceptConsent)
-	mux.Get("/api/users/email/{email}", a.getUserByEmail)
-	mux.Get("/api/token/refresh/{email}", a.refreshTokenByEmail)
-	mux.Post("/api/login", a.LoginPost)
+	mux.Get(rootPath+"/userinfo", a.getUserInfo)
+	mux.Get(rootPath+"/callback", a.callbackToken)
+	mux.Get(rootPath+"/consent", a.acceptConsent)
+	mux.Get(rootPath+"/users/email/{email}", a.getUserByEmail)
+	mux.Get(rootPath+"/token/refresh/{email}", a.refreshTokenByEmail)
+	mux.Post(rootPath+"/login", a.LoginPost)
 
 	//AuthBoss handlers
 	a.authBoss.Config.Core.Router.Get(recoverSentURL, a.authBoss.Core.ErrorHandler.Wrap(a.getRecoverSentURL))
 
 	mux.Group(func(mux chi.Router) {
 		mux.Use(authboss.ModuleListMiddleware(a.authBoss))
-		mux.Mount("/api", http.StripPrefix("/api", a.authBoss.Config.Core.Router))
+		mux.Mount(rootPath, http.StripPrefix(rootPath, a.authBoss.Config.Core.Router))
 	})
 
 	a.r.Any("/*resources", gin.WrapH(mux))
