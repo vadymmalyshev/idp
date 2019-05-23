@@ -1,8 +1,9 @@
 package auth
 
 import (
+	"github.com/pquerna/otp/totp"
 	renderPkg "github.com/unrolled/render"
-
+	"github.com/volatiletech/authboss/otp/twofactor"
 	"net/http"
 
 	"git.tor.ph/hiveon/idp/config"
@@ -91,12 +92,59 @@ func (a *Auth) Init() {
 		return a.handleLogin(challenge, w, r)
 	})
 
+	a.authBoss.Events.Before(authboss.EventAuthHijack, func(w http.ResponseWriter, r *http.Request, handled bool) (bool, error) {
+		abUser, _ := a.authBoss.LoadCurrentUser(&r)
+		user := abUser.(*users.User)
+
+		if len(user.GetTOTPSecretKey()) == 0 {
+			return true, nil
+		}
+		totpSecret := user.GetTOTPSecretKey()
+		recoveryCode := user.Code2FA
+
+		var ok bool
+
+		recoveryCodes := twofactor.DecodeRecoveryCodes(user.GetRecoveryCodes())
+		recoveryCodes, ok = twofactor.UseRecoveryCode(recoveryCodes, recoveryCode)
+
+		if ok {
+			//logger.Infof("user %s used recovery code instead of sms2fa", user.GetPID())
+			user.PutRecoveryCodes(twofactor.EncodeRecoveryCodes(recoveryCodes))
+			if err := a.authBoss.Config.Storage.Server.Save(r.Context(), user); err != nil {
+				return false, err
+			}
+		}
+		res := totp.Validate(recoveryCode, totpSecret)
+
+		if !res {
+			a.render.JSON(w, 422, &ResponseError{
+				Status:  "error",
+				Success: false,
+				Error:   "2FA code is incorrect",
+			})
+			return true, nil
+		}
+		// == login ==
+
+		challenge, cookie, err := a.getChallengeCodeFromHydra(r)
+
+		if err != nil {
+			logrus.Error("can't get challenge code after register", err)
+			return true, err
+		}
+		http.SetCookie(w, cookie)
+
+		return a.handleLogin(challenge, w, r)
+	})
+
+
 	mux := chi.NewRouter()
 
 	mux.Use(a.authBoss.LoadClientStateMiddleware, remember.Middleware(a.authBoss))
 	mux.Use(a.handleUserSession)
 	mux.Use(a.checkRegistrationCredentials)
 	mux.Use(a.check2FaSetupRequest)
+	mux.Use(a.store2faCode)
 	mux.Use(a.dataInjector)
 
 	mux.Get("/api/userinfo", a.getUserInfo)

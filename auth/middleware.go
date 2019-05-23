@@ -228,3 +228,43 @@ func (a Auth) check2FaSetupRequest(h http.Handler) http.Handler {
 		h.ServeHTTP(w, r)
 	})
 }
+
+func (a Auth) store2faCode(h http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path == "/api/login" && r.Method == "POST" {
+			var values map[string]string
+
+			b, err := ioutil.ReadAll(r.Body)
+			bodyBytes := b
+
+			if err != nil {
+				fmt.Println(err, "failed to read http body")
+			}
+
+			if err = json.Unmarshal(b, &values); err != nil {
+				fmt.Println(err, "failed to parse json http body")
+			}
+			r.Body = ioutil.NopCloser(bytes.NewBuffer(bodyBytes))
+
+			code := string(values["code"])
+			if code == "" {
+				return
+			}
+			email := values["email"]
+
+			pidUser, err := a.authBoss.Storage.Server.Load(r.Context(), email)
+			us := pidUser.(*users.User)
+			us.PutCode(code)
+
+			if err = a.authBoss.Config.Storage.Server.Save(r.Context(), us); err != nil {
+				a.render.JSON(w, http.StatusUnprocessableEntity, &ResponseError{
+					Status:  "error",
+					Success: false,
+					Error:   fmt.Sprintf("Can't save 2FA code"),
+				})
+				return
+			}
+		}
+		h.ServeHTTP(w, r)
+	})
+}
