@@ -97,8 +97,9 @@ func (a *Auth) Init() {
 		user := abUser.(*users.User)
 
 		if len(user.GetTOTPSecretKey()) == 0 {
-			return true, nil
+			return false, nil
 		}
+
 		totpSecret := user.GetTOTPSecretKey()
 		recoveryCode := user.Code2FA
 
@@ -122,7 +123,7 @@ func (a *Auth) Init() {
 				Success: false,
 				Error:   "2FA code is incorrect",
 			})
-			return true, nil
+			return false, nil
 		}
 		// == login ==
 

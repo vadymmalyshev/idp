@@ -247,15 +247,30 @@ func (a Auth) store2faCode(h http.Handler) http.Handler {
 			r.Body = ioutil.NopCloser(bytes.NewBuffer(bodyBytes))
 
 			code := string(values["code"])
-			if code == "" {
-				return
-			}
 			email := values["email"]
 
 			pidUser, err := a.authBoss.Storage.Server.Load(r.Context(), email)
 			us := pidUser.(*users.User)
-			us.PutCode(code)
 
+			if len(us.GetTOTPSecretKey()) != 0 && code == ""{
+				a.render.JSON(w, 422, &ResponseError{
+					Status:  "error",
+					Success: false,
+					Error:   "2FA code is empty",
+				})
+				return
+			}
+
+			if len(us.GetTOTPSecretKey()) == 0 && code != ""{
+				a.render.JSON(w, 422, &ResponseError{
+					Status:  "error",
+					Success: false,
+					Error:   "2FA is not enabled",
+				})
+				return
+			}
+
+			us.PutCode(code)
 			if err = a.authBoss.Config.Storage.Server.Save(r.Context(), us); err != nil {
 				a.render.JSON(w, http.StatusUnprocessableEntity, &ResponseError{
 					Status:  "error",
