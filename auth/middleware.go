@@ -253,7 +253,7 @@ func (a Auth) store2faCode(h http.Handler) http.Handler {
 			us := pidUser.(*users.User)
 
 			if len(us.GetTOTPSecretKey()) != 0 && code == ""{
-				a.render.JSON(w, 422, &ResponseError{
+				a.render.JSON(w, http.StatusUnprocessableEntity, &ResponseError{
 					Status:  "error",
 					Success: false,
 					Error:   "2FA code is empty",
@@ -262,7 +262,7 @@ func (a Auth) store2faCode(h http.Handler) http.Handler {
 			}
 
 			if len(us.GetTOTPSecretKey()) == 0 && code != ""{
-				a.render.JSON(w, 422, &ResponseError{
+				a.render.JSON(w, http.StatusUnprocessableEntity, &ResponseError{
 					Status:  "error",
 					Success: false,
 					Error:   "2FA is not enabled",

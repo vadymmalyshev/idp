@@ -38,8 +38,6 @@ func (a *Auth) Init() {
 
 	//Events
 	a.authBoss.Events.After(authboss.EventRegister, a.AfterEventRegistration)
-	//a.authBoss.Events.After(authboss.EventAuth, a.AfterEventAuth)
-	//a.authBoss.Events.Before(authboss.EventAuthHijack, a.BeforeEventAuthHijack)
 
 	mux := chi.NewRouter()
 
@@ -57,10 +55,10 @@ func (a *Auth) Init() {
 	mux.Get("/api/consent", a.acceptConsent)
 	mux.Get("/api/users/email/{email}", a.getUserByEmail)
 	mux.Get("/api/token/refresh/{email}", a.refreshTokenByEmail)
+	mux.Post("/api/login", a.LoginPost)
 
 	//AuthBoss handlers
 	a.authBoss.Config.Core.Router.Get(recoverSentURL, a.authBoss.Core.ErrorHandler.Wrap(a.getRecoverSentURL))
-	a.authBoss.Config.Core.Router.Post(loginPostURL, a.authBoss.Core.ErrorHandler.Wrap(a.LoginPost))
 
 	mux.Group(func(mux chi.Router) {
 		mux.Use(authboss.ModuleListMiddleware(a.authBoss))

@@ -166,7 +166,7 @@ func (a Auth) acceptConsent(w http.ResponseWriter, r *http.Request) {
 		Get(url)
 
 	if err != nil {
-		a.render.JSON(w, 422, &ResponseError{
+		a.render.JSON(w, http.StatusUnprocessableEntity, &ResponseError{
 			Status:  "error",
 			Success: false,
 			Error:   "no consent csrf token has been provided",
@@ -188,7 +188,7 @@ func (a Auth) acceptConsent(w http.ResponseWriter, r *http.Request) {
 
 func (a Auth) handleLogin(challenge string, w http.ResponseWriter, r *http.Request) (bool, error) {
 	if challenge == "" {
-		a.render.JSON(w, 422, &ResponseError{
+		a.render.JSON(w, http.StatusUnprocessableEntity, &ResponseError{
 			Status:  "error",
 			Success: false,
 			Error:   "no challenge code has been provided",
@@ -204,7 +204,7 @@ func (a Auth) handleLogin(challenge string, w http.ResponseWriter, r *http.Reque
 		resp, errConfirm := hydra.ConfirmLogin(user.ID, false, challenge, a.conf.Hydra)
 		if errConfirm != nil || resp.RedirectTo == "" {
 			logrus.Debugf("probably challenge has been expired")
-			a.render.JSON(w, 422, &ResponseError{
+			a.render.JSON(w, http.StatusUnprocessableEntity, &ResponseError{
 				Status:  "error",
 				Success: false,
 				Error:   "challenge code has been expired",
@@ -235,7 +235,7 @@ func (a Auth) handleLogin(challenge string, w http.ResponseWriter, r *http.Reque
 			if loginStateErr != nil {
 				logrus.Infof("%s token absent! login rejected\n", cookieLoginState)
 			}
-			a.render.JSON(w, 422, &ResponseError{
+			a.render.JSON(w, http.StatusUnprocessableEntity, &ResponseError{
 				Status:  "error",
 				Success: false,
 				Error:   "auth token absent",
@@ -251,7 +251,7 @@ func (a Auth) handleLogin(challenge string, w http.ResponseWriter, r *http.Reque
 			Get(resp.RedirectTo)
 
 		if err != nil {
-			a.render.JSON(w, 422, &ResponseError{
+			a.render.JSON(w, http.StatusUnprocessableEntity, &ResponseError{
 				Status:  "error",
 				Success: false,
 				Error:   "no csrf token has been provided",
@@ -261,7 +261,7 @@ func (a Auth) handleLogin(challenge string, w http.ResponseWriter, r *http.Reque
 
 		accessToken := res.RawResponse.Header.Get("access_token")
 		if accessToken == "" {
-			a.render.JSON(w, 422, &ResponseError{
+			a.render.JSON(w, http.StatusUnprocessableEntity, &ResponseError{
 				Status:  "error",
 				Success: false,
 				Error:   "No access token has been obtained",
@@ -271,7 +271,7 @@ func (a Auth) handleLogin(challenge string, w http.ResponseWriter, r *http.Reque
 
 		SetAccessTokenCookie(w, accessToken)
 
-		a.render.JSON(w, 200, map[string]string{
+		a.render.JSON(w, http.StatusOK, map[string]string{
 			"access_token": accessToken,
 			"token_type":   "bearer",
 		})
@@ -305,14 +305,14 @@ func (a Auth) getUserByEmail(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	a.render.JSON(w, 200, user)
+	a.render.JSON(w, http.StatusOK, user)
 }
 
 func (a Auth) refreshTokenByEmail(w http.ResponseWriter, r *http.Request) {
 	email := chi.URLParam(r, "email")
 	user, err := a.authBoss.Config.Storage.Server.Load(r.Context(), email)
 	if err != nil {
-		a.render.JSON(w, 500, map[string]string{"error": "user not found"})
+		a.render.JSON(w, http.StatusInternalServerError, map[string]string{"error": "user not found"})
 		return
 	}
 
@@ -322,18 +322,18 @@ func (a Auth) refreshTokenByEmail(w http.ResponseWriter, r *http.Request) {
 func (a Auth) getUserInfo(w http.ResponseWriter, r *http.Request) {
 	user, err := a.authBoss.LoadCurrentUser(&r)
 	if err != nil {
-		a.render.JSON(w, 401, err.Error())
+		a.render.JSON(w, http.StatusUnauthorized, err.Error())
 		return
 	}
 	a.RefreshToken(w, r, user)
 }
 
-func (a *Auth) LoginPost(w http.ResponseWriter, r *http.Request) error {
+func (a *Auth) LoginPost(w http.ResponseWriter, r *http.Request)  {
 	logger := a.authBoss.RequestLogger(r)
 
 	validatable, err := a.authBoss.Core.BodyReader.Read(auth.PageLogin, r)
 	if err != nil {
-		return err
+		return
 	}
 
 	// Skip validation since all the validation happens during the database lookup and
@@ -344,10 +344,9 @@ func (a *Auth) LoginPost(w http.ResponseWriter, r *http.Request) error {
 	pidUser, err := a.authBoss.Storage.Server.Load(r.Context(), pid)
 	if err == authboss.ErrUserNotFound {
 		logger.Infof("failed to load user requested by pid: %s", pid)
-		data := authboss.HTMLData{authboss.DataErr: "Invalid Credentials"}
-		return a.authBoss.Core.Responder.Respond(w, r, http.StatusOK, auth.PageLogin, data)
+		return
 	} else if err != nil {
-		return err
+		return
 	}
 
 	authUser := authboss.MustBeAuthable(pidUser)
@@ -360,36 +359,31 @@ func (a *Auth) LoginPost(w http.ResponseWriter, r *http.Request) error {
 	if err != nil {
 		handled, err = a.authBoss.Events.FireAfter(authboss.EventAuthFail, w, r)
 		if err != nil {
-			return err
-		} else if handled {
-			return nil
+			return
 		}
 
 		logger.Infof("user %s failed to log in", pid)
-		data := authboss.HTMLData{authboss.DataErr: "Invalid Credentials"}
-		return a.authBoss.Core.Responder.Respond(w, r, http.StatusOK, auth.PageLogin, data)
+		a.render.JSON(w, http.StatusUnauthorized, &ResponseError{
+			Status:  "error",
+			Success: false,
+			Error:   "Invalid credentials",
+		})
+		return
 	}
 
 	r = r.WithContext(context.WithValue(r.Context(), authboss.CTXKeyValues, validatable))
 
 	handled, err = a.authBoss.Events.FireBefore(authboss.EventAuth, w, r)
 	if err != nil {
-		return err
+		return
 	} else if handled {
-		return nil
+		return
 	}
 
 	if _, err := a.checkTOTPWhenLogin(w, r); err != nil {
 		logger.Errorf("TOTP error %s", err)
-		return err
+		return
 	}
-
-	/*	handled, err = a.authBoss.Events.FireBefore(authboss.EventAuthHijack, w, r)
-		if err != nil {
-			return err
-		} else if handled {
-			return nil
-		}*/
 
 	logger.Infof("user %s logged in", pid)
 	authboss.PutSession(w, authboss.SessionKey, pid)
@@ -397,22 +391,24 @@ func (a *Auth) LoginPost(w http.ResponseWriter, r *http.Request) error {
 
 	handled, err = a.authBoss.Events.FireAfter(authboss.EventAuth, w, r)
 	if err != nil {
-		return err
+		return
 	} else if handled {
-		return nil
+		return
 	}
 
 	//HandleLogin with hydra
 	challenge, cookie, err := a.getChallengeCodeFromHydra(r)
 	if err != nil {
 		logrus.Error("can't get challenge code after register", err)
-		return err
+		a.render.JSON(w, http.StatusUnprocessableEntity, &ResponseError{
+			Status:  "error",
+			Success: false,
+			Error:   "Can't get challenge code after register",
+		})
 	}
 	http.SetCookie(w, cookie)
 
 	_, err = a.handleLogin(challenge, w, r)
-
-	return err
 }
 
 func (a Auth) checkTOTPWhenLogin(w http.ResponseWriter, r *http.Request) (bool, error) {
@@ -441,12 +437,12 @@ func (a Auth) checkTOTPWhenLogin(w http.ResponseWriter, r *http.Request) (bool, 
 	res := totp.Validate(recoveryCode, totpSecret)
 
 	if !res {
-		a.render.JSON(w, 422, &ResponseError{
+		a.render.JSON(w, http.StatusUnauthorized, &ResponseError{
 			Status:  "error",
 			Success: false,
 			Error:   "2FA code is incorrect",
 		})
-		return false, nil
+		return false, errors.New("2FA code is incorrect")
 	}
 
 	return true, nil
