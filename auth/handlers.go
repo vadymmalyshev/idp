@@ -437,7 +437,7 @@ func (a Auth) checkTOTPWhenLogin(w http.ResponseWriter, r *http.Request) (bool, 
 	res := totp.Validate(recoveryCode, totpSecret)
 
 	if !res {
-		a.render.JSON(w, http.StatusUnauthorized, &ResponseError{
+		a.render.JSON(w, http.StatusBadRequest, &ResponseError{
 			Status:  "error",
 			Success: false,
 			Error:   "2FA code is incorrect",
