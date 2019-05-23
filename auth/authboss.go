@@ -61,6 +61,7 @@ func initAuthBoss(serviceAddr string, db *gorm.DB, sessionStorer clientState.Ses
 
 	ab.Config.Modules.TOTP2FAIssuer = "HiveonID"
 	ab.Config.Modules.TwoFactorEmailAuthRequired = false
+	ab.Config.Modules.LogoutMethod = "POST"
 
 	defaults.SetCore(&ab.Config, *flagAPI, false)
 
@@ -93,7 +94,6 @@ func initAuthBoss(serviceAddr string, db *gorm.DB, sessionStorer clientState.Ses
 			"recover_end":   {passwordRule},
 		},
 		Confirms: map[string][]string{
-			// 	"register":    {"password", authboss.ConfirmPrefix + "password"},
 			"recover_end": {"password", authboss.ConfirmPrefix + "password"},
 		},
 		Whitelist: map[string][]string{

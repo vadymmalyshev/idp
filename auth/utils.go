@@ -35,6 +35,21 @@ func SetAccessTokenCookie(w http.ResponseWriter, token string) {
 	http.SetCookie(w, &cookie)
 }
 
+func deleteAccessTokenCookie(w http.ResponseWriter) {
+
+	cookieDomain, _ := config.GetCookieDomain()
+
+	cookie := http.Cookie{
+		Name:   "Authorization",
+		Value:  fmt.Sprintf(""),
+		Domain: cookieDomain,
+		Path:   "/",
+		MaxAge: -1,
+	}
+
+	http.SetCookie(w, &cookie)
+}
+
 func ToMap(in interface{}, tag string) (map[string]interface{}, error) {
 	out := make(map[string]interface{})
 

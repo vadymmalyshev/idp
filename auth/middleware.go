@@ -283,3 +283,13 @@ func (a Auth) store2faCode(h http.Handler) http.Handler {
 		h.ServeHTTP(w, r)
 	})
 }
+
+
+func (a Auth) deleteAuthorizationCookieAfterLogout(h http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path == "/api/logout" && r.Method == "POST" {
+			deleteAccessTokenCookie(w)
+		}
+		h.ServeHTTP(w, r)
+	})
+}

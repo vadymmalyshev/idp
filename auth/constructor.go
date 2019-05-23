@@ -48,6 +48,7 @@ func (a *Auth) Init() {
 	mux.Use(a.check2FaSetupRequest)
 	mux.Use(a.store2faCode)
 	mux.Use(a.dataInjector)
+	mux.Use(a.deleteAuthorizationCookieAfterLogout)
 
 	//IDP handlers
 	mux.Get("/api/userinfo", a.getUserInfo)
