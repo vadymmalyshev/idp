@@ -1,17 +1,13 @@
 package auth
 
 import (
-	"github.com/pquerna/otp/totp"
 	renderPkg "github.com/unrolled/render"
-	"github.com/volatiletech/authboss/otp/twofactor"
 	"net/http"
 
 	"git.tor.ph/hiveon/idp/config"
-	"git.tor.ph/hiveon/idp/models/users"
 	"github.com/gin-gonic/gin"
 	"github.com/go-chi/chi"
 	"github.com/jinzhu/gorm"
-	"github.com/sirupsen/logrus"
 	"github.com/volatiletech/authboss"
 	"github.com/volatiletech/authboss/remember"
 )
@@ -40,107 +36,14 @@ func (a *Auth) Init() {
 	cookieStore := initCookieStorer()
 	a.authBoss = initAuthBoss(a.conf.Portal.Callback, a.db, sessionStore, cookieStore)
 
-	a.authBoss.Config.Core.Router.Get(recoverSentURL, a.authBoss.Core.ErrorHandler.Wrap(func(w http.ResponseWriter, r *http.Request) error {
-		challenge, cookie,  err := a.getChallengeCodeFromHydra(r)
-
-		if err != nil {
-			logrus.Error("can't get challenge code after register", err)
-			return err
-		}
-		http.SetCookie(w, cookie)
-
-		_ ,err = a.handleLogin(challenge, w, r)
-
-		if err != nil {
-			logrus.Error("can't login", err)
-			return err
-		}
-
-		return nil
-	}))
-
-	a.authBoss.Events.After(authboss.EventRegister, func(w http.ResponseWriter, r *http.Request, handled bool) (bool, error) {
-		referalID, err := r.Cookie("refId")
-
-		if err == nil && referalID != nil {
-			abUser, err := a.authBoss.LoadCurrentUser(&r)
-			if abUser != nil && err == nil {
-				user := abUser.(*users.User)
-				user.PutReferal(referalID.Value)
-			}
-		}
-		challenge, cookie, err := a.getChallengeCodeFromHydra(r)
-
-		if err != nil {
-			logrus.Error("can't get challenge code after register", err)
-			return true, err
-		}
-		http.SetCookie(w, cookie)
-
-		return a.handleLogin(challenge, w, r)
-	})
-
-	a.authBoss.Events.After(authboss.EventAuth, func(w http.ResponseWriter, r *http.Request, handled bool) (bool, error) {
-		challenge, cookie, err := a.getChallengeCodeFromHydra(r)
-
-		if err != nil {
-			logrus.Error("can't get challenge code after register", err)
-			return true, err
-		}
-		http.SetCookie(w, cookie)
-
-		return a.handleLogin(challenge, w, r)
-	})
-
-	a.authBoss.Events.Before(authboss.EventAuthHijack, func(w http.ResponseWriter, r *http.Request, handled bool) (bool, error) {
-		abUser, _ := a.authBoss.LoadCurrentUser(&r)
-		user := abUser.(*users.User)
-
-		if len(user.GetTOTPSecretKey()) == 0 {
-			return false, nil
-		}
-
-		totpSecret := user.GetTOTPSecretKey()
-		recoveryCode := user.Code2FA
-
-		var ok bool
-
-		recoveryCodes := twofactor.DecodeRecoveryCodes(user.GetRecoveryCodes())
-		recoveryCodes, ok = twofactor.UseRecoveryCode(recoveryCodes, recoveryCode)
-
-		if ok {
-			//logger.Infof("user %s used recovery code instead of sms2fa", user.GetPID())
-			user.PutRecoveryCodes(twofactor.EncodeRecoveryCodes(recoveryCodes))
-			if err := a.authBoss.Config.Storage.Server.Save(r.Context(), user); err != nil {
-				return false, err
-			}
-		}
-		res := totp.Validate(recoveryCode, totpSecret)
-
-		if !res {
-			a.render.JSON(w, 422, &ResponseError{
-				Status:  "error",
-				Success: false,
-				Error:   "2FA code is incorrect",
-			})
-			return false, nil
-		}
-		// == login ==
-
-		challenge, cookie, err := a.getChallengeCodeFromHydra(r)
-
-		if err != nil {
-			logrus.Error("can't get challenge code after register", err)
-			return true, err
-		}
-		http.SetCookie(w, cookie)
-
-		return a.handleLogin(challenge, w, r)
-	})
-
+	//Events
+	a.authBoss.Events.After(authboss.EventRegister, a.AfterEventRegistration)
+	//a.authBoss.Events.After(authboss.EventAuth, a.AfterEventAuth)
+	//a.authBoss.Events.Before(authboss.EventAuthHijack, a.BeforeEventAuthHijack)
 
 	mux := chi.NewRouter()
 
+	//Middlewares
 	mux.Use(a.authBoss.LoadClientStateMiddleware, remember.Middleware(a.authBoss))
 	mux.Use(a.handleUserSession)
 	mux.Use(a.checkRegistrationCredentials)
@@ -148,11 +51,16 @@ func (a *Auth) Init() {
 	mux.Use(a.store2faCode)
 	mux.Use(a.dataInjector)
 
+	//IDP handlers
 	mux.Get("/api/userinfo", a.getUserInfo)
 	mux.Get("/api/callback", a.callbackToken)
 	mux.Get("/api/consent", a.acceptConsent)
 	mux.Get("/api/users/email/{email}", a.getUserByEmail)
 	mux.Get("/api/token/refresh/{email}", a.refreshTokenByEmail)
+
+	//AuthBoss handlers
+	a.authBoss.Config.Core.Router.Get(recoverSentURL, a.authBoss.Core.ErrorHandler.Wrap(a.getRecoverSentURL))
+	a.authBoss.Config.Core.Router.Post(loginPostURL, a.authBoss.Core.ErrorHandler.Wrap(a.LoginPost))
 
 	mux.Group(func(mux chi.Router) {
 		mux.Use(authboss.ModuleListMiddleware(a.authBoss))

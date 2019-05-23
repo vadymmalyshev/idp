@@ -11,6 +11,7 @@ const (
 
 	recoverSentURL = "/recover/sent"
 	recoverSentTPL = "recover_sent"
+	loginPostURL = "/login"
 
 	tplPath = "views/"
 

@@ -34,7 +34,7 @@ require (
 	github.com/volatiletech/authboss v0.0.0-20190207041050-5c92c016e0cd
 	github.com/volatiletech/authboss-clientstate v0.0.0-20190112194853-0943df8b4e05
 	github.com/volatiletech/authboss-renderer v0.0.0-20181105062701-4b64de40529a
-	golang.org/x/crypto v0.0.0-20190219172222-a4c6cb3142f2 // indirect
+	golang.org/x/crypto v0.0.0-20190219172222-a4c6cb3142f2
 	golang.org/x/net v0.0.0-20190213061140-3a22650c66bd // indirect
 	golang.org/x/oauth2 v0.0.0-20190220154721-9b3c75971fc9
 	golang.org/x/sys v0.0.0-20190221075227-b4e8571b14e0 // indirect
