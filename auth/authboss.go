@@ -1,6 +1,7 @@
 package auth
 
 import (
+	"git.tor.ph/hiveon/idp/config"
 	clientState "github.com/volatiletech/authboss-clientstate"
 	"github.com/volatiletech/authboss/otp/twofactor/totp2fa"
 	"github.com/volatiletech/authboss/remember"
@@ -35,9 +36,11 @@ func initSessionStorer() clientState.SessionStorer {
 }
 
 func initCookieStorer() clientState.CookieStorer {
+	cookieDomain, _ := config.GetCookieDomain()
+
 	cookieStoreKey, _ := base64.StdEncoding.DecodeString(`NpEPi8pEjKVjLGJ6kYCS+VTCzi6BUuDzU0wrwXyf5uDPArtlofn2AG6aTMiPmN3C909rsEWMNqJqhIVPGP3Exg==`)
 	cookieStore := clientState.NewCookieStorer(cookieStoreKey, nil)
-	cookieStore.Domain = "localhost"
+	cookieStore.Domain = cookieDomain
 	cookieStore.HTTPOnly = false
 	cookieStore.Secure = false
 
