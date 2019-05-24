@@ -161,7 +161,7 @@ func setRedirectURL(redirectURL string, w http.ResponseWriter) {
 
 func (a Auth) checkRegistrationCredentials(h http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if r.URL.Path == "/api/register" && r.Method == "POST" {
+		if r.URL.Path == rootPath+"/register" && r.Method == "POST" {
 			var values map[string]string
 
 			b, err := ioutil.ReadAll(r.Body)
@@ -204,7 +204,7 @@ func (a Auth) checkRegistrationCredentials(h http.Handler) http.Handler {
 
 func (a Auth) check2FaSetupRequest(h http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if r.URL.Path == "/api/2fa/totp/setup" && r.Method == "POST" {
+		if r.URL.Path == rootPath+"/2fa/totp/setup" && r.Method == "POST" {
 			reqTokenCookie, err := r.Cookie("Authorization")
 			if err != nil {
 				a.render.JSON(w, http.StatusUnprocessableEntity, &ResponseError{
@@ -224,6 +224,71 @@ func (a Auth) check2FaSetupRequest(h http.Handler) http.Handler {
 				})
 				return
 			}
+		}
+		h.ServeHTTP(w, r)
+	})
+}
+
+func (a Auth) store2faCode(h http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path == rootPath+"/login" && r.Method == "POST" {
+			var values map[string]string
+
+			b, err := ioutil.ReadAll(r.Body)
+			bodyBytes := b
+
+			if err != nil {
+				fmt.Println(err, "failed to read http body")
+			}
+
+			if err = json.Unmarshal(b, &values); err != nil {
+				fmt.Println(err, "failed to parse json http body")
+			}
+			r.Body = ioutil.NopCloser(bytes.NewBuffer(bodyBytes))
+
+			code := string(values["code"])
+			email := values["email"]
+
+			pidUser, err := a.authBoss.Storage.Server.Load(r.Context(), email)
+			us := pidUser.(*users.User)
+
+			if len(us.GetTOTPSecretKey()) != 0 && code == ""{
+				a.render.JSON(w, http.StatusUnprocessableEntity, &ResponseError{
+					Status:  "error",
+					Success: false,
+					Error:   "2FA code is empty",
+				})
+				return
+			}
+
+			if len(us.GetTOTPSecretKey()) == 0 && code != ""{
+				a.render.JSON(w, http.StatusUnprocessableEntity, &ResponseError{
+					Status:  "error",
+					Success: false,
+					Error:   "2FA is not enabled",
+				})
+				return
+			}
+
+			us.PutCode(code)
+			if err = a.authBoss.Config.Storage.Server.Save(r.Context(), us); err != nil {
+				a.render.JSON(w, http.StatusUnprocessableEntity, &ResponseError{
+					Status:  "error",
+					Success: false,
+					Error:   fmt.Sprintf("Can't save 2FA code"),
+				})
+				return
+			}
+		}
+		h.ServeHTTP(w, r)
+	})
+}
+
+
+func (a Auth) deleteAuthorizationCookieAfterLogout(h http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path == rootPath+"/logout" && r.Method == "POST" {
+			deleteAccessTokenCookie(w)
 		}
 		h.ServeHTTP(w, r)
 	})

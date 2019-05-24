@@ -7,10 +7,13 @@ const (
 	cookieConsentCSRFName        = "oauth2_consent_csrf"
 	cookieLoginState             = "login_csrftoken"
 
+	rootPath = "/api/idp"
+
 	IDPSessionName = "idp_session"
 
 	recoverSentURL = "/recover/sent"
 	recoverSentTPL = "recover_sent"
+	loginPostURL   = "/login"
 
 	tplPath = "views/"
 
@@ -20,7 +23,6 @@ const (
 	// SessionCookieMaxAge holds long an authenticated session should be valid in seconds
 	SessionCookieMaxAge = 30 * 24 * 60 * 60
 )
-
 
 var (
 	regexpForChalangeCode = regexp.MustCompile("login_challenge=(\\w+)")

@@ -2,6 +2,7 @@ package auth
 
 import (
 	clientState "github.com/volatiletech/authboss-clientstate"
+	"github.com/volatiletech/authboss/otp/twofactor/totp2fa"
 	"github.com/volatiletech/authboss/remember"
 
 	"encoding/base64"
@@ -15,7 +16,6 @@ import (
 	"github.com/volatiletech/authboss-renderer"
 	"github.com/volatiletech/authboss/auth"
 	"github.com/volatiletech/authboss/defaults"
-	"github.com/volatiletech/authboss/otp/twofactor/totp2fa"
 	"github.com/volatiletech/authboss/recover"
 	"github.com/volatiletech/authboss/register"
 )
@@ -61,6 +61,7 @@ func initAuthBoss(serviceAddr string, db *gorm.DB, sessionStorer clientState.Ses
 
 	ab.Config.Modules.TOTP2FAIssuer = "HiveonID"
 	ab.Config.Modules.TwoFactorEmailAuthRequired = false
+	ab.Config.Modules.LogoutMethod = "POST"
 
 	defaults.SetCore(&ab.Config, *flagAPI, false)
 
@@ -93,7 +94,6 @@ func initAuthBoss(serviceAddr string, db *gorm.DB, sessionStorer clientState.Ses
 			"recover_end":   {passwordRule},
 		},
 		Confirms: map[string][]string{
-			// 	"register":    {"password", authboss.ConfirmPrefix + "password"},
 			"recover_end": {"password", authboss.ConfirmPrefix + "password"},
 		},
 		Whitelist: map[string][]string{
@@ -104,10 +104,6 @@ func initAuthBoss(serviceAddr string, db *gorm.DB, sessionStorer clientState.Ses
 	ab.Config.Paths.RecoverOK = recoverSentURL
 	// Load our template of recover sent message to AB renderer
 	ab.Config.Core.ViewRenderer.Load(recoverSentTPL)
-	// Handle recover sent
-	//ab.Config.Core.Router.Get(recoverSentURL, ab.Core.ErrorHandler.Wrap(func(w http.ResponseWriter, req *http.Request) error {
-	//	return ab.Config.Core.Responder.Respond(w, req, http.StatusOK, recoverSentTPL, nil)
-	//}))
 
 	modAuth := auth.Auth{}
 	if err := modAuth.Init(ab); err != nil {

@@ -42,6 +42,7 @@ type User struct {
 	SMSPhoneNumber     string
 	SMSSeedPhoneNumber string
 	RecoveryCodes      string `json:"-"`
+	Code2FA            string `json:"-"`
 
 	// Remember is in another table
 }
@@ -199,3 +200,7 @@ func (u User) GetArbitrary() map[string]string {
 
 // Get refID from user
 func (u User) GetReferal() string { return u.ReferalID }
+
+func (u *User) PutCode(code string) {
+		u.Code2FA = code
+}
