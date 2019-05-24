@@ -320,12 +320,20 @@ func (a Auth) refreshTokenByEmail(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a Auth) getUserInfo(w http.ResponseWriter, r *http.Request) {
-	user, err := a.authBoss.LoadCurrentUser(&r)
+	user, err := a.getUserFromHydraSession(w, r) // also refresh token if needed
 	if err != nil {
 		a.render.JSON(w, http.StatusUnauthorized, err.Error())
 		return
 	}
-	a.RefreshToken(w, r, user)
+
+	userMap, er := ToMap(user, "json")
+	if er != nil {
+		a.render.JSON(w, http.StatusUnauthorized, err.Error())
+		return
+	}
+
+	a.render.JSON(w, http.StatusOK, userMap)
+	return
 }
 
 func (a *Auth) LoginPost(w http.ResponseWriter, r *http.Request)  {
