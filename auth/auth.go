@@ -78,8 +78,8 @@ func (a Auth) getUserFromHydraSession(w http.ResponseWriter, r *http.Request) (a
 	}
 
 	if introToken.Active == false { //refresh
-		rememberCookie, _ := authboss.GetCookie(r, authboss.CookieRemember)
-		if rememberCookie == "" {
+		_, ok := authboss.GetCookie(r, authboss.CookieRemember)
+		if !ok {
 			return nil, errors.New("Authorization token is not active")
 		}
 
