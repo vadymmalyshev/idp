@@ -28,6 +28,7 @@ var (
 	_ authboss.CreatingServerStorer   = assertStorer
 	_ authboss.ConfirmingServerStorer = assertStorer
 	_ authboss.RecoveringServerStorer = assertStorer
+	_ authboss.RememberingServerStorer = assertStorer
 )
 
 type UserStorer struct {
