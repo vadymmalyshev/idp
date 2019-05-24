@@ -161,7 +161,7 @@ func setRedirectURL(redirectURL string, w http.ResponseWriter) {
 
 func (a Auth) checkRegistrationCredentials(h http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if r.URL.Path == "/api/register" && r.Method == "POST" {
+		if r.URL.Path == rootPath+"/register" && r.Method == "POST" {
 			var values map[string]string
 
 			b, err := ioutil.ReadAll(r.Body)
@@ -204,7 +204,7 @@ func (a Auth) checkRegistrationCredentials(h http.Handler) http.Handler {
 
 func (a Auth) check2FaSetupRequest(h http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if r.URL.Path == "/api/2fa/totp/setup" && r.Method == "POST" {
+		if r.URL.Path == rootPath+"/2fa/totp/setup" && r.Method == "POST" {
 			reqTokenCookie, err := r.Cookie("Authorization")
 			if err != nil {
 				a.render.JSON(w, http.StatusUnprocessableEntity, &ResponseError{
@@ -231,7 +231,7 @@ func (a Auth) check2FaSetupRequest(h http.Handler) http.Handler {
 
 func (a Auth) store2faCode(h http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if r.URL.Path == "/api/login" && r.Method == "POST" {
+		if r.URL.Path == rootPath+"/login" && r.Method == "POST" {
 			var values map[string]string
 
 			b, err := ioutil.ReadAll(r.Body)
@@ -287,7 +287,7 @@ func (a Auth) store2faCode(h http.Handler) http.Handler {
 
 func (a Auth) deleteAuthorizationCookieAfterLogout(h http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if r.URL.Path == "/api/logout" && r.Method == "POST" {
+		if r.URL.Path == rootPath+"/logout" && r.Method == "POST" {
 			deleteAccessTokenCookie(w)
 		}
 		h.ServeHTTP(w, r)
