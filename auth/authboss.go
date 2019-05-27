@@ -60,7 +60,7 @@ func initAuthBoss(serviceAddr string, db *gorm.DB, sessionStorer clientState.Ses
 
 	ab.Config.Modules.RecoverLoginAfterRecovery = true
 
-	ab.Config.Modules.RegisterPreserveFields = []string{"email", "login", "name"}
+	ab.Config.Modules.RegisterPreserveFields = []string{"email", "login", "name", "promocode"}
 
 	ab.Config.Modules.TOTP2FAIssuer = "HiveonID"
 	ab.Config.Modules.TwoFactorEmailAuthRequired = false
@@ -88,11 +88,15 @@ func initAuthBoss(serviceAddr string, db *gorm.DB, sessionStorer clientState.Ses
 		FieldName: "login", Required: true,
 		MinLength: 2,
 	}
+	promocodeRule := defaults.Rules{
+		FieldName: "promocode", Required: false,
+		AllowWhitespace: false,
+	}
 
 	ab.Config.Core.BodyReader = defaults.HTTPBodyReader{
 		ReadJSON: *flagAPI,
 		Rulesets: map[string][]defaults.Rules{
-			"register":      {emailRule, passwordRule, nameRule, loginRule},
+			"register":      {emailRule, passwordRule, nameRule, loginRule, promocodeRule},
 			"recover_start": {emailRule},
 			"recover_end":   {passwordRule},
 		},
@@ -100,7 +104,7 @@ func initAuthBoss(serviceAddr string, db *gorm.DB, sessionStorer clientState.Ses
 			"recover_end": {"password", authboss.ConfirmPrefix + "password"},
 		},
 		Whitelist: map[string][]string{
-			"register": []string{"email", "name", "login", "password"},
+			"register": []string{"email", "name", "login", "password", "promocode"},
 		},
 	}
 
