@@ -14,6 +14,7 @@ type User struct {
 	Email     string `gorm:"not null;unique_index"`
 	Password  string `gorm:"not null" json:"-"`
 	ReferalID string `json:"-"`
+	Promocode string `json:"-"`
 
 	// Confirm
 	ConfirmSelector string `json:"-"`
@@ -120,6 +121,9 @@ func (u *User) PutArbitrary(values map[string]string) {
 	if n, ok := values["name"]; ok {
 		u.Name = n
 	}
+	if n, ok := values["promocode"]; ok {
+		u.Promocode = n
+	}
 }
 
 // Put refID into user
@@ -194,7 +198,7 @@ func (u User) GetOAuth2Expiry() (expiry time.Time) { return u.OAuth2Expiry }
 // GetArbitrary from user
 func (u User) GetArbitrary() map[string]string {
 	return map[string]string{
-		"login": u.Login, "name": u.Name,
+		"login": u.Login, "name": u.Name, "promocode": u.Promocode,
 	}
 }
 
