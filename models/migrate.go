@@ -1,6 +1,7 @@
 package models
 
 import (
+	"git.tor.ph/hiveon/idp/models/logs"
 	"git.tor.ph/hiveon/idp/models/users"
 
 	"github.com/jinzhu/gorm"
@@ -9,4 +10,5 @@ import (
 func Migrate(db *gorm.DB) {
 	db.AutoMigrate(&users.User{})
 	db.AutoMigrate(&users.RememberToken{})
+	db.AutoMigrate(&logs.Log{})
 }

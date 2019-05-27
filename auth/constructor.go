@@ -1,6 +1,7 @@
 package auth
 
 import (
+	"git.tor.ph/hiveon/idp/models/logs"
 	renderPkg "github.com/unrolled/render"
 	"net/http"
 
@@ -18,6 +19,7 @@ type Auth struct {
 	conf     *config.CommonConfig
 	render   *renderPkg.Render
 	authBoss *authboss.Authboss
+	userLogger *logs.UserLogger
 }
 
 func NewAuth(r *gin.Engine, db *gorm.DB, conf *config.CommonConfig) *Auth {
@@ -35,9 +37,10 @@ func (a *Auth) Init() {
 	sessionStore := initSessionStorer()
 	cookieStore := initCookieStorer()
 	a.authBoss = initAuthBoss(a.conf.Portal.Callback, a.db, sessionStore, cookieStore)
-
+    a.userLogger = initUserLogger(a.db)
 	//Events
 	a.authBoss.Events.After(authboss.EventRegister, a.AfterEventRegistration)
+	a.authBoss.Events.After(authboss.EventAuth, a.AfterEventLogin)
 
 	mux := chi.NewRouter()
 
@@ -67,4 +70,8 @@ func (a *Auth) Init() {
 	})
 
 	a.r.Any("/*resources", gin.WrapH(mux))
+}
+
+func initUserLogger(db *gorm.DB) *logs.UserLogger{
+	return logs.NewUserLogger(db)
 }

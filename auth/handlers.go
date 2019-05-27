@@ -400,8 +400,6 @@ func (a *Auth) LoginPost(w http.ResponseWriter, r *http.Request)  {
 	handled, err = a.authBoss.Events.FireAfter(authboss.EventAuth, w, r)
 	if err != nil {
 		return
-	} else if handled {
-		return
 	}
 
 	//HandleLogin with hydra
