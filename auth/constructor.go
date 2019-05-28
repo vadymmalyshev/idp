@@ -14,11 +14,11 @@ import (
 )
 
 type Auth struct {
-	r        *gin.Engine
-	db       *gorm.DB
-	conf     *config.CommonConfig
-	render   *renderPkg.Render
-	authBoss *authboss.Authboss
+	r          *gin.Engine
+	db         *gorm.DB
+	conf       *config.CommonConfig
+	render     *renderPkg.Render
+	authBoss   *authboss.Authboss
 	userLogger *logs.UserLogger
 }
 

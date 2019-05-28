@@ -5,13 +5,14 @@ import (
 	"time"
 )
 // login/registration log, type - login/registration
+
 type Log struct {
 	gorm.Model
-	UserID string `gorm:"not null"`
-	Agent  string `gorm:"not null"`
-	IP     string `gorm:"not null"`
-	Domen  string `gorm:"not null"`
-	Type   string `gorm:"not null"`
+	UserID string  `gorm:"not null"`
+	Agent  string  `gorm:"not null"`
+	IP     string  `gorm:"not null"`
+	Domen  string  `gorm:"not null"`
+	Type   string  `gorm:"not null"`
 }
 
 // TableName represents gorm interface to change users table name

@@ -6,7 +6,16 @@ import (
 	"net/http"
 )
 
+type LogType string
 
+func (l LogType) String() string {
+	return string(l)
+}
+
+var (
+	LogTypeLogin LogType = "login"
+	LogTypeRegistration LogType = "registration"
+)
 
 func (a Auth) AfterEventRegistration(w http.ResponseWriter, r *http.Request, handled bool) (bool, error) {
 	referalID, err := r.Cookie("refId")
@@ -26,7 +35,7 @@ func (a Auth) AfterEventRegistration(w http.ResponseWriter, r *http.Request, han
 	}
 	http.SetCookie(w, cookie)
 
-	err = a.createLoginRecord(w, r, "R")
+	err = a.createLoginRecord(w, r, LogTypeRegistration)
 	if err != nil {
 		return true, err
 	}
@@ -35,28 +44,30 @@ func (a Auth) AfterEventRegistration(w http.ResponseWriter, r *http.Request, han
 }
 
 func (a Auth) AfterEventLogin(w http.ResponseWriter, r *http.Request, handled bool) (bool, error) {
-	err := a.createLoginRecord(w, r, "L")
+	err := a.createLoginRecord(w, r, LogTypeLogin)
 	return true, err
 }
 
-func (a Auth) createLoginRecord(w http.ResponseWriter, r *http.Request, loginType string) error {
+func (a Auth) createLoginRecord(w http.ResponseWriter, r *http.Request, loginType LogType) error {
 	abUser, err := a.authBoss.LoadCurrentUser(&r)
-	if abUser != nil && err == nil {
-		newLog := a.userLogger.New()
-		IP := r.RemoteAddr;
-		ua := r.Header.Get("User-Agent")
-		fromUrl, err := r.Cookie("fromUrl")
-		fu := "Unknown"
-		if err == nil {
-			fu = fromUrl.Domain
-		}
-		newLog.PutIP(IP)
-		newLog.PutAgent(ua)
-		newLog.PutDomen(fu)
-		newLog.PutUserID(abUser.GetPID())
-		newLog.Type = loginType
 
-		err = a.userLogger.CreateRecord(newLog)
+	if err != nil {
+		return err;
 	}
-	return err
+	newLog := a.userLogger.New()
+	IP := r.RemoteAddr;
+	ua := r.Header.Get("User-Agent")
+	fromUrl, err := r.Cookie("fromUrl")
+	fu := "Unknown"
+
+	if err == nil {
+		fu = fromUrl.Domain
+	}
+	newLog.PutIP(IP)
+	newLog.PutAgent(ua)
+	newLog.PutDomen(fu)
+	newLog.PutUserID(abUser.GetPID())
+	newLog.Type = loginType.String()
+
+	return a.userLogger.CreateRecord(newLog)
 }
