@@ -250,6 +250,14 @@ func (a Auth) store2faCode(h http.Handler) http.Handler {
 			email := values["email"]
 
 			pidUser, err := a.authBoss.Storage.Server.Load(r.Context(), email)
+			if err != nil {
+				a.render.JSON(w, http.StatusUnprocessableEntity, &ResponseError{
+					Status:  "error",
+					Success: false,
+					Error:   "User not found",
+				})
+				return
+			}
 			us := pidUser.(*users.User)
 
 			if len(us.GetTOTPSecretKey()) != 0 && code == ""{
