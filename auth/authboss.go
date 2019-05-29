@@ -102,6 +102,7 @@ func initAuthBoss(serviceAddr string, db *gorm.DB, sessionStorer clientState.Ses
 		},
 		Confirms: map[string][]string{
 			"recover_end": {"password", authboss.ConfirmPrefix + "password"},
+			"register": {"password", authboss.ConfirmPrefix + "password"},
 		},
 		Whitelist: map[string][]string{
 			"register": []string{"email", "name", "login", "password", "promocode"},
