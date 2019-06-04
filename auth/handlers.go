@@ -166,11 +166,7 @@ func (a Auth) acceptConsent(w http.ResponseWriter, r *http.Request) {
 		Get(url)
 
 	if err != nil {
-		a.render.JSON(w, http.StatusUnprocessableEntity, &ResponseError{
-			Status:  "error",
-			Success: false,
-			Error:   "no consent csrf token has been provided",
-		})
+		a.render.JSON(w, http.StatusUnprocessableEntity, a.errorResponse("No consent csrf token has been provided"))
 		return
 	}
 
@@ -188,12 +184,7 @@ func (a Auth) acceptConsent(w http.ResponseWriter, r *http.Request) {
 
 func (a Auth) handleLogin(challenge string, w http.ResponseWriter, r *http.Request) (bool, error) {
 	if challenge == "" {
-		a.render.JSON(w, http.StatusUnprocessableEntity, &ResponseError{
-			Status:  "error",
-			Success: false,
-			Error:   "no challenge code has been provided",
-		})
-
+		a.render.JSON(w, http.StatusUnprocessableEntity, a.errorResponse("No challenge code has been provided"))
 		return true, nil
 	}
 
@@ -204,11 +195,7 @@ func (a Auth) handleLogin(challenge string, w http.ResponseWriter, r *http.Reque
 		resp, errConfirm := hydra.ConfirmLogin(user.ID, false, challenge, a.conf.Hydra)
 		if errConfirm != nil || resp.RedirectTo == "" {
 			logrus.Debugf("probably challenge has been expired")
-			a.render.JSON(w, http.StatusUnprocessableEntity, &ResponseError{
-				Status:  "error",
-				Success: false,
-				Error:   "challenge code has been expired",
-			})
+			a.render.JSON(w, http.StatusUnprocessableEntity, a.errorResponse("Challenge code has been expired"))
 			return true, nil
 		}
 
@@ -235,11 +222,7 @@ func (a Auth) handleLogin(challenge string, w http.ResponseWriter, r *http.Reque
 			if loginStateErr != nil {
 				logrus.Infof("%s token absent! login rejected\n", cookieLoginState)
 			}
-			a.render.JSON(w, http.StatusUnprocessableEntity, &ResponseError{
-				Status:  "error",
-				Success: false,
-				Error:   "auth token absent",
-			})
+			a.render.JSON(w, http.StatusUnprocessableEntity, a.errorResponse("Auth token absent"))
 			return true, nil
 		}
 
@@ -251,21 +234,13 @@ func (a Auth) handleLogin(challenge string, w http.ResponseWriter, r *http.Reque
 			Get(resp.RedirectTo)
 
 		if err != nil {
-			a.render.JSON(w, http.StatusUnprocessableEntity, &ResponseError{
-				Status:  "error",
-				Success: false,
-				Error:   "no csrf token has been provided",
-			})
+			a.render.JSON(w, http.StatusUnprocessableEntity, a.errorResponse("No csrf token has been provided"))
 			return true, nil
 		}
 
 		accessToken := res.RawResponse.Header.Get("access_token")
 		if accessToken == "" {
-			a.render.JSON(w, http.StatusUnprocessableEntity, &ResponseError{
-				Status:  "error",
-				Success: false,
-				Error:   "No access token has been obtained",
-			})
+			a.render.JSON(w, http.StatusUnprocessableEntity, a.errorResponse("No access token has been obtained"))
 			return true, nil
 		}
 
@@ -301,18 +276,19 @@ func (a Auth) getRecoverSentURL(w http.ResponseWriter, r *http.Request) error {
 func (a Auth) getUserByEmail(w http.ResponseWriter, r *http.Request) {
 	user, err := a.getAuthbossUser(r)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusNoContent)
+		a.render.JSON(w, http.StatusNoContent, a.errorResponse("User not found"))
 		return
 	}
 
 	a.render.JSON(w, http.StatusOK, user)
+	return
 }
 
 func (a Auth) refreshTokenByEmail(w http.ResponseWriter, r *http.Request) {
 	email := chi.URLParam(r, "email")
 	user, err := a.authBoss.Config.Storage.Server.Load(r.Context(), email)
 	if err != nil {
-		a.render.JSON(w, http.StatusInternalServerError, map[string]string{"error": "user not found"})
+		a.render.JSON(w, http.StatusInternalServerError, a.errorResponse("User not found"))
 		return
 	}
 
@@ -322,13 +298,13 @@ func (a Auth) refreshTokenByEmail(w http.ResponseWriter, r *http.Request) {
 func (a Auth) getUserInfo(w http.ResponseWriter, r *http.Request) {
 	user, err := a.getUserFromHydraSession(w, r) // also refresh token if needed
 	if err != nil {
-		a.render.JSON(w, http.StatusUnauthorized, err.Error())
+		a.render.JSON(w, http.StatusUnauthorized, a.errorResponse(err.Error()))
 		return
 	}
 
 	userMap, er := ToMap(user, "json")
 	if er != nil {
-		a.render.JSON(w, http.StatusUnauthorized, err.Error())
+		a.render.JSON(w, http.StatusUnauthorized, a.errorResponse(err.Error()))
 		return
 	}
 
@@ -336,7 +312,7 @@ func (a Auth) getUserInfo(w http.ResponseWriter, r *http.Request) {
 	return
 }
 
-func (a *Auth) LoginPost(w http.ResponseWriter, r *http.Request)  {
+func (a Auth) loginPost(w http.ResponseWriter, r *http.Request)  {
 	logger := a.authBoss.RequestLogger(r)
 
 	validatable, err := a.authBoss.Core.BodyReader.Read(auth.PageLogin, r)
@@ -371,11 +347,7 @@ func (a *Auth) LoginPost(w http.ResponseWriter, r *http.Request)  {
 		}
 
 		logger.Infof("user %s failed to log in", pid)
-		a.render.JSON(w, http.StatusUnauthorized, &ResponseError{
-			Status:  "error",
-			Success: false,
-			Error:   "Invalid credentials",
-		})
+		a.render.JSON(w, http.StatusUnauthorized, a.errorResponse("Invalid credentials"))
 		return
 	}
 
@@ -390,6 +362,7 @@ func (a *Auth) LoginPost(w http.ResponseWriter, r *http.Request)  {
 
 	if _, err := a.checkTOTPWhenLogin(w, r); err != nil {
 		logger.Errorf("TOTP error %s", err)
+		a.render.JSON(w, http.StatusBadRequest, a.errorResponse(err.Error()))
 		return
 	}
 
@@ -406,11 +379,8 @@ func (a *Auth) LoginPost(w http.ResponseWriter, r *http.Request)  {
 	challenge, cookie, err := a.getChallengeCodeFromHydra(r)
 	if err != nil {
 		logrus.Error("can't get challenge code after register", err)
-		a.render.JSON(w, http.StatusUnprocessableEntity, &ResponseError{
-			Status:  "error",
-			Success: false,
-			Error:   "Can't get challenge code after register",
-		})
+		a.render.JSON(w, http.StatusUnprocessableEntity, a.errorResponse("Can't get challenge code after register"))
+		return
 	}
 	http.SetCookie(w, cookie)
 
@@ -443,11 +413,6 @@ func (a Auth) checkTOTPWhenLogin(w http.ResponseWriter, r *http.Request) (bool, 
 	res := totp.Validate(recoveryCode, totpSecret)
 
 	if !res {
-		a.render.JSON(w, http.StatusBadRequest, &ResponseError{
-			Status:  "error",
-			Success: false,
-			Error:   "2FA code is incorrect",
-		})
 		return false, errors.New("2FA code is incorrect")
 	}
 

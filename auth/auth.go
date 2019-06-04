@@ -109,7 +109,7 @@ func (a Auth) RefreshToken(w http.ResponseWriter, r *http.Request, abUser authbo
 	oauthClient := initOauthClient(a.conf.Hydra)
 
 	if refreshToken == "" {
-		http.Error(w, "No refresh token", http.StatusForbidden)
+		http.Error(w, "No refresh token", http.StatusUnauthorized)
 		return
 	}
 
@@ -133,4 +133,13 @@ func (a Auth) RefreshToken(w http.ResponseWriter, r *http.Request, abUser authbo
 	a.render.JSON(w, 200, map[string]string{
 		"access_token": updatedToken.AccessToken,
 	})
+}
+// Error response
+// swagger:response ResponseError
+func (a Auth) errorResponse(text string) ResponseError {
+	return ResponseError {
+		Status:  "error",
+		Success: false,
+		Error:   fmt.Sprintf(text),
+	}
 }
