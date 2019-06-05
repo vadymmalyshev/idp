@@ -1,14 +1,12 @@
 package auth
 
 import (
-	"git.tor.ph/hiveon/idp/models/logs"
-	renderPkg "github.com/unrolled/render"
-	"net/http"
-
 	"git.tor.ph/hiveon/idp/config"
+	"git.tor.ph/hiveon/idp/models/logs"
 	"github.com/gin-gonic/gin"
 	"github.com/go-chi/chi"
 	"github.com/jinzhu/gorm"
+	renderPkg "github.com/unrolled/render"
 	"github.com/volatiletech/authboss"
 	"github.com/volatiletech/authboss/remember"
 )
@@ -68,7 +66,7 @@ func (a *Auth) Init() {
 
 	mux.Group(func(mux chi.Router) {
 		mux.Use(authboss.ModuleListMiddleware(a.authBoss))
-		mux.Mount(rootPath, http.StripPrefix(rootPath, a.authBoss.Config.Core.Router))
+		//mux.Mount(rootPath, http.StripPrefix(rootPath, a.authBoss.Config.Core.Router))
 	})
 
 	a.r.Any("/*resources", gin.WrapH(mux))

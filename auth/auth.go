@@ -21,12 +21,6 @@ var (
 	flagAPI = flag.Bool("api", true, "configure the app to be an api instead of an html app")
 )
 
-type ResponseError struct {
-	Status  string `json:"status"`
-	Success bool   `json:"success"`
-	Error   string `json:"errorMsg"`
-}
-
 func (a Auth) getAuthbossUser(r *http.Request) (authboss.User, error) {
 	email := chi.URLParam(r, "email")
 	user, err := a.authBoss.Config.Storage.Server.Load(r.Context(), email)
@@ -134,12 +128,4 @@ func (a Auth) RefreshToken(w http.ResponseWriter, r *http.Request, abUser authbo
 		"access_token": updatedToken.AccessToken,
 	})
 }
-// Error response
-// swagger:response ResponseError
-func (a Auth) errorResponse(text string) ResponseError {
-	return ResponseError {
-		Status:  "error",
-		Success: false,
-		Error:   fmt.Sprintf(text),
-	}
-}
+
