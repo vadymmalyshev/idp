@@ -8,6 +8,11 @@ type ResponseError struct {
 	Error   string `json:"errorMsg"`
 }
 
+type LoginResponse struct {
+	AccessToken string `json:"access_token"`
+	TokenType   string `json:"token_type"`
+}
+
 func ErrorResponse(text string) ResponseError {
 	return ResponseError {
 		Status:  "error",

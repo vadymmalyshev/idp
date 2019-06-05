@@ -247,9 +247,9 @@ func (a Auth) handleLogin(challenge string, w http.ResponseWriter, r *http.Reque
 
 		SetAccessTokenCookie(w, accessToken)
 
-		a.render.JSON(w, http.StatusOK, map[string]string{
-			"access_token": accessToken,
-			"token_type":   "bearer",
+		a.render.JSON(w, http.StatusOK, &responses.LoginResponse{
+			AccessToken: accessToken,
+			TokenType:   "bearer",
 		})
 	}
 	return true, nil
