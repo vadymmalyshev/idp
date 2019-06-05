@@ -280,7 +280,7 @@ func (a Auth) getRecoverSentURL(w http.ResponseWriter, r *http.Request) error {
 // @Accept  json
 // @Produce  json
 // @Param email path string true "email"
-// @Success 200 {object} users.User
+// @Success 200 {object} users.User "ok"
 // @Failure 204 {object} responses.ResponseError "User not found"
 // @Router /users/email/{email} [get]
 func (a Auth) getUserByEmail(w http.ResponseWriter, r *http.Request) {
@@ -300,7 +300,7 @@ func (a Auth) getUserByEmail(w http.ResponseWriter, r *http.Request) {
 // @Accept  json
 // @Produce  json
 // @Param email path string true "email"
-// @Success 200 {object} responses.Refresh
+// @Success 200 {object} responses.Refresh "ok"
 // @Failure 500 {object} responses.ResponseError "User not found"
 // @Failure 401 {object} responses.ResponseError "No refresh token"
 // @Router /token/refresh/{email} [get]
@@ -320,7 +320,7 @@ func (a Auth) refreshTokenByEmail(w http.ResponseWriter, r *http.Request) {
 // @Description Get user info and refresh auth token if needed
 // @Accept  json
 // @Produce  json
-// @Success 200 {object} responses.UserInfo
+// @Success 200 {object} responses.UserInfo "ok"
 // @Failure 401 {object} responses.ResponseError "Authorization token missed"
 // @Router /userinfo [get]
 func (a Auth) getUserInfo(w http.ResponseWriter, r *http.Request) {
@@ -350,7 +350,7 @@ func (a Auth) getUserInfo(w http.ResponseWriter, r *http.Request) {
 // @Param  code formData string false  "promocode"
 // @Param  fromUrl formData string true  "fromUrl"
 // @Param  rm formData bool true  "remember me"
-// @Success 200 {object} responses.Login
+// @Success 200 {object} responses.Login "ok"
 // @Failure 400 {object} responses.ResponseError "2FA code is incorrect"
 // @Failure 401 {object} responses.ResponseError "Invalid credentials"
 // @Failure 422 {object} responses.ResponseError "Can't get challenge code after register"
