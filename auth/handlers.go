@@ -350,7 +350,7 @@ func (a Auth) getUserInfo(w http.ResponseWriter, r *http.Request) {
 // @Param  code formData string false  "promocode"
 // @Param  fromUrl formData string true  "fromUrl"
 // @Param  rm formData bool true  "remember me"
-// @Success 200 {string} ok
+// @Success 200 {object} responses.LoginResponse
 // @Failure 400 {object} auth.ResponseError
 // @Failure 401 {object} auth.ResponseError
 // @Failure 422 {object} auth.ResponseError
