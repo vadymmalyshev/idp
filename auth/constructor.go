@@ -9,6 +9,7 @@ import (
 	renderPkg "github.com/unrolled/render"
 	"github.com/volatiletech/authboss"
 	"github.com/volatiletech/authboss/remember"
+	"net/http"
 )
 
 type Auth struct {
@@ -59,16 +60,15 @@ func (a *Auth) Init() {
 		r.Post("/login", a.loginPost)
 		r.Get("/callback", a.callbackToken)
 		r.Get("/consent", a.acceptConsent)
+
+		r.Group(func(mux chi.Router) {
+			mux.Use(authboss.ModuleListMiddleware(a.authBoss))
+			mux.Mount("/", http.StripPrefix(rootPath, a.authBoss.Config.Core.Router))
+		})
 	})
 
 	//AuthBoss handlers
 	a.authBoss.Config.Core.Router.Get(recoverSentURL, a.authBoss.Core.ErrorHandler.Wrap(a.getRecoverSentURL))
-
-	mux.Group(func(mux chi.Router) {
-		mux.Use(authboss.ModuleListMiddleware(a.authBoss))
-		//mux.Mount(rootPath, http.StripPrefix(rootPath, a.authBoss.Config.Core.Router))
-	})
-
 	a.r.Any("/*resources", gin.WrapH(mux))
 }
 
