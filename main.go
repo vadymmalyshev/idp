@@ -1,24 +1,8 @@
-// HIVEON IDP
-//
-//     Schemes: http
-//     Version: 0.1
-//
-//     Consumes:
-//     - application/json
-//
-//     Produces:
-//     - application/json
-//
-//     Security:
-//     - bearer:
-//
-//     SecurityDefinitions:
-//     bearer:
-//          type: apiKey
-//          name: Authorization
-//          in: header
-//
-// swagger:meta
+// @title IDP API
+// @version 1.0
+// @description IDP API
+// @BasePath /api/idp
+
 package main
 
 import (

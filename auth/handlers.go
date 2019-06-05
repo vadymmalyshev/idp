@@ -273,6 +273,15 @@ func (a Auth) getRecoverSentURL(w http.ResponseWriter, r *http.Request) error {
 	return nil
 }
 
+// getUserByEmail godoc
+// @Summary User by email
+// @Description Get user by email
+// @Accept  json
+// @Produce  json
+// @Param email path string true "email"
+// @Success 200 {object} users.User
+// @Failure 204 {object} auth.ResponseError
+// @Router /users/email/{email} [get]
 func (a Auth) getUserByEmail(w http.ResponseWriter, r *http.Request) {
 	user, err := a.getAuthbossUser(r)
 	if err != nil {
@@ -284,6 +293,16 @@ func (a Auth) getUserByEmail(w http.ResponseWriter, r *http.Request) {
 	return
 }
 
+// refreshTokenByEmail godoc
+// @Summary Refresh token
+// @Description Refresh token by email
+// @Accept  json
+// @Produce  json
+// @Param email path string true "email"
+// @Success 200 {string} token
+// @Failure 500 {object} auth.ResponseError
+// @Failure 401 {object} auth.ResponseError
+// @Router /token/refresh/{email} [get]
 func (a Auth) refreshTokenByEmail(w http.ResponseWriter, r *http.Request) {
 	email := chi.URLParam(r, "email")
 	user, err := a.authBoss.Config.Storage.Server.Load(r.Context(), email)
@@ -295,6 +314,14 @@ func (a Auth) refreshTokenByEmail(w http.ResponseWriter, r *http.Request) {
 	a.RefreshToken(w, r, user)
 }
 
+// getUserInfo godoc
+// @Summary User info
+// @Description Get user info and refresh auth token if needed
+// @Accept  json
+// @Produce  json
+// @Success 200 {string} userinfo
+// @Failure 401 {object} auth.ResponseError
+// @Router /userinfo [get]
 func (a Auth) getUserInfo(w http.ResponseWriter, r *http.Request) {
 	user, err := a.getUserFromHydraSession(w, r) // also refresh token if needed
 	if err != nil {
@@ -312,6 +339,21 @@ func (a Auth) getUserInfo(w http.ResponseWriter, r *http.Request) {
 	return
 }
 
+// loginPost godoc
+// @Summary User's login
+// @Description User's login
+// @Accept  json
+// @Produce  json
+// @Param  email formData string true  "email"
+// @Param  password formData string true  "password"
+// @Param  code formData string false  "promocode"
+// @Param  fromUrl formData string true  "fromUrl"
+// @Param  rm formData bool true  "remember me"
+// @Success 200 {string} ok
+// @Failure 400 {object} auth.ResponseError
+// @Failure 401 {object} auth.ResponseError
+// @Failure 422 {object} auth.ResponseError
+// @Router /userinfo [post]
 func (a Auth) loginPost(w http.ResponseWriter, r *http.Request)  {
 	logger := a.authBoss.RequestLogger(r)
 
