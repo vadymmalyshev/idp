@@ -281,7 +281,7 @@ func (a Auth) getRecoverSentURL(w http.ResponseWriter, r *http.Request) error {
 // @Produce  json
 // @Param email path string true "email"
 // @Success 200 {object} users.User
-// @Failure 204 {object} responses.ResponseError
+// @Failure 204 {object} responses.ResponseError "User not found"
 // @Router /users/email/{email} [get]
 func (a Auth) getUserByEmail(w http.ResponseWriter, r *http.Request) {
 	user, err := a.getAuthbossUser(r)
@@ -301,8 +301,8 @@ func (a Auth) getUserByEmail(w http.ResponseWriter, r *http.Request) {
 // @Produce  json
 // @Param email path string true "email"
 // @Success 200 {object} responses.Refresh
-// @Failure 500 {object} responses.ResponseError
-// @Failure 401 {object} responses.ResponseError
+// @Failure 500 {object} responses.ResponseError "User not found"
+// @Failure 401 {object} responses.ResponseError "No refresh token"
 // @Router /token/refresh/{email} [get]
 func (a Auth) refreshTokenByEmail(w http.ResponseWriter, r *http.Request) {
 	email := chi.URLParam(r, "email")
@@ -321,7 +321,7 @@ func (a Auth) refreshTokenByEmail(w http.ResponseWriter, r *http.Request) {
 // @Accept  json
 // @Produce  json
 // @Success 200 {object} responses.UserInfo
-// @Failure 401 {object} responses.ResponseError
+// @Failure 401 {object} responses.ResponseError "Authorization token missed"
 // @Router /userinfo [get]
 func (a Auth) getUserInfo(w http.ResponseWriter, r *http.Request) {
 	user, err := a.getUserFromHydraSession(w, r) // also refresh token if needed
@@ -351,9 +351,9 @@ func (a Auth) getUserInfo(w http.ResponseWriter, r *http.Request) {
 // @Param  fromUrl formData string true  "fromUrl"
 // @Param  rm formData bool true  "remember me"
 // @Success 200 {object} responses.Login
-// @Failure 400 {object} responses.ResponseError
-// @Failure 401 {object} responses.ResponseError
-// @Failure 422 {object} responses.ResponseError
+// @Failure 400 {object} responses.ResponseError "2FA code is incorrect"
+// @Failure 401 {object} responses.ResponseError "Invalid credentials"
+// @Failure 422 {object} responses.ResponseError "Can't get challenge code after register"
 // @Router /userinfo [post]
 func (a Auth) loginPost(w http.ResponseWriter, r *http.Request)  {
 	logger := a.authBoss.RequestLogger(r)

@@ -42,13 +42,13 @@ func formatToken(token string) string {
 func (a Auth) getUserFromHydraSession(w http.ResponseWriter, r *http.Request) (authboss.User, error) {
 	reqTokenCookie, err := r.Cookie("Authorization")
 	if err != nil {
-		return nil, errors.New("authorization token missed")
+		return nil, errors.New("Authorization token missed")
 	}
 
 	reqToken := reqTokenCookie.Value
 
 	if len(reqToken) == 0 {
-		return nil, errors.New("authorization token missed")
+		return nil, errors.New("Authorization token missed")
 	}
 
 	splitToken := strings.Split(reqToken, " ")
