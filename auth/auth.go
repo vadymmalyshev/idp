@@ -6,6 +6,7 @@ import (
 	"errors"
 	"flag"
 	"fmt"
+	"git.tor.ph/hiveon/idp/models/responses"
 	"git.tor.ph/hiveon/idp/models/users"
 	"github.com/ory/hydra/sdk/go/hydra/swagger"
 	"golang.org/x/oauth2"
@@ -124,8 +125,8 @@ func (a Auth) RefreshToken(w http.ResponseWriter, r *http.Request, abUser authbo
 
 	SetAccessTokenCookie(w, updatedToken.AccessToken)
 
-	a.render.JSON(w, 200, map[string]string{
-		"access_token": updatedToken.AccessToken,
+	a.render.JSON(w, 200, &responses.Refresh{
+		AccessToken: updatedToken.AccessToken,
 	})
 }
 

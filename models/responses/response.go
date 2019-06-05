@@ -1,6 +1,9 @@
 package responses
 
-import "fmt"
+import (
+	"fmt"
+	"time"
+)
 
 type ResponseError struct {
 	Status  string `json:"status"`
@@ -8,9 +11,26 @@ type ResponseError struct {
 	Error   string `json:"errorMsg"`
 }
 
-type LoginResponse struct {
+type Login struct {
 	AccessToken string `json:"access_token"`
 	TokenType   string `json:"token_type"`
+}
+
+type Refresh struct {
+	AccessToken string `json:"access_token"`
+}
+
+type UserInfo struct {
+	ID                 uint       `json:"id"`
+	CreatedAt          time.Time  `json:"created_at"`
+	UpdatedAt          time.Time  `json:"updated_at"`
+	DeletedAt          *time.Time `json:"deleted_at"`
+	Login              string     `json:"login"`
+	Name               string     `json:"name"`
+	Email              string     `json:"email"`
+	Enabled2fa         bool       `json:"enabled2fa"`
+	SMSPhoneNumber     string     `json:"phone_number"`
+	SMSSeedPhoneNumber string     `json:"seed_phone_number"`
 }
 
 func ErrorResponse(text string) ResponseError {
