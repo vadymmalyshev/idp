@@ -52,6 +52,7 @@ func InitViperConfig() *CommonConfig {
 	// viper.AddConfigPath("$HOME/config")
 	viper.AddConfigPath("./")
 	viper.AddConfigPath("./config")
+	viper.AddConfigPath("../config")
 	viper.SetConfigType("yaml")
 	viper.AutomaticEnv()
 	viper.SetConfigName(*configName)

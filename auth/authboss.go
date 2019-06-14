@@ -102,7 +102,7 @@ func initAuthBoss(serviceAddr string, db *gorm.DB, sessionStorer clientState.Ses
 		},
 		Confirms: map[string][]string{
 			"recover_end": {"password", authboss.ConfirmPrefix + "password"},
-			"register": {"password", authboss.ConfirmPrefix + "password"},
+			"register":    {"password", authboss.ConfirmPrefix + "password"},
 		},
 		Whitelist: map[string][]string{
 			"register": []string{"email", "name", "login", "password", "promocode"},
@@ -115,27 +115,27 @@ func initAuthBoss(serviceAddr string, db *gorm.DB, sessionStorer clientState.Ses
 
 	modAuth := auth.Auth{}
 	if err := modAuth.Init(ab); err != nil {
-		logrus.Panicf("can't initialize authboss's auth mod", err)
+		logrus.Panicf("can't initialize authboss's auth mod: %v", err)
 	}
 
 	modRegister := register.Register{}
 	if err := modRegister.Init(ab); err != nil {
-		logrus.Panicf("can't initialize authboss's register mod", err)
+		logrus.Panicf("can't initialize authboss's register mod: %v", err)
 	}
 
 	modRecover := recover.Recover{}
 	if err := modRecover.Init(ab); err != nil {
-		logrus.Panicf("can't initialize authboss's recover mod", err)
+		logrus.Panicf("can't initialize authboss's recover mod: %v", err)
 	}
 
 	modTotp := &totp2fa.TOTP{Authboss: ab}
 	if err := modTotp.Setup(); err != nil {
-		logrus.Panicf("can't initialize authboss's totp2fa mod", err)
+		logrus.Panicf("can't initialize authboss's totp2fa mod: %v", err)
 	}
 
 	modRemember := remember.Remember{}
 	if err := modRemember.Init(ab); err != nil {
-		logrus.Panicf("can't initialize authboss's remember mod", err)
+		logrus.Panicf("can't initialize authboss's remember mod: %v", err)
 	}
 
 	return ab
