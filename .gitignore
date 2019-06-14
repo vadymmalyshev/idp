@@ -23,6 +23,7 @@ vendor/
 /.licensei.cache
 # /.env
 __data/
+/docs/
 
 # IDE integration
 /.idea/*

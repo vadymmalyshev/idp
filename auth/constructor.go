@@ -1,16 +1,15 @@
 package auth
 
 import (
-	"git.tor.ph/hiveon/idp/models/logs"
-	renderPkg "github.com/unrolled/render"
-	"net/http"
-
 	"git.tor.ph/hiveon/idp/config"
+	"git.tor.ph/hiveon/idp/models/logs"
 	"github.com/gin-gonic/gin"
 	"github.com/go-chi/chi"
 	"github.com/jinzhu/gorm"
+	renderPkg "github.com/unrolled/render"
 	"github.com/volatiletech/authboss"
 	"github.com/volatiletech/authboss/remember"
+	"net/http"
 )
 
 type Auth struct {
@@ -37,7 +36,7 @@ func (a *Auth) Init() {
 	sessionStore := initSessionStorer()
 	cookieStore := initCookieStorer()
 	a.authBoss = initAuthBoss(a.conf.Portal.Callback, a.db, sessionStore, cookieStore)
-    a.userLogger = initUserLogger(a.db)
+	a.userLogger = initUserLogger(a.db)
 	//Events
 	a.authBoss.Events.After(authboss.EventRegister, a.AfterEventRegistration)
 	a.authBoss.Events.After(authboss.EventAuth, a.AfterEventLogin)
@@ -53,25 +52,26 @@ func (a *Auth) Init() {
 	mux.Use(a.dataInjector)
 	mux.Use(a.deleteAuthorizationCookieAfterLogout)
 
-	//IDP handlers
-	mux.Get(rootPath+"/userinfo", a.getUserInfo)
-	mux.Get(rootPath+"/callback", a.callbackToken)
-	mux.Get(rootPath+"/consent", a.acceptConsent)
-	mux.Get(rootPath+"/users/email/{email}", a.getUserByEmail)
-	mux.Get(rootPath+"/token/refresh/{email}", a.refreshTokenByEmail)
-	mux.Post(rootPath+"/login", a.LoginPost)
+	mux.Route(rootPath, func(r chi.Router) {
+		//IDP handlers
+		r.Get("/userinfo", a.getUserInfo)
+		r.Get("/users/email/{email}", a.getUserByEmail)
+		r.Get("/token/refresh/{email}", a.refreshTokenByEmail)
+		r.Post("/login", a.loginPost)
+		r.Get("/callback", a.callbackToken)
+		r.Get("/consent", a.acceptConsent)
+
+		r.Group(func(mux chi.Router) {
+			mux.Use(authboss.ModuleListMiddleware(a.authBoss))
+			mux.Mount("/", http.StripPrefix(rootPath, a.authBoss.Config.Core.Router))
+		})
+	})
 
 	//AuthBoss handlers
 	a.authBoss.Config.Core.Router.Get(recoverSentURL, a.authBoss.Core.ErrorHandler.Wrap(a.getRecoverSentURL))
-
-	mux.Group(func(mux chi.Router) {
-		mux.Use(authboss.ModuleListMiddleware(a.authBoss))
-		mux.Mount(rootPath, http.StripPrefix(rootPath, a.authBoss.Config.Core.Router))
-	})
-
 	a.r.Any("/*resources", gin.WrapH(mux))
 }
 
-func initUserLogger(db *gorm.DB) *logs.UserLogger{
+func initUserLogger(db *gorm.DB) *logs.UserLogger {
 	return logs.NewUserLogger(db)
 }

@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"git.tor.ph/hiveon/idp/config"
+	"git.tor.ph/hiveon/idp/models/responses"
 	"git.tor.ph/hiveon/idp/models/users"
 	//"github.com/gorilla/csrf"
 	"io/ioutil"
@@ -64,39 +65,6 @@ func (a Auth) layoutData(w http.ResponseWriter, r **http.Request, redirect strin
 		"redirectURL":   redirect,
 	}
 }
-
-/*func debugMw(handler http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		fmt.Printf("\n%s %s %s\n", r.Method, r.URL.Path, r.Proto)
-
-		session, err := sessionStore.Get(r, IDPSessionName)
-		if err == nil {
-			fmt.Print("Session: ")
-			first := true
-			for k, v := range session.Values {
-				if first {
-					first = false
-				} else {
-					fmt.Print(", ")
-				}
-				fmt.Printf("%s = %v", k, v)
-			}
-			fmt.Println()
-		}
-		// fmt.Println("Database:")
-		// for _, u := range database.Users {
-		// 	fmt.Printf("! %#v\n", u)
-		// }
-		if val := r.Context().Value(authboss.CTXKeyData); val != nil {
-			fmt.Printf("CTX Data: %s", spew.Sdump(val))
-		}
-		if val := r.Context().Value(authboss.CTXKeyValues); val != nil {
-			fmt.Printf("CTX Values: %s", spew.Sdump(val))
-		}
-
-		handler.ServeHTTP(w, r)
-	})
-}*/
 
 func initOauthClient(hydraConf config.HydraConfig) *oauth2.Config {
 	client := GetClient(hydraConf)
@@ -179,22 +147,14 @@ func (a Auth) checkRegistrationCredentials(h http.Handler) http.Handler {
 			login := values["login"]
 			pidUser, err := a.authBoss.Storage.Server.Load(r.Context(), login)
 			if pidUser != nil {
-				a.render.JSON(w, http.StatusUnprocessableEntity, &ResponseError{
-					Status:  "error",
-					Success: false,
-					Error:   fmt.Sprintf("Username %s has already taken", login),
-				})
+				a.render.JSON(w, http.StatusUnprocessableEntity, responses.ErrorResponse(fmt.Sprintf("Username %s has already taken", login)))
 				return
 			}
 
 			email := values["email"]
 			pidUser, err = a.authBoss.Storage.Server.Load(r.Context(), email)
 			if pidUser != nil {
-				a.render.JSON(w, http.StatusUnprocessableEntity, &ResponseError{
-					Status:  "error",
-					Success: false,
-					Error:   fmt.Sprintf("Email %s has already taken", email),
-				})
+				a.render.JSON(w, http.StatusUnprocessableEntity, responses.ErrorResponse(fmt.Sprintf("Email %s has already taken", email)))
 				return
 			}
 		}
@@ -207,21 +167,13 @@ func (a Auth) check2FaSetupRequest(h http.Handler) http.Handler {
 		if r.URL.Path == rootPath+"/2fa/totp/setup" && r.Method == "POST" {
 			reqTokenCookie, err := r.Cookie("Authorization")
 			if err != nil {
-				a.render.JSON(w, http.StatusUnprocessableEntity, &ResponseError{
-					Status:  "error",
-					Success: false,
-					Error:   fmt.Sprintf("Authorization token missed"),
-				})
+				a.render.JSON(w, http.StatusUnprocessableEntity, responses.ErrorResponse("Authorization token missed"))
 				return
 			}
 			reqToken := reqTokenCookie.Value
 
 			if len(reqToken) == 0 {
-				a.render.JSON(w, http.StatusUnprocessableEntity, &ResponseError{
-					Status:  "error",
-					Success: false,
-					Error:   fmt.Sprintf("Authorization token missed"),
-				})
+				a.render.JSON(w, http.StatusUnprocessableEntity, responses.ErrorResponse("Authorization token missed"))
 				return
 			}
 		}
@@ -251,47 +203,30 @@ func (a Auth) store2faCode(h http.Handler) http.Handler {
 
 			pidUser, err := a.authBoss.Storage.Server.Load(r.Context(), email)
 			if err != nil {
-				a.render.JSON(w, http.StatusUnprocessableEntity, &ResponseError{
-					Status:  "error",
-					Success: false,
-					Error:   "User not found",
-				})
+				a.render.JSON(w, http.StatusUnprocessableEntity, responses.ErrorResponse("User not found"))
 				return
 			}
 			us := pidUser.(*users.User)
 
 			if len(us.GetTOTPSecretKey()) != 0 && code == ""{
-				a.render.JSON(w, http.StatusUnprocessableEntity, &ResponseError{
-					Status:  "error",
-					Success: false,
-					Error:   "2FA code is empty",
-				})
+				a.render.JSON(w, http.StatusUnprocessableEntity, responses.ErrorResponse("2FA code is empty"))
 				return
 			}
 
 			if len(us.GetTOTPSecretKey()) == 0 && code != ""{
-				a.render.JSON(w, http.StatusUnprocessableEntity, &ResponseError{
-					Status:  "error",
-					Success: false,
-					Error:   "2FA is not enabled",
-				})
+				a.render.JSON(w, http.StatusUnprocessableEntity, responses.ErrorResponse("2FA is not enabled"))
 				return
 			}
 
 			us.PutCode(code)
 			if err = a.authBoss.Config.Storage.Server.Save(r.Context(), us); err != nil {
-				a.render.JSON(w, http.StatusUnprocessableEntity, &ResponseError{
-					Status:  "error",
-					Success: false,
-					Error:   fmt.Sprintf("Can't save 2FA code"),
-				})
+				a.render.JSON(w, http.StatusUnprocessableEntity, responses.ErrorResponse("Can't save 2FA code"))
 				return
 			}
 		}
 		h.ServeHTTP(w, r)
 	})
 }
-
 
 func (a Auth) deleteAuthorizationCookieAfterLogout(h http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
