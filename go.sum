@@ -351,12 +351,6 @@ github.com/volatiletech/authboss-clientstate v0.0.0-20190112194853-0943df8b4e05 
 github.com/volatiletech/authboss-clientstate v0.0.0-20190112194853-0943df8b4e05/go.mod h1:OfM17hvA6F9YRmXy2itY6fJiR4j4gXIIVs3NT1UPvoE=
 github.com/volatiletech/authboss-renderer v0.0.0-20181105062701-4b64de40529a h1:0s3D3O9E5cIyju6cwv1PH6hWytwUv9eP+lhUbDHGsGA=
 github.com/volatiletech/authboss-renderer v0.0.0-20181105062701-4b64de40529a/go.mod h1:JMZJF0rB3SIlSX00Q4T0LnlYoGBJR2WczG/spD8hxok=
-github.com/xeipuuv/gojsonpointer v0.0.0-20180127040702-4e3ac2762d5f h1:J9EGpcZtP0E/raorCMxlFGSTBrsSlaDGf3jU/qvAE2c=
-github.com/xeipuuv/gojsonpointer v0.0.0-20180127040702-4e3ac2762d5f/go.mod h1:N2zxlSyiKSe5eX1tZViRH5QA0qijqEDrYZiPEAiq3wU=
-github.com/xeipuuv/gojsonreference v0.0.0-20180127040603-bd5ef7bd5415 h1:EzJWgHovont7NscjpAxXsDA8S8BMYve8Y5+7cuRE7R0=
-github.com/xeipuuv/gojsonreference v0.0.0-20180127040603-bd5ef7bd5415/go.mod h1:GwrjFmJcFw6At/Gs6z4yjiIwzuJ1/+UwLxMQDVQXShQ=
-github.com/xeipuuv/gojsonschema v1.1.0 h1:ngVtJC9TY/lg0AA/1k48FYhBrhRoFlEmWzsehpNAaZg=
-github.com/xeipuuv/gojsonschema v1.1.0/go.mod h1:5yf86TLmAcydyeJq5YvxkGPE2fm/u4myDekKRoLuqhs=
 github.com/xordataexchange/crypt v0.0.3-0.20170626215501-b2862e3d0a77/go.mod h1:aYKd//L2LvnjZzWKhF00oedf4jCCReLcmhLdhm1A27Q=
 github.com/xtgo/uuid v0.0.0-20140804021211-a0b114877d4c h1:3lbZUMbMiGUW/LMkfsEABsc5zNT9+b1CvsJx47JzJ8g=
 github.com/xtgo/uuid v0.0.0-20140804021211-a0b114877d4c/go.mod h1:UrdRz5enIKZ63MEE3IF9l2/ebyx59GyGgPi+tICQdmM=
@@ -466,10 +460,6 @@ gopkg.in/gomail.v2 v2.0.0-20160411212932-81ebce5c23df h1:n7WqCuqOuCbNr617RXOY0AW
 gopkg.in/gomail.v2 v2.0.0-20160411212932-81ebce5c23df/go.mod h1:LRQQ+SO6ZHR7tOkpBDuZnXENFzX8qRjMDMyPD6BRkCw=
 gopkg.in/gorp.v1 v1.7.1 h1:GBB9KrWRATQZh95HJyVGUZrWwOPswitEYEyqlK8JbAA=
 gopkg.in/gorp.v1 v1.7.1/go.mod h1:Wo3h+DBQZIxATwftsglhdD/62zRFPhGhTiu5jUJmCaw=
-gopkg.in/h2non/baloo.v3 v3.0.2 h1:d0H0jPRnEqjJtmokb0Lww6gnYjLuqqjws3NaCK2Eq4o=
-gopkg.in/h2non/baloo.v3 v3.0.2/go.mod h1:1NAP2GLsXL5zrP+vpx48D+is9nc7zl5fBpMqPp/JEzA=
-gopkg.in/h2non/gentleman.v2 v2.0.3 h1:exsUPKJDFwNjJykboVj8+BKPWMNOxR/AmPL3f7Hutwo=
-gopkg.in/h2non/gentleman.v2 v2.0.3/go.mod h1:A1c7zwrTgAyyf6AbpvVksYtBayTB4STBUGmdkEtlHeA=
 gopkg.in/inf.v0 v0.9.1/go.mod h1:cWUDdTG/fYaXco+Dcufb5Vnc6Gp2YChqWtbxRZE0mXw=
 gopkg.in/resty.v1 v1.9.1/go.mod h1:vo52Hzryw9PnPHcJfPsBiFW62XhNx5OczbV9y+IMpgc=
 gopkg.in/resty.v1 v1.11.0 h1:z5nqGs/W/h91PLOc+WZefPj8rRZe8Ctlgxg/AtbJ+NE=
