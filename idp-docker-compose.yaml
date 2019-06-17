@@ -16,7 +16,7 @@ services:
     <<: *idp_hiveon-dev-network
     container_name: hydra
     hostname: hydra
-    image: oryd/hydra:${HYDRA_VERSION:-v1.0.0-rc.12_oryOS.11}
+    image: oryd/hydra:${HYDRA_VERSION:-v1.0.0-rc.15}
     environment:
       - LOG_LEVEL=debug
       - SYSTEM_SECRET=${HYDRA_SYSTEM_SECRET:-youReallyNeedToChangeThis}
