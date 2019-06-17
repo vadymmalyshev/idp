@@ -1,0 +1,54 @@
+.inputWrapper {
+  position: relative;
+}
+
+.label {
+  position: absolute;
+  top: 0;
+  padding: 15px 0 0 20px;
+  transition: all 0.15s;
+  opacity: 0.5;
+  font-size: 14px;
+}
+
+.input:focus + .label,
+/* .input:valid + .label, */
+.input.value + .label {
+  font-size: 75%;
+  transform: translate3d(-19px, -108%, 0);
+  opacity: 1;
+}
+
+.errorMessage {
+  font-size: 13px;
+  font-weight: normal;
+  color: var(--hos-red-color);
+  height: 27px;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  padding-right: 2px;
+}
+
+.input {
+  display: block;
+  box-sizing: border-box;
+  padding: 12px 20px;
+  width: 100%;
+  outline: 0;
+  border: 1px solid transparent;
+  border-radius: 3px;
+  color: var(--hos-light-grey);
+  font-size: 14px;
+  line-height: 20px;
+  transition: border-color ease-in-out 0.15s;
+  background: var(--hos-extra-dark-bg);
+}
+
+.input:disabled {
+  opacity: 0.5;
+}
+
+.input:focus {
+  border-color: var(--hos-border-light--hover);
+}

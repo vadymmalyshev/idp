@@ -1,0 +1,15 @@
+[
+	{
+		"url": "/",
+		"title": "Hiveon ID | Welcome"
+	},
+	{
+		"url": "/login"
+  },
+	{
+		"url": "/register"
+  },
+  {
+		"url": "/restore-pass"
+  }
+]
