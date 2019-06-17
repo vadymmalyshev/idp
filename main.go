@@ -1,8 +1,3 @@
-// @title IDP API
-// @version 1.0
-// @description IDP API
-// @BasePath /api/idp
-
 package main
 
 import (

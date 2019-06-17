@@ -6,7 +6,6 @@ import (
 	"errors"
 	"flag"
 	"fmt"
-	"git.tor.ph/hiveon/idp/models/responses"
 	"git.tor.ph/hiveon/idp/models/users"
 	"github.com/ory/hydra/sdk/go/hydra/swagger"
 	"golang.org/x/oauth2"
@@ -21,6 +20,12 @@ import (
 var (
 	flagAPI = flag.Bool("api", true, "configure the app to be an api instead of an html app")
 )
+
+type ResponseError struct {
+	Status  string `json:"status"`
+	Success bool   `json:"success"`
+	Error   string `json:"errorMsg"`
+}
 
 func (a Auth) getAuthbossUser(r *http.Request) (authboss.User, error) {
 	email := chi.URLParam(r, "email")
@@ -42,13 +47,13 @@ func formatToken(token string) string {
 func (a Auth) getUserFromHydraSession(w http.ResponseWriter, r *http.Request) (authboss.User, error) {
 	reqTokenCookie, err := r.Cookie("Authorization")
 	if err != nil {
-		return nil, errors.New("Authorization token missed")
+		return nil, errors.New("authorization token missed")
 	}
 
 	reqToken := reqTokenCookie.Value
 
 	if len(reqToken) == 0 {
-		return nil, errors.New("Authorization token missed")
+		return nil, errors.New("authorization token missed")
 	}
 
 	splitToken := strings.Split(reqToken, " ")
@@ -104,7 +109,7 @@ func (a Auth) RefreshToken(w http.ResponseWriter, r *http.Request, abUser authbo
 	oauthClient := initOauthClient(a.conf.Hydra)
 
 	if refreshToken == "" {
-		http.Error(w, "No refresh token", http.StatusUnauthorized)
+		http.Error(w, "No refresh token", http.StatusForbidden)
 		return
 	}
 
@@ -125,8 +130,7 @@ func (a Auth) RefreshToken(w http.ResponseWriter, r *http.Request, abUser authbo
 
 	SetAccessTokenCookie(w, updatedToken.AccessToken)
 
-	a.render.JSON(w, 200, &responses.Refresh{
-		AccessToken: updatedToken.AccessToken,
+	a.render.JSON(w, 200, map[string]string{
+		"access_token": updatedToken.AccessToken,
 	})
 }
-
