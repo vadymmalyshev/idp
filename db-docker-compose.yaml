@@ -1,4 +1,4 @@
-version: '3.5'
+version: "3.5"
 
 #Volumes
 volumes:
@@ -10,31 +10,28 @@ networks:
     ipam:
       driver: default
       config:
-      - subnet: 10.100.100.0/24
-  default: 
+        - subnet: 10.100.100.0/24
+  default:
     name: hiveon-dev-network
 
 #Templates
-x-hiveon-dev-network:
-  &hiveon-dev-network
+x-hiveon-dev-network: &hiveon-dev-network
   networks:
-  - hiveon-dev-network
+    - hiveon-dev-network
 
 #Containers
 services:
-
   postgres:
-#    restart: unless-stopped
-    build: './postgres'
+    #    restart: unless-stopped
+    build: "./postgres"
     <<: *hiveon-dev-network
-    image: 'postgres:pool'
+    image: "postgres:pool"
     container_name: postgres
     hostname: postgres
     ports:
-      - '127.0.0.1:5432:5432'
+      - "127.0.0.1:5432:5432"
     volumes:
-#      - ./postgres:/docker-entrypoint-initdb.d
+      #      - ./postgres:/docker-entrypoint-initdb.d
       - postgres_data:/var/lib/postgresql/data
     env_file:
       - .dev.local
-

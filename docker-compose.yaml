@@ -1,14 +1,13 @@
-version: '3.5'
+version: "3.5"
 
 #Networking (docker networks)
 networks:
   idp_hiveon-dev-network:
     external: true
 #Templates
-x-idp_hiveon-dev-network:
-  &idp_hiveon-dev-network
+x-idp_hiveon-dev-network: &idp_hiveon-dev-network
   networks:
-  - idp_hiveon-dev-network
+    - idp_hiveon-dev-network
 
 #Containers
 services:
@@ -17,7 +16,7 @@ services:
     <<: *idp_hiveon-dev-network
     container_name: hydra
     hostname: hydra
-    image: oryd/hydra:${HYDRA_VERSION:-v1.0.0-rc.6_oryOS.10}
+    image: oryd/hydra:${HYDRA_VERSION:-v1.0.0-rc.12_oryOS.11}
     environment:
       - LOG_LEVEL=debug
       - SYSTEM_SECRET=${HYDRA_SYSTEM_SECRET:-hydra}
@@ -28,8 +27,7 @@ services:
       - OAUTH2_SHARE_ERROR_DEBUG=1
     depends_on:
       - hydra-migrate
-    command:
-      serve all --dangerous-force-http
+    command: serve all --dangerous-force-http
     ports:
       - "4444:4444"
       - "4445:4445"
@@ -41,16 +39,14 @@ services:
     <<: *idp_hiveon-dev-network
     container_name: hydra-migrate
     hostname: hydra-migrate
-    image: oryd/hydra:${HYDRA_VERSION:-v1.0.0-rc.6_oryOS.10}
+    image: oryd/hydra:${HYDRA_VERSION:-v1.0.0-rc.12_oryOS.11}
     environment:
       - LOG_LEVEL=debug
-    command:
-      migrate sql postgres://${IDP_DB_USER:-idp}:${IDP_DB_PASS:-8GWbz2JF4FMe1Q8X}@${IDP_DB_HOST:-postgres}:5432/${HYDRA_DB_NAME:-hydra}?sslmode=disable
+    command: migrate sql postgres://${IDP_DB_USER:-idp}:${IDP_DB_PASS:-8GWbz2JF4FMe1Q8X}@${IDP_DB_HOST:-postgres}:5432/${HYDRA_DB_NAME:-hydra}?sslmode=disable
     env_file:
       - ./.env
-
 #  idp:
-    #    restart: on-failure
+#    restart: on-failure
 #    <<: *idp_hiveon-dev-network
 #    container_name: idp
 #    hostname: idp
