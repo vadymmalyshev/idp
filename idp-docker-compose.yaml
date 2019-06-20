@@ -41,13 +41,13 @@ services:
     <<: *idp_hiveon-dev-network
     container_name: hydra-migrate
     hostname: hydra-migrate
-    image: oryd/hydra:${HYDRA_VERSION:-v1.0.0-rc.8_oryOS.10}
+    image: oryd/hydra:${HYDRA_VERSION:-v1.0.0-rc.15}
     environment:
       - LOG_LEVEL=debug
     external_links:
       - postgres:postgres
     command:
-      migrate sql postgres://${IDP_DB_USER:-idp}:${IDP_DB_PASS:-8GWbz2JF4FMe1Q8X}@${IDP_DB_HOST:-postgres}:5432/${HYDRA_DB_NAME:-hydra}?sslmode=disable
+      migrate sql postgres://${IDP_DB_USER:-idp}:${IDP_DB_PASS:-8GWbz2JF4FMe1Q8X}@${IDP_DB_HOST:-postgres}:5432/${HYDRA_DB_NAME:-hydra}?sslmode=disable --yes
     env_file:
       - .dev.local
 
