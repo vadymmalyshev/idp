@@ -16,6 +16,7 @@ type IDP struct {
 	ClientSecret string `yaml:"client_secret"`
 	Callback     string `yaml:"callback"`
 	DB           DBConf `yaml:"db"`
+	HiveOSApiURL string `json:"hive_os_api_url"`
 }
 
 type DBConf struct {
