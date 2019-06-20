@@ -1,0 +1,123 @@
+html, body {
+	height: 100%;
+	width: 100%;
+	padding: 0;
+	margin: 0;
+	background:#21252B;
+	font-family: 'Helvetica Neue', arial, sans-serif;
+	font-weight: 400;
+	color: #d0d4d7;
+	-webkit-font-smoothing: antialiased;
+	-moz-osx-font-smoothing: grayscale;
+}
+
+* {
+	box-sizing: border-box;
+}
+
+#app {
+	height: 100%;
+}
+
+
+/**
+ * React Starter Kit (https://www.reactstarterkit.com/)
+ *
+ * Copyright © 2014-present Kriasoft, LLC. All rights reserved.
+ *
+ * This source code is licensed under the MIT license found in the
+ * LICENSE.txt file in the root directory of this source tree.
+ */
+
+ :root {
+  /*
+   * Typography
+   * ======================================================================== */
+
+  --font-family-base: 'Open Sans', 'Segoe UI', 'HelveticaNeue-Light', sans-serif;
+  --monospace: 'PT Mono', monospace;
+
+  /*
+   * Layout
+   * ======================================================================== */
+
+  --max-content-width: 1200px;
+
+  /*
+   * Media queries breakpoints
+   * ======================================================================== */
+
+  --screen-xs-min: 480px;  /* Extra small screen / phone */
+  --screen-sm-min: 768px;  /* Small screen / tablet */
+  --screen-md-min: 992px;  /* Medium screen / desktop */
+  --screen-lg-min: 1200px; /* Large screen / wide desktop */
+  --input-background: #2c2727aa;
+  --hos-white-text: #f1f1f1;
+  --hos-light-text: #f1f1f488;
+  --hos-border-light: #f1f1f433;
+  --hos-border-light--hover: #10466D;
+  /* --hos-light-bg: rgb(49, 47, 45); */
+  /* --hos-dark-bg: rgb(43, 43, 40); */
+  /* --hos-extra-dark-bg: rgb(19, 19, 18); */
+
+  --coin-color: #7996ca;
+  --dcoin-color: #7996ca;
+
+  --hos-white-color: #ccc;
+  --hos-grey-light: #a5a5a5;
+  --hos-grey-light: #c6ced4; /*#d0d4d7;*/
+  --hos-grey-color: #878d98;
+  --hos-action-color: #4F88FF;
+  --hos-link-color: #5DAEF2;
+  --hos-header-action-hover-color: #228fd7;
+
+
+  /* worker colors */
+  --hos-worker-offline: #6a2d30;
+  --hos-worker-offline: #6f4345;
+  --hos-worker-offline: #5d3535;
+  --hos-worker-offline: #4e2d31;
+  /* --hos-worker-offline: #674443; */
+
+  /* action colors   */
+  --hos-amd-color: #c345a1;
+  --hos-amd-color-hl: #9c27b054;
+  --hos-nvidia-color: #8bc34a;
+  --hos-nvidia-color-hl: #8bc34a4d;
+  --hos-cpu-color: #fcce00;
+  --hos-cpu-color-hl: #fcce001c;
+  --hos-asic-color: #4f88ff;
+  --hos-asic-color-hl: #4f87ff41;
+  --hos-power-color: #8BBDF7;
+
+  --red-color: #ff4a46;
+  --red-color-hl: #ff572245;
+  --red-color-light: #f39696;
+  --green-color: #89c540;
+  --green-color-hl: #8bc34a2b;
+  --green-color-hl-hover: #8bc34a5d;
+  --green-color-light: #cee9b0;
+  --blue-color: #468ee6;
+  --blue-color-hl: #4cb7ff30;
+  --blue-color-hl-hover: #4cb7ff52;
+  --blue-color-light: #69cff1;
+  --orange-color: #f7a700;
+  --orange-color-hl: #ff990049;
+  --orange-color-light: #f5c987;
+  --hos-red-color: #E26B73;
+  --hos-light-grey: #a7a29d;
+  --hos-xxl-light-bg: #383E4A;
+  --hos-xxxl-light-bg: #494E56;
+  --hos-extra-light-bg: #2F333D;
+  --hos-extra-light-bg: #33373e;
+  --hos-light-bg: #282C34;
+  --hos-dark-bg: #21252B;
+  --hos-extra-dark-bg: #1D1F23;
+  --hos-xxl-dark-bg: #16171b;
+
+  --snake-green: #89c540;
+  --snake-lemon: #cad149;
+  --snake-yellow: #fea541;
+  --snake-orange: #fe6f45;
+  --snake-red: #ff4a46;
+}
