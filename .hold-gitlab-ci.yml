@@ -25,7 +25,7 @@ auto-deploy-dev:
   script:
     - cd /opt/idp
     - docker-compose -f idp-docker-compose.yaml pull
-    - docker-compose -f idp-docker-compose.yaml up -d --force-recreate idp
+    - docker-compose -f idp-docker-compose.yaml up -d --force-recreate
     - docker restart nginx
 manual-deploy-branch:
   when: manual

@@ -1,6 +1,8 @@
 package auth
 
 import (
+	responses "git.tor.ph/hiveon/idp/models/responses"
+
 	"context"
 	"encoding/json"
 	"errors"
@@ -13,8 +15,12 @@ import (
 	"net/http"
 	"strings"
 
+	"git.tor.ph/hiveon/idp/models/users"
 	"github.com/go-chi/chi"
+	"github.com/ory/hydra/sdk/go/hydra/swagger"
 	"github.com/volatiletech/authboss"
+	"golang.org/x/oauth2"
+	"gopkg.in/resty.v1"
 )
 
 var (
