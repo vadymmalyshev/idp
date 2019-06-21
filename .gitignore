@@ -16,6 +16,7 @@ orgs/
 test.txt
 /bin/
 /build/
+/docs/
 /vendor/
 vendor/
 /.docker/
@@ -23,7 +24,6 @@ vendor/
 /.licensei.cache
 # /.env
 __data/
-/docs/
 
 # IDE integration
 /.idea/*

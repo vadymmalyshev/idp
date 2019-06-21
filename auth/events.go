@@ -1,9 +1,13 @@
 package auth
 
 import (
+	"encoding/json"
+	"fmt"
+	"net/http"
+
 	"git.tor.ph/hiveon/idp/models/users"
 	"github.com/sirupsen/logrus"
-	"net/http"
+	"gopkg.in/resty.v1"
 )
 
 type LogType string
@@ -13,20 +17,25 @@ func (l LogType) String() string {
 }
 
 var (
-	LogTypeLogin LogType = "login"
+	LogTypeLogin        LogType = "login"
 	LogTypeRegistration LogType = "registration"
 )
 
 func (a Auth) AfterEventRegistration(w http.ResponseWriter, r *http.Request, handled bool) (bool, error) {
-	referalID, err := r.Cookie("refId")
-
-	if err == nil && referalID != nil {
-		abUser, err := a.authBoss.LoadCurrentUser(&r)
-		if abUser != nil && err == nil {
-			user := abUser.(*users.User)
+	abUser, err := a.authBoss.LoadCurrentUser(&r)
+	if abUser != nil && err == nil {
+		user := abUser.(*users.User)
+		if referalID, err := r.Cookie("refId"); err != nil {
 			user.PutReferal(referalID.Value)
 		}
+
+		if hiveOsID, err := a.createUserAtHiveOS(user); err != nil {
+			user.PutHiveOSUserID(hiveOsID)
+		}
+
+		a.db.Model(&user).Save(user)
 	}
+
 	challenge, cookie, err := a.getChallengeCodeFromHydra(r)
 
 	if err != nil {
@@ -52,10 +61,10 @@ func (a Auth) createLoginRecord(w http.ResponseWriter, r *http.Request, loginTyp
 	abUser, err := a.authBoss.LoadCurrentUser(&r)
 
 	if err != nil {
-		return err;
+		return err
 	}
 	newLog := a.userLogger.New()
-	IP := r.RemoteAddr;
+	IP := r.RemoteAddr
 	ua := r.Header.Get("User-Agent")
 	fromUrl, err := r.Cookie("fromUrl")
 	fu := "Unknown"
@@ -70,4 +79,24 @@ func (a Auth) createLoginRecord(w http.ResponseWriter, r *http.Request, loginTyp
 	newLog.Type = loginType.String()
 
 	return a.userLogger.CreateRecord(newLog)
+}
+
+func (a Auth) createUserAtHiveOS(u users.User) (int64, error) {
+	resp, err := resty.R().SetFormData(map[string]string{
+		"login":     u.Login,
+		"name":      u.Name,
+		"email":     u.Email,
+		"ref_id":    u.ReferalID,
+		"promocode": u.Promocode,
+	}).Post(fmt.Sprintf("%s/api/int/users", a.conf.IDP.HiveOSApiURL))
+	if err != nil {
+		return 0, err
+	}
+
+	var responseStruct = make(map[string]interface{})
+	if err := json.Unmarshal(resp.Body(), &responseStruct); err != nil {
+		return 0, err
+	}
+
+	return responseStruct["id"].(int64), nil
 }

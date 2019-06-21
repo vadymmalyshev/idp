@@ -9,12 +9,14 @@ import (
 // User using by IDP to store users and their credentials
 type User struct {
 	gorm.Model
-	Login     string `gorm:"not null"`
-	Name      string `gorm:"not null"`
-	Email     string `gorm:"not null;unique_index"`
-	Password  string `gorm:"not null" json:"-"`
-	ReferalID string `json:"-"`
-	Promocode string `json:"-"`
+	HiveOSUserID      int64
+	BillingPercentage float64 `json:"-"`
+	Login             string  `gorm:"not null"`
+	Name              string  `gorm:"not null"`
+	Email             string  `gorm:"not null;unique_index"`
+	Password          string  `gorm:"not null" json:"-"`
+	ReferalID         string  `json:"-"`
+	Promocode         string  `json:"-"`
 
 	// Confirm
 	ConfirmSelector string `json:"-"`
@@ -206,5 +208,9 @@ func (u User) GetArbitrary() map[string]string {
 func (u User) GetReferal() string { return u.ReferalID }
 
 func (u *User) PutCode(code string) {
-		u.Code2FA = code
+	u.Code2FA = code
+}
+
+func (u *User) PutHiveOSUserID(id int64) {
+	u.HiveOSUserID = id
 }
