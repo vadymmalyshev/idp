@@ -16,12 +16,17 @@ import (
 
 var RememberFor = time.Hour * 24 * 30 //30 * 24 * 60 * 60
 
+const (
+	LoginPath    = "/oauth2/auth/requests/login"
+	ConsentPath  = "/oauth2/auth/requests/consent"
+)
+
 func init() {
 	resty.SetRedirectPolicy(resty.FlexibleRedirectPolicy(20))
 }
 
 func AcceptConsentChallengeCode(challenge string, hConfig config.HydraConfig) (string, error) {
-	url := fmt.Sprintf("%s/oauth2/auth/requests/consent/%s", hConfig.Admin, challenge)
+	url := fmt.Sprintf("%s%s?consent_challenge=%s", hConfig.Admin, ConsentPath, challenge)
 	consent := hydraConsent.ConsentRequest{}
 
 	res, err := resty.R().Get(url)
@@ -37,11 +42,12 @@ func AcceptConsentChallengeCode(challenge string, hConfig config.HydraConfig) (s
 		Remember: false, RememberFor: int(RememberFor.Seconds())}
 
 	accept := hydraConsent.RequestHandlerResponse{}
+	urlAccept := fmt.Sprintf("%s%s/accept?consent_challenge=%s", hConfig.Admin, ConsentPath, challenge)
 
 	res, err = resty.R().
 		SetBody(req).
 		SetHeader("Content-Type", "application/json").
-		Put(url + "/accept")
+		Put(urlAccept)
 
 	if err != nil {
 		logrus.Errorf("an error occured while making hydra accept consent url: %s", err.Error())
@@ -76,8 +82,7 @@ func CheckChallengeCode(challenge string, hConfig config.HydraConfig) (hydraCons
 }
 
 func ConfirmLogin(userID uint, remember bool, challenge string, hConfig config.HydraConfig) (LoginResponse, error) {
-	//url := fmt.Sprintf("%s/oauth2/auth/requests/login/%s/accept", hConfig.Admin, challenge)
-	url := fmt.Sprintf("%s/oauth2/auth/requests/login/accept?login_challenge=%s", hConfig.Admin, challenge)
+	urlAccept := fmt.Sprintf("%s%s/accept?login_challenge=%s", hConfig.Admin, LoginPath, challenge)
 	response := LoginResponse{}
 	request := LoginRequest{}
 	request.Subject = strconv.FormatUint(uint64(userID), 10)
@@ -88,7 +93,7 @@ func ConfirmLogin(userID uint, remember bool, challenge string, hConfig config.H
 	res, err := resty.R().
 		SetBody(request).
 		SetHeader("Content-Type", "application/json").
-		Put(url)
+		Put(urlAccept)
 
 	if err != nil {
 		logrus.WithFields(logrus.Fields{
