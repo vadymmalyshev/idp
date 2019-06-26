@@ -81,7 +81,7 @@ func (a Auth) createLoginRecord(w http.ResponseWriter, r *http.Request, loginTyp
 	return a.userLogger.CreateRecord(newLog)
 }
 
-func (a Auth) createUserAtHiveOS(u users.User) (int64, error) {
+func (a Auth) createUserAtHiveOS(u *users.User) (int64, error) {
 	resp, err := resty.R().SetFormData(map[string]string{
 		"login":     u.Login,
 		"name":      u.Name,

@@ -76,8 +76,8 @@ func CheckChallengeCode(challenge string, hConfig config.HydraConfig) (hydraCons
 }
 
 func ConfirmLogin(userID uint, remember bool, challenge string, hConfig config.HydraConfig) (LoginResponse, error) {
-	url := fmt.Sprintf("%s/oauth2/auth/requests/login/%s/accept", hConfig.Admin, challenge)
-
+	//url := fmt.Sprintf("%s/oauth2/auth/requests/login/%s/accept", hConfig.Admin, challenge)
+	url := fmt.Sprintf("%s/oauth2/auth/requests/login/accept?login_challenge=%s", hConfig.Admin, challenge)
 	response := LoginResponse{}
 	request := LoginRequest{}
 	request.Subject = strconv.FormatUint(uint64(userID), 10)
