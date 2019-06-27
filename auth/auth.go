@@ -1,20 +1,13 @@
 package auth
 
 import (
-	responses "git.tor.ph/hiveon/idp/models/responses"
-
 	"context"
 	"encoding/json"
 	"errors"
 	"flag"
 	"fmt"
-	"git.tor.ph/hiveon/idp/models/users"
-	"github.com/ory/hydra/sdk/go/hydra/swagger"
-	"golang.org/x/oauth2"
-	"gopkg.in/resty.v1"
 	"net/http"
 	"strings"
-
 	"git.tor.ph/hiveon/idp/models/users"
 	"github.com/go-chi/chi"
 	"github.com/ory/hydra/sdk/go/hydra/swagger"

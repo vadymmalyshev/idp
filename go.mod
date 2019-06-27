@@ -2,6 +2,7 @@ module git.tor.ph/hiveon/idp
 
 require (
 	cloud.google.com/go v0.36.0 // indirect
+	github.com/alecthomas/template v0.0.0-20160405071501-a0175ee3bccc
 	github.com/boombuler/barcode v1.0.0 // indirect
 	github.com/denisenkom/go-mssqldb v0.0.0-20190204142019-df6d76eb9289 // indirect
 	github.com/eknkc/amber v0.0.0-20171010120322-cdade1c07385 // indirect
@@ -30,6 +31,7 @@ require (
 	github.com/spf13/afero v1.2.1 // indirect
 	github.com/spf13/viper v1.3.1
 	github.com/stretchr/testify v1.3.0
+	github.com/swaggo/swag v1.5.1
 	github.com/ugorji/go/codec v0.0.0-20190204201341-e444a5086c43 // indirect
 	github.com/unrolled/render v1.0.0
 	github.com/volatiletech/authboss v0.0.0-20190207041050-5c92c016e0cd
